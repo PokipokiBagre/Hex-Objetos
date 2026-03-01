@@ -23,17 +23,24 @@ export function dibujarControl() {
         const active = estadoUI.jugadorControl === j ? 'style="border: 2px solid #d4af37"' : '';
         html += `<button onclick="window.setCtrl('${j}')" ${active}>${j}</button> `;
     });
-    // BOTÓN PARA REGRESAR SIN PEDIR CLAVE
-    html += `<br><br><button onclick="window.mostrarPagina('op-menu')" style="background:#444; border-color:#888;">⬅ Volver al Menú OP</button></div><br>`;
+    html += `<br><br><button onclick="window.mostrarPagina('op-menu')" style="background:#444;">⬅ Volver al Menú OP</button></div><br>`;
     
     if (estadoUI.jugadorControl) {
         const j = estadoUI.jugadorControl;
+        
+        // CASILLA DE COPIADO DINÁMICO (ÚLTIMA ACCIÓN)
+        html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:10px; border:1px dashed #d4af37;">
+                    <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:30px; font-size:0.8em; margin-bottom:5px;">${estadoUI.logCopy || 'Esperando acción...'}</textarea>
+                    <button onclick="window.copyToClipboard('copy-log-stock')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">Copiar Registro</button>
+                 </div>`;
+
         html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusqueda(this.value)">`;
         html += `<div class="grid-control">`;
         const term = estadoUI.busquedaOP.toLowerCase();
         ordenarItems(j).forEach(o => {
             if (!term || o.toLowerCase().includes(term)) {
-                const c = invGlobal[j][o] || 0; const extraClass = c > 0 ? "item-con-stock" : "";
+                const c = invGlobal[j][o] || 0;
+                const extraClass = c > 0 ? "item-con-stock" : "";
                 html += `<div class="control-card ${extraClass}"><span class="item-name">${o} (<b>${c}</b>)</span><div class="item-btns"><button onclick="window.hexMod('${j}','${o}',1)">+1</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button></div><div class="item-btns" style="margin-top:5px"><button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)" style="background:#4a0000">-5</button></div></div>`;
             }
         });
@@ -43,22 +50,32 @@ export function dibujarControl() {
 }
 
 export function dibujarFormularioObjeto() {
-    let html = `<h2>Crear Nuevo Objeto</h2>
+    let html = `<h2>Forjar Nuevo Objeto</h2>
     <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px;">
-        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre del objeto..." style="width:95%">
+        
+        <textarea id="copy-log-forge" class="search-bar" readonly style="width:95%; height:60px; font-size:0.8em; background:#1a0033; border-color:#d4af37;"></textarea>
+        <button onclick="window.copyToClipboard('copy-log-forge')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold; margin-bottom:15px;">Copiar Formato Forja</button>
+
+        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateForgeLog()" style="width:95%">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
             <select id="new-obj-tipo" class="search-bar" style="width:100%"><option value="Consumible">Consumible</option><option value="Herramienta">Herramienta</option><option value="Accesorio">Accesorio</option><option value="Equipo">Equipo</option></select>
             <select id="new-obj-mat" class="search-bar" style="width:100%"><option value="Cristal">Cristal</option><option value="Metal">Metal</option><option value="Orgánico">Orgánico</option><option value="Sagrado">Sagrado</option></select>
         </div>
-        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto del objeto..." style="width:95%; height:60px; margin-top:10px;"></textarea>
+        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateForgeLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
         <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option value="Común">Común</option><option value="Raro">Raro</option><option value="Legendario">Legendario</option></select>
-        <h3 style="margin-top:20px; font-size:1em;">Dueños y Cantidades</h3>
+        
+        <h3 style="margin-top:20px; font-size:1em;">Cantidades por Jugador</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
+    
     Object.keys(invGlobal).sort().forEach(j => {
-        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;"></div>`;
+        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;">
+            <label>${j}:</label>
+            <input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateForgeLog()" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;">
+        </div>`;
     });
+
     html += `</div>
-        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">Agregar objeto y definir dueños</button>
+        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">Forjar y Repartir</button>
         <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">Cancelar</button>
     </div>`;
     document.getElementById('panel-interactivo').innerHTML = html;
@@ -115,5 +132,6 @@ export function dibujarCatalogo() {
     });
     document.getElementById('tabla-todos-objetos').innerHTML = html + "</table>"; mantenerFoco('busq-cat');
 }
+
 
 
