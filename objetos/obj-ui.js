@@ -2,12 +2,98 @@ import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
 
 export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujarControl(); }
 
+const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
+
 function ordenarItems(j) {
     if (!j || !invGlobal[j]) return Object.keys(objGlobal).sort();
     return Object.keys(objGlobal).sort((a, b) => {
         const sA = invGlobal[j][a] || 0; const sB = invGlobal[j][b] || 0;
         if (sB !== sA) return sB - sA; return a.localeCompare(b);
     });
+}
+
+export function dibujarInventarios() {
+    let html = "<h2>Inventarios</h2><div class='filter-group'>";
+    Object.keys(invGlobal).sort().forEach(j => {
+        const active = estadoUI.jugadorInv === j ? 'class="btn-active"' : '';
+        html += `<button onclick="window.setInv('${j}')" ${active}>${j}</button> `;
+    });
+    html += "</div><br>";
+
+    if (estadoUI.jugadorInv) {
+        const j = estadoUI.jugadorInv;
+        const term = (estadoUI.busquedaInv || "").toLowerCase();
+
+        // 1. AFINIDAD Y DESCRIPCIÓN
+        const afins = objGlobal[j]?.afinidades || {};
+        const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
+        
+        html += `
+        <div class="player-header">
+            <img src="../img/${j.toLowerCase()}icon.png" class="player-icon" onerror="this.src='../img/icon.png'">
+            <div class="player-info">
+                <h3>${j}</h3>
+                <p class="afinidad-tag">Afinidad Máxima: <span>${maxAf}</span></p>
+                <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción de personaje disponible."}</p>
+            </div>
+        </div>
+        <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo y mochila..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
+
+        // 2. TOP 5 OBJETOS DESTACADOS (Sujetos al buscador)
+        const destacados = Object.keys(invGlobal[j])
+            .filter(o => invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term)))
+            .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
+            .slice(0, 5);
+
+        if (destacados.length > 0) {
+            html += `<div class="top-items-grid">`;
+            destacados.forEach(o => {
+                const imgFile = o.toLowerCase().replace(/\s+/g, '_');
+                html += `
+                <div class="top-item-card rarity-${objGlobal[o]?.rar.toLowerCase()}">
+                    <img src="imgobjetos/${imgFile}.jpg" onerror="this.src='../img/objetos.jpg'">
+                    <span class="top-item-name">${o}</span>
+                </div>`;
+            });
+            html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
+        }
+
+        // 3. TABLA GENERAL
+        html += `<div class="table-responsive"><table class='container-hex'><tr><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
+        ordenarItems(j).forEach(o => {
+            if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
+                html += `<tr><td style="font-weight:bold; color:#d4af37;">${o}</td><td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff}</td><td>${invGlobal[j][o]}</td></tr>`;
+            }
+        });
+        html += "</table></div>";
+    }
+    document.getElementById('contenedor-jugadores').innerHTML = html;
+}
+
+export function dibujarCatalogo() {
+    let html = "<h2>Catálogo</h2><div class='filter-group'>";
+    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
+        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
+        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
+    });
+    html += "</div><div class='filter-group' style='margin-top:10px;'>";
+    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
+        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
+        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
+    });
+    html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar en el Heptagrama..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
+    <div class="table-responsive"><table class='container-hex'><tr><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
+    
+    const term = (estadoUI.busquedaCat || "").toLowerCase();
+    Object.keys(objGlobal).sort().forEach(o => {
+        const item = objGlobal[o];
+        const matchR = estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar;
+        const matchM = estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat;
+        if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
+            html += `<tr><td>${o}</td><td style="text-align:left; font-size:0.85em;">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
+        }
+    });
+    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table></div>";
 }
 
 export function dibujarControl() {
@@ -34,70 +120,9 @@ export function dibujarControl() {
     document.getElementById('panel-interactivo').innerHTML = html;
 }
 
-export function dibujarCreacionObjeto() {
-    let html = `<h2>Creación de Objetos</h2><div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px;">
-        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateCreationLog()" style="width:95%">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-            <select id="new-obj-tipo" class="search-bar" onchange="window.updateCreationLog()" style="width:100%"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
-            <select id="new-obj-mat" class="search-bar" onchange="window.updateCreationLog()" style="width:100%"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
-        </div>
-        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
-        <select id="new-obj-rar" class="search-bar" onchange="window.updateCreationLog()" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
-        <h3 style="margin-top:20px;">Cantidades</h3><div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
-    Object.keys(invGlobal).sort().forEach(j => { html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;"></div>`; });
-    html += `</div><div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;"><textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:100px; font-size:0.85em; margin-bottom:10px; text-align:left;"></textarea><button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button></div>
-        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">CREAR Y DEFINIR DUEÑO</button><button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button></div>`;
-    document.getElementById('panel-interactivo').innerHTML = html;
-}
-
 export function dibujarMenuOP() {
     document.getElementById('menu-op-central').innerHTML = `<h2>Acceso OP</h2><div class="main-grid" style="max-width: 700px; margin: 0 auto; gap: 15px;">
         <button onclick="window.mostrarPagina('control')" style="padding: 20px;">Editor de Stock</button><button onclick="window.mostrarCreacionObjeto()" style="padding: 20px; background:#4a004a">Creación de Objetos</button>
         <button onclick="window.descargarInventariosJPG()" style="padding: 20px; background:#8b0000; color: white;">Descargar JPGs</button><button onclick="window.descargarLog()" style="padding: 20px; background:#004a4a; color: white;">Descargar Log</button>
         <button onclick="window.descargarEstadoCSV()" style="padding: 20px; background:#d4af37; color:#120024">Descargar CSV</button><button onclick="window.mostrarPagina('inventarios')" style="padding: 20px; background:#444;">Cerrar OP</button></div>`;
-}
-
-export function dibujarInventarios() {
-    let html = "<h2>Inventarios</h2><div style='text-align:center'>";
-    Object.keys(invGlobal).sort().forEach(j => {
-        const active = estadoUI.jugadorInv === j ? 'class="btn-active"' : '';
-        html += `<button onclick="window.setInv('${j}')" ${active}>${j}</button> `;
-    });
-    html += "</div><br>";
-    if (estadoUI.jugadorInv) {
-        const j = estadoUI.jugadorInv;
-        html += `<input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
-        html += `<div class='table-responsive'><div class='container-hex'><h3>${j}</h3><table><tr><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
-        const term = (estadoUI.busquedaInv || "").toLowerCase();
-        ordenarItems(j).forEach(o => {
-            if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) html += `<tr><td>${o}</td><td style="font-size:0.8em; text-align:left;">${objGlobal[o]?.eff || '-'}</td><td>${invGlobal[j][o]}</td></tr>`;
-        });
-        html += "</table></div></div>";
-    }
-    document.getElementById('contenedor-jugadores').innerHTML = html;
-}
-
-export function dibujarCatalogo() {
-    let html = "<h2>Catálogo</h2><div style='text-align:center'>";
-    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
-        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
-        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
-    });
-    html += "<br><br>";
-    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
-        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
-        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
-    });
-    html += `<br><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)"></div>`;
-    html += `<div class='table-responsive'><table class='container-hex'><tr><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
-    const term = (estadoUI.busquedaCat || "").toLowerCase();
-    Object.keys(objGlobal).sort().forEach(o => {
-        const item = objGlobal[o];
-        const matchRar = estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar;
-        const matchMat = estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat;
-        if (matchRar && matchMat && (!term || o.toLowerCase().includes(term))) {
-            html += `<tr><td>${o}</td><td style="font-size:0.8em; text-align:left;">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
-        }
-    });
-    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table></div>";
 }
