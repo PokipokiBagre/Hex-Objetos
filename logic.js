@@ -2,11 +2,14 @@ import { invGlobal, objGlobal, historial, guardar } from './state.js';
 
 export function modificar(j, o, c, callback) {
     if (!invGlobal[j]) invGlobal[j] = {};
+    // ASIGNACIÓN CORRECTA: Sumamos el cambio al valor actual
     invGlobal[j][o] = Math.max(0, (invGlobal[j][o] || 0) + c);
     historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: o, cambio: c, total: invGlobal[j][o] });
-    guardar(); callback(); 
+    guardar(); 
+    callback(); // Esto redibuja la UI manteniendo el filtro del buscador
 }
 
+// ... Resto de funciones (descargarEstadoCSV, descargarLog, descargarInventariosJPG) se mantienen igual ...
 export function descargarEstadoCSV() {
     let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; 
     Object.keys(objGlobal).sort().forEach(o => {
@@ -15,12 +18,11 @@ export function descargarEstadoCSV() {
         Object.keys(invGlobal).forEach(jug => {
             if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); }
         });
-        // EXPORTA EL FORMATO EXACTO A-G
         csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
     });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    link.download = `HEX_ESTADO_A_G.csv`;
+    link.download = `HEX_ESTADO_NUEVO.csv`;
     link.click();
 }
 
@@ -58,5 +60,3 @@ export function importarLog(contenido, callback) {
     });
     guardar(); callback();
 }
-
-export function resetDB() { if(confirm("¿BORRAR TODO?")) { localStorage.clear(); location.reload(); } }
