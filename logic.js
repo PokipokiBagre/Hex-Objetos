@@ -8,22 +8,22 @@ export function modificar(j, o, c, callback) {
 }
 
 export function descargarEstadoCSV() {
-    let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; // Formato A-G
+    let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; 
     Object.keys(objGlobal).sort().forEach(o => {
         const info = objGlobal[o];
         let d = [], c = [];
         Object.keys(invGlobal).forEach(jug => {
             if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); }
         });
+        // EXPORTA EL FORMATO EXACTO A-G
         csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
     });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    link.download = `HEX_ESTADO_NUEVO.csv`;
+    link.download = `HEX_ESTADO_A_G.csv`;
     link.click();
 }
 
-// Función de Log para no perder rastro
 export function descargarLog() {
     let csv = "Fecha,Jugador,Objeto,Cambio,Total\n";
     historial.forEach(h => csv += `"${h.fecha}","${h.jugador}","${h.objeto}",${h.cambio},${h.total}\n`);
@@ -59,4 +59,4 @@ export function importarLog(contenido, callback) {
     guardar(); callback();
 }
 
-export function resetDB() { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); } }
+export function resetDB() { if(confirm("¿BORRAR TODO?")) { localStorage.clear(); location.reload(); } }
