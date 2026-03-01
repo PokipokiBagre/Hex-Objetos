@@ -6,4 +6,6 @@ export let estadoUI = {
     filtroMat: 'Todos',
     esAdmin: false
 };
-export function guardar() { localStorage.setItem('hex_db_v4', JSON.stringify({ inv: invGlobal, obj: objGlobal, his: historial })); }
+export function guardar() { 
+    localStorage.setItem('hex_db_v4', JSON.stringify({ inv: invGlobal, obj: objGlobal, his: historial })); 
+}
