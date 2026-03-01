@@ -1,7 +1,7 @@
 import { invGlobal, objGlobal, historial, estadoUI } from './obj-state.js';
 import { cargarTodoDesdeCSV } from './obj-data.js';
-import { modificar, descargarLog, importarLog, descargarEstadoCSV, descargarInventariosJPG } from './obj-logic.js';
-import { refrescarUI, dibujarMenuOP } from './obj-ui.js';
+import { modificar, descargarLog, importarLog, descargarEstadoCSV, descargarInventariosJPG, agregarObjetoManual } from './obj-logic.js';
+import { refrescarUI, dibujarMenuOP, dibujarFormularioObjeto } from './obj-ui.js';
 
 async function iniciar() {
     const cache = localStorage.getItem('hex_obj_v4');
@@ -48,6 +48,29 @@ async function iniciar() {
     window.descargarInventariosJPG = descargarInventariosJPG;
     window.descargarLog = descargarLog;
     window.subirLogManual = () => document.getElementById('input-log').click();
+    window.mostrarAgregarObjeto = () => {
+        window.mostrarPagina('control'); // Usamos el contenedor de panel-interactivo
+        dibujarFormularioObjeto();
+    };
+
+    window.ejecutarAgregarObjeto = () => {
+        const datos = {
+            nombre: document.getElementById('new-obj-name').value.trim(),
+            tipo: document.getElementById('new-obj-tipo').value,
+            mat: document.getElementById('new-obj-mat').value,
+            eff: document.getElementById('new-obj-eff').value.trim(),
+            rar: document.getElementById('new-obj-rar').value
+        };
+
+        const reparticion = {};
+        document.querySelectorAll('.cant-input').forEach(input => {
+            reparticion[input.dataset.player] = input.value;
+        });
+
+        agregarObjetoManual(datos, reparticion, () => {
+            window.mostrarPagina('op-menu');
+        });
+    };
 
     document.getElementById('input-log')?.addEventListener('change', (e) => {
         const reader = new FileReader();
@@ -58,3 +81,4 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
+
