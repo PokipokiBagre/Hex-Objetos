@@ -1,13 +1,29 @@
 import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
 
+// Mantiene el foco y la posición del cursor al escribir
+function dibujarConFoco(html) {
+    const activeId = document.activeElement.id;
+    const start = document.activeElement.selectionStart;
+    const end = document.activeElement.selectionEnd;
+    
+    document.getElementById('contenedor-jugadores').innerHTML = html;
+    
+    if (activeId) {
+        const el = document.getElementById(activeId);
+        if (el) {
+            el.focus();
+            if (el.setSelectionRange) el.setSelectionRange(start, end);
+        }
+    }
+}
+
 export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujarControl(); }
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
-// Normalización agresiva: limpia espacios invisibles y tildes
 const normalizarNombre = (str) => {
     if (!str) return "";
-    return str.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_');
+    return str.toString().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
 };
 
 function ordenarItems(j) {
@@ -32,7 +48,6 @@ export function dibujarInventarios() {
         const afins = objGlobal[j]?.afinidades || {};
         const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
         
-        // Carga de icono de personaje con respaldo
         html += `
         <div class="player-header">
             <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
@@ -53,7 +68,6 @@ export function dibujarInventarios() {
             html += `<div class="top-items-grid">`;
             destacados.forEach(o => {
                 const imgFile = normalizarNombre(o);
-                // Respaldo de imagen de objeto
                 html += `
                 <div class="top-item-card rarity-${objGlobal[o]?.rar.toLowerCase()}">
                     <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
@@ -71,7 +85,7 @@ export function dibujarInventarios() {
         });
         html += "</table></div>";
     }
-    document.getElementById('contenedor-jugadores').innerHTML = html;
+    dibujarConFoco(html); // Usamos la función de foco para el renderizado
 }
 
 // --- MANTENER INTACTO: FUNCIONES OP Y CONTROL ---
@@ -85,7 +99,7 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
                  </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control">`;
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = estadoUI.busquedaOP.toLowerCase();
