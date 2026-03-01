@@ -4,9 +4,9 @@ import { modificar, descargarLog, descargarEstadoCSV, descargarInventariosJPG } 
 import { refrescarUI, dibujarMenuOP } from './obj-ui.js';
 
 async function iniciar() {
-    // Forzar limpieza al refrescar la página
     if (performance.getEntriesByType("navigation")[0]?.type === "reload") {
         localStorage.removeItem('hex_obj_v4');
+        console.log("Sistema: Caché depurada por recarga");
     }
 
     const cache = localStorage.getItem('hex_obj_v4');
@@ -35,13 +35,12 @@ async function iniciar() {
         window.actualizarBitacoraTexto(); modificar(j, o, c, refrescarUI);
     };
 
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar datos?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
         const i = prompt("System Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
     };
 
-    // Navegación y Filtros
     window.mostrarPagina = (id) => { document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); document.getElementById('pag-' + id).style.display = 'block'; refrescarUI(); };
     window.setInv = (j) => { estadoUI.jugadorInv = j; refrescarUI(); };
     window.setCtrl = (j) => { estadoUI.jugadorControl = j; refrescarUI(); };
