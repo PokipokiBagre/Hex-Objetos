@@ -19,19 +19,16 @@ async function iniciar() {
     });
 
     window.validarOP = () => {
-        const secret = 'Y2FuZXk='; // "caney"
+        const secret = 'Y2FuZXk=';
         if (estadoUI.esAdmin || prompt("Contraseña:") === atob(secret)) {
             estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu');
         } else { alert("Acceso denegado"); }
     };
 
-    // FUNCIÓN UNIFICADA: RESET + SINCRONIZAR
     window.actualizarTodo = async () => {
-        if(confirm("¿Actualizar sistema? Esto limpiará la memoria local y cargará los datos más recientes del Google Sheet.")) {
+        if(confirm("¿Actualizar sistema? Se borrará la memoria local para cargar los datos más recientes del Excel.")) {
             localStorage.clear();
-            await cargarTodoDesdeCSV();
-            refrescarUI();
-            alert("Sistema Actualizado con éxito.");
+            location.reload(); // Recarga la página para asegurar limpieza total
         }
     };
 
