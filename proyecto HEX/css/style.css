@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
+/* --- BASES DE MAGIA ANTIGUA --- */
+body { 
+    font-family: 'Cinzel', serif; 
+    background-color: #120024; /* Violeta Gwyndolin */
+    color: #ffffff; 
+    margin: 0; padding: 20px;
+    background-image: radial-gradient(circle, #1a0033 0%, #000 100%);
+    min-height: 100vh;
+}
+
+h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text-align: center; }
+
+/* Contenedor: Lo subimos al 90% para que la triple columna respire */
+.container-hex { width: 90%; margin: 0 auto; max-width: 1400px; }
+
+nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+
+button { 
+    background: #2e004f; color: #d4af37; border: 1px solid #d4af37;
+    padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; transition: 0.3s;
+}
+
+button:hover { background: #d4af37; color: #120024; box-shadow: 0 0 15px #d4af37; }
+
+/* --- TABLAS DE INVENTARIO Y CATÁLOGO --- */
+table { 
+    width: 100%; border-collapse: collapse; background: rgba(30, 0, 60, 0.8);
+    border: 1px solid #d4af37; margin-bottom: 20px;
+}
+
+th { background: #d4af37; color: #120024; padding: 12px; border: 1px solid #120024; }
+td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: center; }
+
+/* --- TRIPLE COLUMNA (ACCESO OP) --- */
+.grid-control {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* Divide en 3 partes iguales */
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.control-card {
+    background: rgba(30, 0, 60, 0.9);
+    border: 1px solid #d4af37;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+
+/* --- ESTILO ROJIZO: OBJETOS OBTENIDOS --- */
+.item-con-stock { 
+    background: rgba(139, 0, 0, 0.5) !important; /* Rojo vino más visible */
+    border: 2px solid #ff4d4d !important; /* Borde rojo brillante */
+    box-shadow: 0 0 15px rgba(255, 77, 77, 0.3);
+}
+
+.item-name { margin-bottom: 10px; font-size: 0.9em; text-align: center; font-weight: bold; }
+
+/* --- BOTONES ESPECÍFICOS --- */
+.item-btns { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+.item-btns button { padding: 5px 10px; font-size: 0.75em; margin: 2px; }
+
+.btn-plus { background: #004d00; border-color: #00ff00; color: white; }
+.btn-neg { background: #4a0000 !important; border-color: #ff4d4d !important; color: white; }
+
+/* Seguridad */
+.solo-admin { display: none; }
