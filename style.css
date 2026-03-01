@@ -30,15 +30,62 @@ h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text
 .grid-item img { width: 100px; height: 100px; object-fit: cover; }
 .grid-item:hover { background: #2e004f; box-shadow: 0 0 15px #d4af37; }
 
-/* ACCESOS DIRECTOS (HILOS) */
-.direct-access { display: flex; gap: 30px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
-.access-card { position: relative; width: 320px; height: 180px; border: 1px solid #d4af37; overflow: hidden; }
-.access-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.4s; }
-.access-card .overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(18, 0, 36, 0.6); display: flex; justify-content: center; align-items: center;
+/* ACCESOS DIRECTOS (HILOS) - CORREGIDO PARA LEGIBILIDAD */
+.direct-access { 
+    display: flex; 
+    gap: 30px; 
+    justify-content: center; 
+    margin-top: 20px; 
+    flex-wrap: wrap; 
+    padding-bottom: 40px; 
 }
-.access-card:hover img { transform: scale(1.05); }
+
+.access-card { 
+    position: relative; 
+    width: 320px; 
+    height: 180px; 
+    border: 2px solid #d4af37; 
+    overflow: hidden; 
+    border-radius: 4px;
+}
+
+.access-card img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    transition: 0.4s; 
+    filter: brightness(0.6); /* Oscurece un poco la imagen de fondo */
+}
+
+.access-card .overlay {
+    position: absolute; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%;
+    background: rgba(18, 0, 36, 0.4); /* Capa oscura intermedia */
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    transition: 0.3s;
+}
+
+/* TEXTO EN BLANCO CON SOMBRA PARA MÁXIMA LECTURA */
+.access-card span { 
+    color: #ffffff !important; 
+    font-weight: bold; 
+    font-size: 1.1em; 
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 2px 2px 8px #000000, 0px 0px 10px #000000; /* Sombra negra reforzada */
+}
+
+.access-card:hover img { 
+    transform: scale(1.1); 
+    filter: brightness(0.8); 
+}
+
+.access-card:hover .overlay { 
+    background: rgba(18, 0, 36, 0.2); 
+}
 
 /* SISTEMA DE OBJETOS Y EDITOR */
 nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
@@ -68,3 +115,4 @@ td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: cente
 
 @media (min-width: 1200px) { .grid-control { grid-template-columns: repeat(5, 1fr); } }
 @media (max-width: 750px) { .main-grid, .direct-access { grid-template-columns: 1fr; } }
+
