@@ -7,9 +7,33 @@ export function modificar(j, o, c, callback) {
     guardar(); callback(); 
 }
 
+export function descargarEstadoCSV() {
+    let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; // Formato A-G
+    Object.keys(objGlobal).sort().forEach(o => {
+        const info = objGlobal[o];
+        let d = [], c = [];
+        Object.keys(invGlobal).forEach(jug => {
+            if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); }
+        });
+        csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
+    });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    link.download = `HEX_ESTADO_NUEVO.csv`;
+    link.click();
+}
+
+// Función de Log para no perder rastro
+export function descargarLog() {
+    let csv = "Fecha,Jugador,Objeto,Cambio,Total\n";
+    historial.forEach(h => csv += `"${h.fecha}","${h.jugador}","${h.objeto}",${h.cambio},${h.total}\n`);
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    link.download = 'log_hex.csv'; link.click();
+}
+
 export async function descargarInventariosJPG() {
     const jugadores = Object.keys(invGlobal);
-    const originalPage = document.querySelector('.pagina[style*="display: block"]')?.id.replace('pag-', '') || 'op-menu';
     window.mostrarPagina('inventarios');
     for (const j of jugadores) {
         window.setInv(j); 
@@ -21,32 +45,6 @@ export async function descargarInventariosJPG() {
         link.href = canvas.toDataURL("image/jpeg", 0.9);
         link.click();
     }
-    window.mostrarPagina(originalPage);
-}
-
-export function descargarEstadoCSV() {
-    let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; 
-    Object.keys(objGlobal).sort().forEach(o => {
-        const info = objGlobal[o];
-        let d = [], c = [];
-        Object.keys(invGlobal).forEach(jug => {
-            if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); }
-        });
-        csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(', ')}","${c.join(', ')}"\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `HEX_ESTADO.csv`;
-    link.click();
-}
-
-export function descargarLog() {
-    let csv = "Fecha,Jugador,Objeto,Cambio,Total\n";
-    historial.forEach(h => csv += `"${h.fecha}","${h.jugador}","${h.objeto}",${h.cambio},${h.total}\n`);
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    link.download = 'log_hex.csv'; link.click();
 }
 
 export function importarLog(contenido, callback) {
