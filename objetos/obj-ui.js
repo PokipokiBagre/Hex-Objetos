@@ -4,6 +4,11 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
+// Función para limpiar nombres de archivos (sin tildes, minúsculas, guiones)
+const normalizarNombre = (str) => {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_');
+};
+
 function ordenarItems(j) {
     if (!j || !invGlobal[j]) return Object.keys(objGlobal).sort();
     return Object.keys(objGlobal).sort((a, b) => {
@@ -23,13 +28,12 @@ export function dibujarInventarios() {
     if (estadoUI.jugadorInv) {
         const j = estadoUI.jugadorInv;
         const term = (estadoUI.busquedaInv || "").toLowerCase();
-
         const afins = objGlobal[j]?.afinidades || {};
         const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
         
         html += `
         <div class="player-header">
-            <img src="../img/imgpersonajes/${j.toLowerCase()}icon.png" class="player-icon" onerror="this.src='../img/icon.png'">
+            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/icon.png'">
             <div class="player-info">
                 <h3>${j}</h3>
                 <p class="afinidad-tag">Afinidad Máxima: <span>${maxAf}</span></p>
@@ -46,8 +50,7 @@ export function dibujarInventarios() {
         if (destacados.length > 0) {
             html += `<div class="top-items-grid">`;
             destacados.forEach(o => {
-                // NORMALIZACIÓN: Elimina tildes y convierte a minúsculas con guiones bajos
-                const imgFile = o.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, '_');
+                const imgFile = normalizarNombre(o);
                 html += `
                 <div class="top-item-card rarity-${objGlobal[o]?.rar.toLowerCase()}">
                     <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/objetos.png'">
@@ -68,33 +71,7 @@ export function dibujarInventarios() {
     document.getElementById('contenedor-jugadores').innerHTML = html;
 }
 
-export function dibujarCatalogo() {
-    let html = "<h2>Catálogo</h2><div class='filter-group'>";
-    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
-        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
-        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
-    });
-    html += "</div><div class='filter-group' style='margin-top:10px;'>";
-    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
-        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
-        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
-    });
-    html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
-    <div class="table-responsive"><table class='container-hex'><tr><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
-    
-    const term = (estadoUI.busquedaCat || "").toLowerCase();
-    Object.keys(objGlobal).sort().forEach(o => {
-        const item = objGlobal[o];
-        const matchR = estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar;
-        const matchM = estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat;
-        if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
-            html += `<tr><td>${o}</td><td style="text-align:left; font-size:0.85em;">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
-        }
-    });
-    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table></div>";
-}
-
-// --- MANTENER INTACTO: FUNCIONES OP ---
+// --- MANTENER INTACTO: FUNCIONES OP Y CONTROL ---
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -105,7 +82,7 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
                  </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control">`;
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = estadoUI.busquedaOP.toLowerCase();
@@ -132,3 +109,27 @@ export function dibujarMenuOP() {
         </div>`;
 }
 
+export function dibujarCatalogo() {
+    let html = "<h2>Catálogo</h2><div class='filter-group'>";
+    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
+        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
+        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
+    });
+    html += "</div><div class='filter-group' style='margin-top:10px;'>";
+    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
+        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
+        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
+    });
+    html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
+    <div class="table-responsive"><table class='container-hex'><tr><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
+    const term = (estadoUI.busquedaCat || "").toLowerCase();
+    Object.keys(objGlobal).sort().forEach(o => {
+        const item = objGlobal[o];
+        const matchR = estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar;
+        const matchM = estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat;
+        if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
+            html += `<tr><td>${o}</td><td style="text-align:left; font-size:0.85em;">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
+        }
+    });
+    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table></div>";
+}
