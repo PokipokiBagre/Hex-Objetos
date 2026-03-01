@@ -1,9 +1,10 @@
 import { invGlobal, objGlobal, historial, estadoUI } from './obj-state.js';
 import { cargarTodoDesdeCSV } from './obj-data.js';
 import { modificar, descargarLog, descargarEstadoCSV, descargarInventariosJPG } from './obj-logic.js';
-import { refrescarUI, dibujarMenuOP, dibujarCreacionObjeto } from './obj-ui.js';
+import { refrescarUI, dibujarMenuOP } from './obj-ui.js';
 
 async function iniciar() {
+    // Forzar limpieza al refrescar la página
     if (performance.getEntriesByType("navigation")[0]?.type === "reload") {
         localStorage.removeItem('hex_obj_v4');
     }
@@ -16,14 +17,6 @@ async function iniciar() {
 
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
-
-    window.hexMod = (j, o, c) => {
-        if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
-        estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
-        if (estadoUI.cambiosSesion[j][o] === 0) delete estadoUI.cambiosSesion[j][o];
-        window.actualizarBitacoraTexto(); modificar(j, o, c, refrescarUI);
-    };
-
     window.actualizarBitacoraTexto = () => {
         let lines = [];
         for (const j in estadoUI.cambiosSesion) {
@@ -35,12 +28,20 @@ async function iniciar() {
         estadoUI.logCopy = lines.join('\n'); refrescarUI();
     };
 
+    window.hexMod = (j, o, c) => {
+        if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
+        estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
+        if (estadoUI.cambiosSesion[j][o] === 0) delete estadoUI.cambiosSesion[j][o];
+        window.actualizarBitacoraTexto(); modificar(j, o, c, refrescarUI);
+    };
+
     window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
         const i = prompt("System Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
     };
 
+    // Navegación y Filtros
     window.mostrarPagina = (id) => { document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); document.getElementById('pag-' + id).style.display = 'block'; refrescarUI(); };
     window.setInv = (j) => { estadoUI.jugadorInv = j; refrescarUI(); };
     window.setCtrl = (j) => { estadoUI.jugadorControl = j; refrescarUI(); };
@@ -48,6 +49,7 @@ async function iniciar() {
     window.setMat = (m) => { estadoUI.filtroMat = m; refrescarUI(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; refrescarUI(); };
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; refrescarUI(); };
+    window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
     
     window.descargarEstadoCSV = descargarEstadoCSV; window.descargarInventariosJPG = descargarInventariosJPG; window.descargarLog = descargarLog;
     refrescarUI();
