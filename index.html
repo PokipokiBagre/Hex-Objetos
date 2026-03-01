@@ -3,25 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <title>HEXCRAFT HEPTAGRAM</title>
-    <link rel="icon" type="image/png" href="img/icon.png"> 
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="icon" type="image/png" href="img/icon.png">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container-hex">
-        <h1>HEX - OBJETOS</h1>
-        <nav>
-            <button onclick="mostrarPagina('inventarios')">Inventarios</button>
-            <button onclick="mostrarPagina('catalogo')">Catálogo</button>
-            <button onclick="window.actualizarTodo()" style="background:#006400; font-weight: bold; border-color: #d4af37;">Actualizar</button>
-            <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">Acceso OP</button>
-        </nav>
-        <section id="pag-inventarios" class="pagina"><div id="contenedor-jugadores"></div></section>
-        <section id="pag-catalogo" class="pagina" style="display:none;"><div id="tabla-todos-objetos"></div></section>
-        <section id="pag-op-menu" class="pagina" style="display:none;"><div id="menu-op-central"></div></section>
-        <section id="pag-control" class="pagina" style="display:none;"><div id="panel-interactivo"></div></section>
-        <input type="file" id="input-log" style="display:none">
+        <header class="hero-section" style="background-image: linear-gradient(rgba(18,0,36,0.7), rgba(18,0,36,0.7)), url('img/hex-002.png');">
+            <h1>HEXCRAFT HEPTAGRAM</h1>
+            <p>Magia superpuesta en el plano de Eje</p>
+        </header>
+
+        <section class="lore-summary">
+            <h2>Mecánicas de Juego</h2>
+            <p>Sistema de rol alojado en tablones de imágenes. La narrativa progresa mediante hilos de ejecución donde el entorno reacciona a las entradas del usuario. El desarrollo de los eventos se determina por la interacción directa con el sistema y la interpretación de los resultados en el plano de Eje.</p>
+        </section>
+
+        <div class="main-grid">
+            <a href="objetos/index.html" class="grid-item">
+                <img src="img/objetos.jpg" alt="Objetos">
+                <span>OBJETOS</span>
+            </a>
+            <div class="grid-item disabled">
+                <img src="img/misiones.png" alt="Misiones">
+                <span>MISIONES</span>
+            </div>
+            <div class="grid-item disabled">
+                <img src="img/estadisticas.png" alt="Estadísticas">
+                <span>ESTADÍSTICAS</span>
+            </div>
+            <div class="grid-item disabled">
+                <img src="img/hechizos.png" alt="Hechizos">
+                <span>HECHIZOS</span>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 50px;">Hilos de Ejecución</h2>
+        <section class="direct-access">
+            <a href="https://8chan.moe/hisrol/res/127489.html" target="_blank" class="access-card">
+                <img src="img/hex-002.png" alt="Rol Actual">
+                <div class="overlay"><span>ROL ACTUAL (HEX-002)</span></div>
+            </a>
+            <a href="https://8chan.moe/hisrol/res/127883.html" target="_blank" class="access-card">
+                <img src="img/met-003.png" alt="Sistema Meta">
+                <div class="overlay"><span>META (MET-003)</span></div>
+            </a>
+        </section>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script type="module" src="objetos/obj-main.js"></script>
 </body>
 </html>
