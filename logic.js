@@ -1,15 +1,12 @@
-import { invGlobal, objGlobal, historial, guardar } from './state.js';
+import { invGlobal, objGlobal, historial, guardar } from './obj-state.js';
 
 export function modificar(j, o, c, callback) {
     if (!invGlobal[j]) invGlobal[j] = {};
-    // ASIGNACIÓN CORRECTA: Sumamos el cambio al valor actual
     invGlobal[j][o] = Math.max(0, (invGlobal[j][o] || 0) + c);
     historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: o, cambio: c, total: invGlobal[j][o] });
-    guardar(); 
-    callback(); // Esto redibuja la UI manteniendo el filtro del buscador
+    guardar(); callback(); 
 }
 
-// ... Resto de funciones (descargarEstadoCSV, descargarLog, descargarInventariosJPG) se mantienen igual ...
 export function descargarEstadoCSV() {
     let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; 
     Object.keys(objGlobal).sort().forEach(o => {
@@ -22,8 +19,7 @@ export function descargarEstadoCSV() {
     });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    link.download = `HEX_ESTADO_NUEVO.csv`;
-    link.click();
+    link.download = `HEX_OBJ_ESTADO.csv`; link.click();
 }
 
 export function descargarLog() {
@@ -31,7 +27,7 @@ export function descargarLog() {
     historial.forEach(h => csv += `"${h.fecha}","${h.jugador}","${h.objeto}",${h.cambio},${h.total}\n`);
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    link.download = 'log_hex.csv'; link.click();
+    link.download = 'log_objetos.csv'; link.click();
 }
 
 export async function descargarInventariosJPG() {
@@ -44,8 +40,7 @@ export async function descargarInventariosJPG() {
         const canvas = await html2canvas(el, { backgroundColor: '#120024', scale: 2, useCORS: true });
         const link = document.createElement('a');
         link.download = `Inventario_${j}.jpg`;
-        link.href = canvas.toDataURL("image/jpeg", 0.9);
-        link.click();
+        link.href = canvas.toDataURL("image/jpeg", 0.9); link.click();
     }
 }
 
