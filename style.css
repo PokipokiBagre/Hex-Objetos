@@ -12,7 +12,6 @@ body {
 h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text-align: center; }
 .container-hex { width: 95%; margin: 0 auto; max-width: 1600px; }
 
-/* PORTADA */
 .hero-section {
     padding: 80px 20px;
     text-align: center;
@@ -54,7 +53,6 @@ h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text
 .grid-item img { width: 100px; height: 100px; object-fit: cover; }
 .grid-item span { font-weight: bold; letter-spacing: 2px; font-size: 0.8em; }
 
-/* ACCESOS DIRECTOS (HILOS) */
 .direct-access {
     display: flex;
     gap: 30px;
@@ -83,9 +81,9 @@ h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text
 }
 
 .access-card span { color: #d4af37; font-weight: bold; font-size: 0.9em; }
-.access-card:hover img { transform: scale(1.05); }
 
-/* TABLAS Y EDITOR (USO INTERNO) */
+.disabled { opacity: 0.2; cursor: not-allowed; grayscale: 1; }
+
 .search-bar {
     width: 85%; max-width: 600px; display: block; margin: 0 auto 20px auto; padding: 12px;
     border: 1px solid #d4af37; background: #1a0033; color: white; text-align: center;
@@ -95,7 +93,4 @@ table { width: 100%; border-collapse: collapse; background: rgba(30, 0, 60, 0.8)
 th { background: #d4af37; color: #120024; padding: 12px; border: 1px solid #120024; }
 td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: center; }
 
-.disabled { opacity: 0.2; cursor: not-allowed; grayscale: 1; }
-
 @media (max-width: 750px) { .main-grid, .direct-access { grid-template-columns: 1fr; } }
-
