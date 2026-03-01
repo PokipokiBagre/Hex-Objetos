@@ -8,11 +8,12 @@ function ordenarItems(j) {
         const sA = invGlobal[j][a] || 0;
         const sB = invGlobal[j][b] || 0;
         if (sB !== sA) return sB - sA;
-        return a.localeCompare(b); // A-Z arriba
+        return a.localeCompare(b); // A-Z
     });
 }
 
 export function dibujarMenuOP() {
+    // ELIMINADOS SINCRONIZAR Y RESET: Ahora todo lo hace el botón "Actualizar"
     document.getElementById('menu-op-central').innerHTML = `
         <h2>Acceso OP</h2>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 650px; margin: 0 auto;">
@@ -72,3 +73,4 @@ export function dibujarControl() {
     }
     document.getElementById('panel-interactivo').innerHTML = html;
 }
+
