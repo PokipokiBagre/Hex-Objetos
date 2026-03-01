@@ -15,25 +15,21 @@ export async function cargarTodoDesdeCSV() {
 
         const mapaNorm = {}; 
 
-        filas.slice(1).forEach(f => {
-            const nombre = f[0]; if (!nombre) return;
-            const id = normalizar(nombre);
-            
-            // Catálogo (A-E)
-            objGlobal[nombre] = { tipo: f[1] || '-', mat: f[2] || '-', eff: f[3] || 'Sin descripción', rar: f[4] || 'Común' };
-            mapaNorm[id] = nombre;
+filas.slice(1).forEach(f => {
+    const nombreObj = f[0];
+    const jugs = f[5] ? f[5].split(',').map(j => j.trim()) : [];
+    const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
 
-            // Inventarios (F-G)
-            const jugs = f[5] ? f[5].split(',').map(j => j.trim()) : [];
-            const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
+    const nombreOficial = mapaNorm[normalizar(nombreObj)] || nombreObj;
 
-            jugs.forEach((jRaw, i) => {
-                let j = jRaw.includes("Corvin") ? "Corvin Vaelen" : jRaw;
-                if (!invGlobal[j]) invGlobal[j] = {};
-                // ASIGNACIÓN DIRECTA: No sumamos, asignamos el valor del Sheet
-                invGlobal[j][nombre] = (cants[i] || 0);
-            });
-        });
+    jugs.forEach((jRaw, i) => {
+        let j = jRaw; 
+        
+        if (!invGlobal[j]) invGlobal[j] = {};
+        invGlobal[j][nombreOficial] = (cants[i] || 0);
+    });
+});
         guardar();
     } catch (e) { console.error("Error cargando datos:", e); }
 }
+
