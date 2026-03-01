@@ -1,6 +1,6 @@
 import { invGlobal, objGlobal, historial, estadoUI } from './state.js';
 import { cargarTodoDesdeCSV } from './data.js';
-import { modificar, descargarLog, importarLog, resetDB, descargarEstadoCSV, descargarInventariosJPG } from './logic.js';
+import { modificar, descargarLog, importarLog, descargarEstadoCSV, descargarInventariosJPG } from './logic.js';
 import { refrescarUI, dibujarMenuOP } from './ui.js';
 
 async function iniciar() {
@@ -19,10 +19,20 @@ async function iniciar() {
     });
 
     window.validarOP = () => {
-        const secret = 'Y2FuZXk=';
+        const secret = 'Y2FuZXk='; // "caney"
         if (estadoUI.esAdmin || prompt("Contraseña:") === atob(secret)) {
             estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu');
-        } else { alert("ACCESO DENEGADO"); }
+        } else { alert("Acceso denegado"); }
+    };
+
+    // FUNCIÓN UNIFICADA: RESET + SINCRONIZAR
+    window.actualizarTodo = async () => {
+        if(confirm("¿Actualizar sistema? Esto limpiará la memoria local y cargará los datos más recientes del Google Sheet.")) {
+            localStorage.clear();
+            await cargarTodoDesdeCSV();
+            refrescarUI();
+            alert("Sistema Actualizado con éxito.");
+        }
     };
 
     window.mostrarPagina = (id) => {
@@ -38,9 +48,7 @@ async function iniciar() {
     window.descargarEstadoCSV = descargarEstadoCSV;
     window.descargarInventariosJPG = descargarInventariosJPG;
     window.descargarLog = descargarLog;
-    window.reset = resetDB;
     window.subirLogManual = () => document.getElementById('input-log').click();
-    window.sincronizarSheet = async () => { await cargarTodoDesdeCSV(); refrescarUI(); alert("SINCRONIZADO"); };
 
     refrescarUI();
 }
