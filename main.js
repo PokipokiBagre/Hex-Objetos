@@ -22,7 +22,7 @@ async function iniciar() {
         const secret = 'Y2FuZXk=';
         if (estadoUI.esAdmin || prompt("Contraseña:") === atob(secret)) {
             estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu');
-        } else { alert("Acceso denegado"); }
+        } else { alert("ACCESO DENEGADO"); }
     };
 
     window.mostrarPagina = (id) => {
@@ -40,7 +40,7 @@ async function iniciar() {
     window.descargarLog = descargarLog;
     window.reset = resetDB;
     window.subirLogManual = () => document.getElementById('input-log').click();
-    window.sincronizarSheet = async () => { await cargarTodoDesdeCSV(); refrescarUI(); alert("Sincronizado"); };
+    window.sincronizarSheet = async () => { await cargarTodoDesdeCSV(); refrescarUI(); alert("SINCRONIZADO"); };
 
     refrescarUI();
 }
