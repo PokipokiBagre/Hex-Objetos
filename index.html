@@ -3,25 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>HEXCRAFT HEPTAGRAM</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
+    <link rel="stylesheet" href="style.css"> </head>
 <body>
     <div class="container-hex">
         <h1>HEX - OBJETOS</h1>
-<nav>
-    <button onclick="mostrarPagina('inventarios')">Inventarios</button>
-    <button onclick="mostrarPagina('catalogo')">Catálogo</button>
-    <button onclick="window.validarOP()" style="background:#2e004f; border-style: dashed;">Acceso OP</button>
-</nav>
-
-<section id="pag-inventarios" class="pagina"><div id="contenedor-jugadores"></div></section>
-<section id="pag-catalogo" class="pagina" style="display:none;"><div id="tabla-todos-objetos"></div></section>
-<section id="pag-op-menu" class="pagina" style="display:none;"><div id="menu-op-central"></div></section>
-<section id="pag-control" class="pagina" style="display:none;"><div id="panel-interactivo"></div></section>
-
-<input type="file" id="input-log" style="display:none">
-</div>
+        <nav>
+            <button onclick="mostrarPagina('inventarios')">Inventarios</button>
+            <button onclick="mostrarPagina('catalogo')">Catálogo</button>
+            <button onclick="window.validarOP()" style="background:#2e004f; border-style: dashed;">Acceso OP</button>
+        </nav>
+        <section id="pag-inventarios" class="pagina"><div id="contenedor-jugadores"></div></section>
+        <section id="pag-catalogo" class="pagina" style="display:none;"><div id="tabla-todos-objetos"></div></section>
+        <section id="pag-op-menu" class="pagina" style="display:none;"><div id="menu-op-central"></div></section>
+        <section id="pag-control" class="pagina" style="display:none;"><div id="panel-interactivo"></div></section>
+        <input type="file" id="input-log" style="display:none">
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script type="module" src="js/main.js"></script>
-</body>
+    <script type="module" src="main.js"></script> </body>
 </html>
