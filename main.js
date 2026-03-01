@@ -25,11 +25,11 @@ async function iniciar() {
         } else { alert("Acceso denegado"); }
     };
 
-    // FUNCIÓN DE LIMPIEZA TOTAL Y RECARGA
+    // BOTÓN UNIFICADO: Limpia la memoria física y reinicia el programa
     window.actualizarTodo = () => {
-        if(confirm("¿Deseas actualizar el sistema? Esto borrará los cambios actuales y descargará los datos originales del Excel.")) {
+        if(confirm("¿Quieres actualizar el sistema? Esto borrará tus ediciones manuales y traerá los datos del Excel.")) {
             localStorage.clear();
-            location.reload(); 
+            location.reload(); // ESTO LIMPIA LA DATA INTERNA POR COMPLETO
         }
     };
 
@@ -51,4 +51,3 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
-
