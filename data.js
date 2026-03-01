@@ -3,7 +3,7 @@ import { invGlobal, objGlobal, guardar } from './state.js';
 const normalizar = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
 export async function cargarTodoDesdeCSV() {
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaNKT4_xKJJ93q2NIhx4_pV6jxuEW4QXeLRdrAxWu9uQFljf5EBAacu9YNc3QMbaobTUoRuhqio5H5/pub?output=csv";
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv";
     try {
         const res = await fetch(sheetURL);
         const texto = await res.text();
@@ -38,4 +38,5 @@ export async function cargarTodoDesdeCSV() {
         });
         guardar();
     } catch (e) { console.error("Error cargando datos:", e); }
+
 }
