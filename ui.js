@@ -12,6 +12,70 @@ function ordenarItems(j) {
     });
 }
 
+export function dibujarInventarios() {
+    let html = "<h2>Inventarios</h2><div style='text-align:center'>";
+    Object.keys(invGlobal).sort().forEach(j => {
+        const active = estadoUI.jugadorInv === j ? 'style="border: 2px solid #d4af37"' : '';
+        html += `<button onclick="window.setInv('${j}')" ${active}>${j}</button> `;
+    });
+    html += "</div><br>";
+
+    if (estadoUI.jugadorInv) {
+        const j = estadoUI.jugadorInv;
+        
+        // BUSCADOR DE INVENTARIO
+        html += `<input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Buscar en el inventario de ${j}..." 
+                    value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
+
+        html += `<div class='container-hex'><h3>${j}</h3><table><tr><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
+        
+        const term = estadoUI.busquedaInv.toLowerCase();
+        ordenarItems(j).forEach(o => {
+            if (invGlobal[j][o] > 0) {
+                if (term && !o.toLowerCase().includes(term)) return; // FILTRADO DINÁMICO
+                html += `<tr><td>${o}</td><td style="font-size:0.8em">${objGlobal[o]?.eff || '-'}</td><td>${invGlobal[j][o]}</td></tr>`;
+            }
+        });
+        html += "</table></div>";
+    }
+    document.getElementById('contenedor-jugadores').innerHTML = html;
+    mantenerFoco('busq-inv'); // MANTENER EL TECLADO ACTIVO
+}
+
+export function dibujarCatalogo() {
+    let html = "<h2>Catálogo</h2><div style='text-align:center'>";
+    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => html += `<button onclick="window.setRar('${r}')">${r}</button> `);
+    html += "<br><br>";
+    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => html += `<button onclick="window.setMat('${m}')" style="background:#004a4a">${m}</button> `);
+    
+    // BUSCADOR DE CATÁLOGO
+    html += `<br><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar en el catálogo general..." 
+                value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)"></div>`;
+
+    html += `<br><table class='container-hex'><tr><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
+    
+    const term = estadoUI.busquedaCat.toLowerCase();
+    Object.keys(objGlobal).sort().forEach(o => {
+        const item = objGlobal[o];
+        if ((estadoUI.filtroRar === 'Todos' || item.rar.includes(estadoUI.filtroRar)) && (estadoUI.filtroMat === 'Todos' || item.mat.includes(estadoUI.filtroMat))) {
+            if (term && !o.toLowerCase().includes(term)) return; // FILTRADO DINÁMICO
+            html += `<tr><td>${o}</td><td style="font-size:0.8em">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
+        }
+    });
+    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table>";
+    mantenerFoco('busq-cat');
+}
+
+// FUNCIÓN AUXILIAR PARA EL FOCO
+function mantenerFoco(id) {
+    const input = document.getElementById(id);
+    if (input && document.activeElement.id !== id) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+    }
+}
+
+// Mantener dibujarControl y dibujarMenuOP igual...
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -19,52 +83,23 @@ export function dibujarControl() {
         html += `<button onclick="window.setCtrl('${j}')" ${active}>${j}</button> `;
     });
     html += "</div><br>";
-
     if (estadoUI.jugadorControl) {
         const j = estadoUI.jugadorControl;
-        
-        // BUSCADOR DINÁMICO
-        html += `<input type="text" id="busq-op" class="search-bar" 
-                    placeholder="🔍 Escribe para filtrar al instante..." 
-                    value="${estadoUI.busquedaOP}" 
-                    oninput="window.setBusqueda(this.value)">`;
-
+        html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Buscar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusqueda(this.value)">`;
         html += `<div class="grid-control">`;
-        
         const term = estadoUI.busquedaOP.toLowerCase();
         ordenarItems(j).forEach(o => {
-            // Lógica de filtrado inmediata
             if (term && !o.toLowerCase().includes(term)) return;
-
             const c = invGlobal[j][o] || 0;
             const extraClass = c > 0 ? "item-con-stock" : "";
-            
-            html += `<div class="control-card ${extraClass}">
-                <span class="item-name">${o} (<b>${c}</b>)</span>
-                <div class="item-btns">
-                    <button onclick="window.hexMod('${j}','${o}',1)">+1</button>
-                    <button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button>
-                </div>
-                <div class="item-btns" style="margin-top:5px">
-                    <button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button>
-                    <button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)">-5</button>
-                </div>
-            </div>`;
+            html += `<div class="control-card ${extraClass}"><span class="item-name">${o} (<b>${c}</b>)</span><div class="item-btns"><button onclick="window.hexMod('${j}','${o}',1)">+1</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button></div><div class="item-btns" style="margin-top:5px"><button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)">-5</button></div></div>`;
         });
         html += "</div>";
     }
     document.getElementById('panel-interactivo').innerHTML = html;
-    
-    // RE-ENFOCAR EL BUSCADOR: Crucial para que sea dinámico
-    const input = document.getElementById('busq-op');
-    if (input) {
-        input.focus();
-        // Coloca el cursor al final del texto
-        input.setSelectionRange(input.value.length, input.value.length);
-    }
+    mantenerFoco('busq-op');
 }
 
-// Mantener el resto de funciones (dibujarMenuOP, dibujarInventarios, dibujarCatalogo) igual...
 export function dibujarMenuOP() {
     document.getElementById('menu-op-central').innerHTML = `
         <h2>Acceso OP</h2>
@@ -75,34 +110,4 @@ export function dibujarMenuOP() {
             <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024">Descargar CSV</button>
             <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
         </div>`;
-}
-
-export function dibujarInventarios() {
-    let html = "<h2>Inventarios</h2><div style='text-align:center'>";
-    Object.keys(invGlobal).sort().forEach(j => html += `<button onclick="window.setInv('${j}')">${j}</button> `);
-    html += "</div><br>";
-    if (estadoUI.jugadorInv) {
-        const j = estadoUI.jugadorInv;
-        html += `<div class='container-hex'><h3>${j}</h3><table><tr><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
-        ordenarItems(j).forEach(o => {
-            if(invGlobal[j][o] > 0) html += `<tr><td>${o}</td><td style="font-size:0.8em">${objGlobal[o]?.eff || '-'}</td><td>${invGlobal[j][o]}</td></tr>`;
-        });
-        html += "</table></div>";
-    }
-    document.getElementById('contenedor-jugadores').innerHTML = html;
-}
-
-export function dibujarCatalogo() {
-    let html = "<h2>Catálogo</h2><div style='text-align:center'>";
-    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => html += `<button onclick="window.setRar('${r}')">${r}</button> `);
-    html += "<br><br>";
-    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => html += `<button onclick="window.setMat('${m}')" style="background:#004a4a">${m}</button> `);
-    html += "</div><br><table class='container-hex'><tr><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>";
-    Object.keys(objGlobal).sort().forEach(o => {
-        const item = objGlobal[o];
-        if ((estadoUI.filtroRar === 'Todos' || item.rar.includes(estadoUI.filtroRar)) && (estadoUI.filtroMat === 'Todos' || item.mat.includes(estadoUI.filtroMat))) {
-            html += `<tr><td>${o}</td><td style="font-size:0.8em">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
-        }
-    });
-    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table>";
 }
