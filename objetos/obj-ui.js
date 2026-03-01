@@ -1,19 +1,22 @@
-import { invGlobal, objGlobal, estadoUI } from 'objetos/obj-state.js';
+import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
 
 export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujarControl(); }
 
 function ordenarItems(j) {
     if (!j || !invGlobal[j]) return Object.keys(objGlobal).sort();
     return Object.keys(objGlobal).sort((a, b) => {
-        const sA = invGlobal[j][a] || 0; const sB = invGlobal[j][b] || 0;
-        if (sB !== sA) return sB - sA; return a.localeCompare(b);
+        const sA = invGlobal[j][a] || 0;
+        const sB = invGlobal[j][b] || 0;
+        if (sB !== sA) return sB - sA;
+        return a.localeCompare(b);
     });
 }
 
 function mantenerFoco(id) {
     const input = document.getElementById(id);
     if (input && document.activeElement.id !== id) {
-        input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
     }
 }
 
@@ -24,6 +27,7 @@ export function dibujarInventarios() {
         html += `<button onclick="window.setInv('${j}')" ${active}>${j}</button> `;
     });
     html += "</div><br>";
+
     if (estadoUI.jugadorInv) {
         const j = estadoUI.jugadorInv;
         html += `<input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Buscar en inventario..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
@@ -36,7 +40,8 @@ export function dibujarInventarios() {
         });
         html += "</table></div>";
     }
-    document.getElementById('contenedor-jugadores').innerHTML = html; mantenerFoco('busq-inv');
+    document.getElementById('contenedor-jugadores').innerHTML = html;
+    mantenerFoco('busq-inv');
 }
 
 export function dibujarCatalogo() {
@@ -50,10 +55,13 @@ export function dibujarCatalogo() {
     Object.keys(objGlobal).sort().forEach(o => {
         const item = objGlobal[o];
         if ((estadoUI.filtroRar === 'Todos' || item.rar.includes(estadoUI.filtroRar)) && (estadoUI.filtroMat === 'Todos' || item.mat.includes(estadoUI.filtroMat))) {
-            if (!term || o.toLowerCase().includes(term)) html += `<tr><td>${o}</td><td style="font-size:0.8em">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
+            if (!term || o.toLowerCase().includes(term)) {
+                html += `<tr><td>${o}</td><td style="font-size:0.8em">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
+            }
         }
     });
-    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table>"; mantenerFoco('busq-cat');
+    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table>";
+    mantenerFoco('busq-cat');
 }
 
 export function dibujarControl() {
@@ -70,13 +78,15 @@ export function dibujarControl() {
         const term = estadoUI.busquedaOP.toLowerCase();
         ordenarItems(j).forEach(o => {
             if (!term || o.toLowerCase().includes(term)) {
-                const c = invGlobal[j][o] || 0; const extraClass = c > 0 ? "item-con-stock" : "";
+                const c = invGlobal[j][o] || 0;
+                const extraClass = c > 0 ? "item-con-stock" : "";
                 html += `<div class="control-card ${extraClass}"><span class="item-name">${o} (<b>${c}</b>)</span><div class="item-btns"><button onclick="window.hexMod('${j}','${o}',1)">+1</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-1)">-1</button></div><div class="item-btns" style="margin-top:5px"><button onclick="window.hexMod('${j}','${o}',5)" style="background:#004a4a">+5</button><button class="btn-neg" onclick="window.hexMod('${j}','${o}',-5)">-5</button></div></div>`;
             }
         });
         html += "</div>";
     }
-    document.getElementById('panel-interactivo').innerHTML = html; mantenerFoco('busq-op');
+    document.getElementById('panel-interactivo').innerHTML = html;
+    mantenerFoco('busq-op');
 }
 
 export function dibujarMenuOP() {
@@ -89,5 +99,5 @@ export function dibujarMenuOP() {
             <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#120024">Descargar CSV</button>
             <button onclick="window.subirLogManual()" style="background:#4a004a">Subir Log</button>
         </div>`;
-
 }
+
