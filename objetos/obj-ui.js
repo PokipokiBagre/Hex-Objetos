@@ -20,10 +20,12 @@ export function dibujarControl() {
     html += `<br><br><button onclick="window.mostrarPagina('op-menu')" style="background:#444;">⬅ Menú OP</button></div><br>`;
     if (estadoUI.jugadorControl) {
         const j = estadoUI.jugadorControl;
-        // REGISTRO ARRIBA EN EL EDITOR PARA ACCESO RÁPIDO
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-                    <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:40px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Esperando acción...'}</textarea>
-                    <button onclick="window.copyToClipboard('copy-log-stock')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
+                    <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button>
+                        <button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">LIMPIAR</button>
+                    </div>
                  </div>`;
         html += `<input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar..." value="${estadoUI.busquedaOP}" oninput="window.setBusqueda(this.value)">`;
         html += `<div class="grid-control">`;
@@ -43,22 +45,24 @@ export function dibujarCreacionObjeto() {
     <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px;">
         <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateCreationLog()" style="width:95%">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-            <select id="new-obj-tipo" class="search-bar" style="width:100%"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
-            <select id="new-obj-mat" class="search-bar" style="width:100%"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
+            <select id="new-obj-tipo" class="search-bar" onchange="window.updateCreationLog()" style="width:100%"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
+            <select id="new-obj-mat" class="search-bar" onchange="window.updateCreationLog()" style="width:100%"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
         </div>
         <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
-        <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
+        <select id="new-obj-rar" class="search-bar" onchange="window.updateCreationLog()" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
         <h3 style="margin-top:20px; font-size:1em;">Cantidades por Jugador</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
     Object.keys(invGlobal).sort().forEach(j => {
         html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()" style="width:50px; float:right; background:#120024; color:white; border:1px solid #d4af37;"></div>`;
     });
-    // REGISTRO ABAJO EN CREACIÓN PORQUE ES UN FORMULARIO SECUENCIAL
-    html += `</div><div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;"></textarea>
-            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
-        </div><button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">CREAR Y DEFINIR DUEÑO</button>
-        <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button></div>`;
+    html += `</div>
+        <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
+            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:100px; font-size:0.85em; margin-bottom:10px; text-align:left;"></textarea>
+            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO DE CREACIÓN</button>
+        </div>
+        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">CREAR Y DEFINIR DUEÑO</button>
+        <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
+    </div>`;
     document.getElementById('panel-interactivo').innerHTML = html;
 }
 export function dibujarMenuOP() {
