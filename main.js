@@ -12,11 +12,11 @@ async function iniciar() {
         historial.push(...(p.his || []));
     }
     
-    document.getElementById('input-log')?.addEventListener('change', (e) => {
-        const reader = new FileReader();
-        reader.onload = (ev) => importarLog(ev.target.result, refrescarUI);
-        reader.readAsText(e.target.files[0]);
-    });
+    // FUNCIÓN PARA BÚSQUEDA DINÁMICA
+    window.setBusqueda = (valor) => {
+        estadoUI.busquedaOP = valor;
+        refrescarUI();
+    };
 
     window.validarOP = () => {
         const secret = 'Y2FuZXk=';
@@ -25,12 +25,8 @@ async function iniciar() {
         } else { alert("Acceso denegado"); }
     };
 
-    // BOTÓN UNIFICADO: Limpia la memoria física y reinicia el programa
     window.actualizarTodo = () => {
-        if(confirm("¿Quieres actualizar el sistema? Esto borrará tus ediciones manuales y traerá los datos del Excel.")) {
-            localStorage.clear();
-            location.reload(); // ESTO LIMPIA LA DATA INTERNA POR COMPLETO
-        }
+        if(confirm("¿Actualizar sistema?")) { localStorage.clear(); location.reload(); }
     };
 
     window.mostrarPagina = (id) => {
