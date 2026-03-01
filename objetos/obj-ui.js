@@ -43,7 +43,7 @@ export function dibujarControl() {
 }
 
 export function dibujarFormularioObjeto() {
-    let html = `<h2>Forjar Nuevo Objeto</h2>
+    let html = `<h2>Crear Nuevo Objeto</h2>
     <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px;">
         <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre del objeto..." style="width:95%">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
@@ -115,4 +115,5 @@ export function dibujarCatalogo() {
     });
     document.getElementById('tabla-todos-objetos').innerHTML = html + "</table>"; mantenerFoco('busq-cat');
 }
+
 
