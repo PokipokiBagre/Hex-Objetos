@@ -10,26 +10,26 @@ export async function cargarTodoDesdeCSV() {
         const texto = await res.text();
         const filas = texto.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
         
+        // Limpieza total antes de cargar para evitar sumas
         for (let k in invGlobal) delete invGlobal[k];
         for (let k in objGlobal) delete objGlobal[k];
 
-        const mapaNorm = {}; 
+        filas.slice(1).forEach(f => {
+            const nombre = f[0]; // COLUMNA A
+            if (!nombre) return;
+            
+            // Catálogo (A-E)
+            objGlobal[nombre] = { tipo: f[1] || '-', mat: f[2] || '-', eff: f[3] || 'Sin descripción', rar: f[4] || 'Común' };
 
-filas.slice(1).forEach(f => {
-    const nombreObj = f[0];
-    const jugs = f[5] ? f[5].split(',').map(j => j.trim()) : [];
-    const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
+            // Inventarios (F-G)
+            const jugs = f[5] ? f[5].split(',').map(j => j.trim()) : [];
+            const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
 
-    const nombreOficial = mapaNorm[normalizar(nombreObj)] || nombreObj;
-
-    jugs.forEach((jRaw, i) => {
-        let j = jRaw; 
-        
-        if (!invGlobal[j]) invGlobal[j] = {};
-        invGlobal[j][nombreOficial] = (cants[i] || 0);
-    });
-});
+            jugs.forEach((j, i) => {
+                if (!invGlobal[j]) invGlobal[j] = {};
+                invGlobal[j][nombre] = (cants[i] || 0); // Asignación directa
+            });
+        });
         guardar();
-    } catch (e) { console.error("Error cargando datos:", e); }
+    } catch (e) { console.error("Error Sheet:", e); }
 }
-
