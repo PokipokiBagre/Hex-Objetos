@@ -1,10 +1,9 @@
 export let statsGlobal = {}; 
 export let estadoUI = {
-    jugadorActivo: null, // Solo mantenemos quién está seleccionado
+    personajeActivo: null,
     esAdmin: false,
-    paginaActiva: 'publico'
+    paginaActiva: 'publico',
+    principales: [] // IDs de personajes que tienen objetos
 };
 
-export function guardarStats() {
-    localStorage.setItem('hex_stats_v1', JSON.stringify(statsGlobal));
-}
+export function guardar() { localStorage.setItem('hex_stats_v2', JSON.stringify(statsGlobal)); }
