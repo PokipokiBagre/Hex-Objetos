@@ -59,4 +59,3 @@ async function iniciarStats() {
 }
 
 iniciarStats();
-
