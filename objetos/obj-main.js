@@ -67,10 +67,9 @@ window.updateCreationLog = () => {
     if (out) out.value = l.join('\n');
 };
 
-// Asegurar que la función para abrir la creación esté vinculada
 window.mostrarCreacionObjeto = () => { 
-    window.mostrarPagina('control'); 
-    dibujarCreacionObjeto(); 
+    window.mostrarPagina('control'); // Navega al panel interactivo
+    dibujarCreacionObjeto();        // Dibuja el formulario
 };
 
 window.hexMod = (j, o, c) => {
@@ -121,4 +120,5 @@ window.hexMod = (j, o, c) => {
     refrescarUI();
 }
 iniciar();
+
 
