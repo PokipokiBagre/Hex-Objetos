@@ -1,12 +1,11 @@
-import { estadoUI, statsGlobal, guardarStats } from './stat-state.js';
-import { cargarStatsDesdeCSV } from './stat-data.js';
-import { dibujarUIStats, dibujarAdminStats } from './stat-ui.js';
-import { descargarCSVStats } from './stat-logic.js';
+import { estadoUI, statsGlobal, guardarStats } from './stats-state.js';
+import { cargarStatsDesdeCSV } from './stats-data.js';
+import { dibujarUIStats, dibujarAdminStats, dibujarCreacionObjeto } from './stats-ui.js';
+import { descargarCSVStats } from './stats-logic.js';
 
 async function iniciarStats() {
     await cargarStatsDesdeCSV();
     
-    // Vinculación Global
     window.setJugadorStats = (j) => { 
         estadoUI.jugadorActivo = j; 
         dibujarUIStats(); 
@@ -18,7 +17,7 @@ async function iniciarStats() {
         document.querySelectorAll('.pagina').forEach(div => div.style.display = 'none');
         const target = document.getElementById('pag-' + p);
         if(target) target.style.display = 'block';
-        dibujarUIStats(); // Refresca para asegurar que el selector se vea bien
+        dibujarUIStats();
     };
 
     window.actualizarStats = () => { 
@@ -31,10 +30,17 @@ async function iniciarStats() {
     window.accesoAdmin = () => {
         if(estadoUI.esAdmin) { window.setPage('admin'); return; }
         const pass = prompt("System Code:");
-        if(pass === atob('Y2FuZXk='))
+        if(pass === atob('Y2FuZXk=')) { 
             estadoUI.esAdmin = true;
             window.setPage('admin');
+        } else {
+            alert("Código incorrecto.");
         }
+    };
+
+    window.mostrarCreacionObjeto = () => {
+        window.setPage('admin'); 
+        dibujarCreacionObjeto(); 
     };
 
     window.addHechizoAdmin = () => {
@@ -45,14 +51,10 @@ async function iniciarStats() {
         
         statsGlobal[estadoUI.jugadorActivo].learnedSpells.push({ afinidad: afin, nombre: nom, costo: hex });
         guardarStats();
-        alert("Añadido localmente. Descarga el CSV para guardar.");
         dibujarAdminStats();
     };
 
     window.descargarCSVStats = descargarCSVStats;
-
     dibujarUIStats();
 }
-
 iniciarStats();
-
