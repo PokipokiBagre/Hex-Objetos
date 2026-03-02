@@ -2,13 +2,15 @@ import { statsGlobal, estadoUI } from './stats-state.js';
 import { calcularBonos } from './stats-logic.js';
 
 export function dibujarUIStats() {
-    // Primero dibujamos SIEMPRE los botones de los jugadores
-    dibujarSelector();
+    dibujarBotonesJugadores(); // Reemplaza al antiguo selector
     
     const dashboard = document.getElementById('dashboard-stats');
     if (!estadoUI.jugadorActivo) { 
-        dashboard.innerHTML = `<div class="stat-card" style="text-align:center; padding:50px; opacity:0.5;">
-            <h3>SISTEMA HEX</h3><p>SELECCIONA UN PERSONAJE ARRIBA.</p></div>`; 
+        dashboard.innerHTML = `
+            <div class="stat-card" style="text-align:center; padding:50px; opacity:0.5;">
+                <h3>SISTEMA HEX</h3>
+                <p>SELECCIONA UN PERSONAJE PARA VER SU ESTADO.</p>
+            </div>`; 
         return; 
     }
 
@@ -22,89 +24,62 @@ export function dibujarUIStats() {
 
     dashboard.innerHTML = `
         <div class="stat-card">
-            <div class="player-header" style="display:flex; align-items:center; gap:20px; border-bottom:1px solid #d4af3744; padding-bottom:15px;">
-                <img src="../img/imgpersonajes/${j.toLowerCase()}icon.png" class="player-icon" style="width:80px; height:80px; border-radius:50%; border:2px solid #d4af37;" onerror="this.src='../img/icon.png'">
+            <div class="player-header">
+                <img src="../img/imgpersonajes/${j.toLowerCase()}icon.png" class="player-icon" onerror="this.src='../img/icon.png'">
                 <div style="text-align:left;">
                     <h2 style="margin:0; color:#d4af37;">${s.nombreFull}</h2>
-                    <p style="font-size:0.8em; color:#aaa;">${s.bio}</p>
-                </div>
-            </div>
-            <div class="resource-grid" style="margin-top:20px;">
-                <label style="color:#ff4d4d; font-size:0.7em;">VITALIDAD ROJA (+${bonos.bonoRoja})</label>
-                <div class="bar-container"><div class="bar-fill bar-red" style="width:${(rojaActual/rojaTotalMax)*100}%"></div><div class="bar-text">${rojaActual}/${rojaTotalMax}</div></div>
-            </div>
-        </div>`;
-}
-
-function dibujarSelector() {
-    const container = document.getElementById('selector-jugadores');
-    if (!container) return;
-
-    const personajes = Object.keys(statsGlobal).sort();
-    
-    container.innerHTML = `<div class="filter-group" style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:20px;">` + 
-        personajes.map(j => `
-            <button onclick="window.setJugadorStats('${j}')" class="${estadoUI.jugadorActivo === j ? 'btn-active' : ''}">
-                ${j.toUpperCase()}
-            </button>
-        `).join('') + `</div>`;
-}
-
-    const j = estadoUI.jugadorActivo;
-    const s = statsGlobal[j];
-    const bonos = calcularBonos(j);
-
-    const rojaPartes = s.vida.roja.split('/');
-    const rojaActual = parseInt(rojaPartes[0]) || 0;
-    const rojaTotalMax = (parseInt(rojaPartes[1]) || 10) + bonos.bonoRoja;
-
-    dashboard.innerHTML = `
-        <div class="stat-card">
-            <div style="display:flex; align-items:center; gap:25px; border-bottom:1px solid #d4af3744; padding-bottom:20px; margin-bottom:25px;">
-                <img src="../img/imgpersonajes/${j.toLowerCase()}icon.png" style="width:110px; height:110px; border:2px solid #d4af37; border-radius:50%; object-fit:cover;" onerror="this.src='../img/icon.png'">
-                <div style="text-align:left;">
-                    <h2 style="margin:0; text-align:left; color:#d4af37; font-size:1.6em;">${s.nombreFull}</h2>
-                    <p style="font-size:0.85em; color:#ddd; margin-top:8px;">${s.bio}</p>
+                    <p style="font-size:0.85em; color:#ddd;">${s.bio}</p>
                 </div>
             </div>
 
             <div class="resource-grid">
                 <div>
-                    <label style="font-size:0.7em; color:#ff4d4d; font-weight:bold;">VITALIDAD ROJA (+${bonos.bonoRoja})</label>
+                    <label style="color:#ff4d4d;">VITALIDAD ROJA (+${bonos.bonoRoja})</label>
                     <div class="bar-container"><div class="bar-fill bar-red" style="width:${(rojaActual/rojaTotalMax)*100}%"></div><div class="bar-text">${rojaActual} / ${rojaTotalMax} ❤️</div></div>
                     
-                    <label style="font-size:0.7em; color:#00bfff; font-weight:bold;">VITALIDAD AZUL (+${bonos.bonoAzul})</label>
-                    <div class="bar-container"><div class="bar-fill bar-blue" style="width:${(s.vida.azul/15)*100}%"></div><div class="bar-text">${s.vida.azul} Corazones 💙</div></div>
+                    <label style="color:#00bfff;">VITALIDAD AZUL (+${bonos.bonoAzul})</label>
+                    <div class="bar-container"><div class="bar-fill bar-blue" style="width:${(s.vida.azul/15)*100}%"></div><div class="bar-text">${s.vida.azul} 💙</div></div>
                 </div>
                 <div>
-                    <label style="font-size:0.7em; color:#9932cc; font-weight:bold;">HEX ACTUAL</label>
+                    <label style="color:#9932cc;">HEX ACTUAL</label>
                     <div class="bar-container"><div class="bar-fill bar-purple" style="width:100%"></div><div class="bar-text">${s.hex} HEX</div></div>
 
-                    <label style="font-size:0.7em; color:#32cd32; font-weight:bold;">VEX (Bono +${bonos.bonoVex})</label>
-                    <div class="bar-container"><div class="bar-fill bar-green" style="width:${(s.vex/(2000 + bonos.bonoVex))*100}%"></div><div class="bar-text">${s.vex} / ${2000 + bonos.bonoVex} VEX</div></div>
+                    <label style="color:#32cd32;">VEX (+${bonos.bonoVex})</label>
+                    <div class="bar-container"><div class="bar-fill bar-green" style="width:${(s.vex/(2000 + bonos.bonoVex))*100}%"></div><div class="bar-text">${s.vex} / ${2000 + bonos.bonoVex}</div></div>
                 </div>
             </div>
 
             <div class="afin-grid">
                 ${Object.entries(s.afin).map(([key, val]) => `
-                    <div class="afin-box">
-                        <label>${key.toUpperCase()}</label>
-                        <span>${val}</span>
-                    </div>
+                    <div class="afin-box"><label>${key.toUpperCase()}</label><span>${val}</span></div>
                 `).join('')}
-            </div>
-
-            <h3>HECHIZOS APRENDIDOS</h3>
-            <div class="table-responsive">
-                <table class="spell-table">
-                    <tr><th>Afinidad</th><th>Hechizo</th><th>Costo</th></tr>
-                    ${s.learnedSpells.map(h => `<tr><td style="color:#d4af37; font-weight:bold;">${h.afinidad}</td><td>${h.nombre}</td><td>${h.costo}</td></tr>`).join('')}
-                </table>
             </div>
         </div>
     `;
 }
 
+// NUEVA FUNCIÓN: Genera los botones exactos como en Objetos
+function dibujarBotonesJugadores() {
+    const container = document.getElementById('selector-jugadores');
+    if (!container) return;
+
+    const personajes = Object.keys(statsGlobal).sort();
+    
+    // Título igual que en la imagen de Inventarios
+    let html = `<h3 style="color:#d4af37; text-align:center; font-size:0.9em; margin-bottom:15px; letter-spacing:2px;">JUGADORES</h3>`;
+    html += `<div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:30px;">`;
+    
+    html += personajes.map(j => `
+        <button onclick="window.setJugadorStats('${j}')" 
+                style="min-width:100px;"
+                class="${estadoUI.jugadorActivo === j ? 'btn-active' : ''}">
+            ${j.toUpperCase()}
+        </button>
+    `).join('');
+    
+    html += `</div>`;
+    container.innerHTML = html;
+}
 export function dibujarAdminStats() {
     const dashboard = document.getElementById('panel-op-stats');
     const j = estadoUI.jugadorActivo;
@@ -118,4 +93,5 @@ export function dibujarAdminStats() {
         </div>
     `;
 }
+
 
