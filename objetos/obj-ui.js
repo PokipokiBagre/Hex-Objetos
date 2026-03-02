@@ -31,7 +31,6 @@ function ordenarItems(j) {
     });
 }
 
-// --- INVENTARIOS ---
 export function dibujarInventarios() {
     let html = "<h2>Inventarios</h2><div class='filter-group'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -43,15 +42,38 @@ export function dibujarInventarios() {
     if (estadoUI.jugadorInv) {
         const j = estadoUI.jugadorInv;
         const term = (estadoUI.busquedaInv || "").toLowerCase();
+        const afins = objGlobal[j]?.afinidades || {};
+        const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
+        
         html += `
         <div class="player-header">
             <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
             <div style="text-align:left; flex:1;">
                 <h3>${j}</h3>
+                <p class="afinidad-tag">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold;">${maxAf}</span></p>
                 <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción disponible."}</p>
             </div>
         </div>
         <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
+
+        const destacados = Object.keys(invGlobal[j])
+            .filter(o => invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term)))
+            .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
+            .slice(0, 5);
+
+        if (destacados.length > 0) {
+            html += `<div class="top-items-grid">`;
+            destacados.forEach(o => {
+                const imgFile = normalizarNombre(o);
+                const rarClase = objGlobal[o]?.rar === 'Raro' ? 'rarity-raro' : (objGlobal[o]?.rar === 'Legendario' ? 'rarity-legendario' : '');
+                html += `
+                <div class="top-item-card ${rarClase}">
+                    <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                    <span style="font-size:0.65em; display:block; height:2.4em; overflow:hidden; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</span>
+                </div>`;
+            });
+            html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
+        }
 
         html += `<div class="table-responsive"><table><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
         Object.keys(invGlobal[j]).sort().forEach(o => {
@@ -70,10 +92,11 @@ export function dibujarInventarios() {
     drawnHEXPreserveFocus('contenedor-jugadores', html);
 }
 
-// --- CATÁLOGO ---
 export function dibujarCatalogo() {
     let html = "<h2>Catálogo</h2><div class='filter-group'>";
     ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => { html += `<button onclick="window.setRar('${r}')">${r}</button> `; });
+    html += "</div><div class='filter-group'>";
+    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => { html += `<button onclick="window.setMat('${m}')" class="btn-active-mat">${m}</button> `; });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
     <div class="table-responsive"><table><tr><th>Imagen</th><th>Nombre</th><th>Efecto</th><th>Rareza</th></tr>`;
     const term = (estadoUI.busquedaCat || "").toLowerCase();
@@ -90,7 +113,7 @@ export function dibujarCatalogo() {
     drawnHEXPreserveFocus('tabla-todos-objetos', html + "</table></div>");
 }
 
-// --- EDITOR DE STOCK (RESTAURADO) ---
+// RESTAURADO: EDITOR DE STOCK CON 4 BOTONES
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -101,8 +124,9 @@ export function dibujarControl() {
     
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-                    <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:60px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Esperando acción...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                    <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:60px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Bitácora de sesión...'}</textarea>
+                    <button onclick="window.copyToClipboard('copy-log-stock')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button>
+                    <br><br><button onclick="window.limpiarLog()" style="width:100%; background:#8b0000; color:white;">LIMPIAR BITÁCORA</button>
                  </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
                  <div class="grid-control">`;
         
@@ -119,7 +143,7 @@ export function dibujarControl() {
                             </div>
                             <div class="item-btns" style="margin-top:5px">
                                 <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',5)" style="background:#004a4a">+5</button>
-                                <button class="btn-neg" onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-5)" style="background:#8b0000">-5</button>
+                                <button class="btn-neg" onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-5)" style="background:#4a0000">-5</button>
                             </div>
                          </div>`;
             }
@@ -129,7 +153,7 @@ export function dibujarControl() {
     drawnHEXPreserveFocus('panel-interactivo', html);
 }
 
-// --- MENÚ OP ---
+// RESTAURADO: MENÚ OP ORDENADO
 export function dibujarMenuOP() {
     document.getElementById('menu-op-central').innerHTML = `
         <h2>Acceso OP</h2>
@@ -143,7 +167,7 @@ export function dibujarMenuOP() {
         </div>`;
 }
 
-// --- CREACIÓN DE OBJETOS (RESTAURADO) ---
+// RESTAURADO: CREACIÓN DE OBJETOS COMPLETA
 export function dibujarCreacionObjeto() {
     let html = `<h2>Creación de Objetos</h2>
     <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
@@ -156,9 +180,11 @@ export function dibujarCreacionObjeto() {
         <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
         <h3 style="margin-top:20px; font-size:1em;">Cantidades por Jugador</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
+    
     Object.keys(invGlobal).sort().forEach(j => {
         html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()"></div>`;
     });
+
     html += `</div>
         <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
             <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;"></textarea>
