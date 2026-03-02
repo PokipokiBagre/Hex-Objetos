@@ -1,40 +1,50 @@
-import { estadoUI, statsGlobal } from './stats-state.js';
+import { invGlobal, statsGlobal, estadoUI } from './stats-state.js';
 import { cargarStatsDesdeCSV } from './stats-data.js';
-import { dibujarUIStats } from './stats-ui.js';
+import { refrescarUI, dibujarMenuOP } from './stats-ui.js';
 
-async function iniciarStats() {
-    try {
-        console.log("Conectando con la base de datos...");
-        await cargarStatsDesdeCSV(); 
-        console.log("Conexión establecida. Jugadores detectados:", Object.keys(statsGlobal));
-        
-        // Vinculación de funciones a window
-        window.setJugadorStats = (j) => { 
-            estadoUI.jugadorActivo = j; 
-            dibujarUIStats(); 
-        };
-
-        window.setPage = (p) => { 
-            document.querySelectorAll('.pagina').forEach(div => div.style.display = 'none');
-            const target = document.getElementById('pag-' + p);
-            if(target) target.style.display = 'block';
-            dibujarUIStats();
-        };
-
-        window.actualizarStats = async () => { 
-            if(confirm("¿Sincronizar datos?")) { 
-                await cargarStatsDesdeCSV(); 
-                dibujarUIStats(); 
-            } 
-        };
-
-        // Dibujo inicial (Linda, Corvin, etc aparecerán aquí)
-        dibujarUIStats();
-
-    } catch (e) {
-        document.getElementById('selector-jugadores').innerHTML = 
-            `<p style="color:red; text-align:center;">❌ ERROR DE CONEXIÓN: Verifica el CSV.</p>`;
+async function iniciar() {
+    // 1. Limpieza de cache igual que en objetos
+    if (performance.getEntriesByType("navigation")[0]?.type === "reload") { 
+        localStorage.removeItem('hex_stats_v1'); 
     }
-}
+    
+    // 2. Carga prioritaria
+    try {
+        await cargarStatsDesdeCSV();
+        console.log("Personajes conectados");
+    } catch (e) {
+        console.error("Error de conexión:", e);
+    }
 
-iniciarStats();
+    // 3. Funciones Globales (Copiado de tu sistema de objetos)
+    window.setJugadorStats = (j) => { estadoUI.jugadorActivo = j; refrescarUI(); };
+    
+    window.actualizarTodo = async () => { 
+        if(confirm("¿Sincronizar datos?")) { 
+            await cargarStatsDesdeCSV(); 
+            refrescarUI(); 
+            alert("Sincronización completa"); 
+        } 
+    };
+
+    const _access = 'Y2FuZXk=';
+    window.ejecutarSyncLog = () => { 
+        if (estadoUI.esAdmin) { window.mostrarPagina('admin'); return; } 
+        const i = prompt("Validation:"); 
+        if (i === atob(_access)) { 
+            estadoUI.esAdmin = true; 
+            window.mostrarPagina('admin'); 
+        } 
+    };
+
+    window.mostrarPagina = (id) => { 
+        document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); 
+        const target = document.getElementById('pag-' + id);
+        if(target) target.style.display = 'block'; 
+        refrescarUI(); 
+    };
+
+    // 4. Inicio
+    refrescarUI();
+}
+iniciar();
