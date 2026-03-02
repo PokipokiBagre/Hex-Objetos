@@ -5,4 +5,7 @@ export let estadoUI = {
     paginaActiva: 'publico',
     principales: [] 
 };
-export function guardar() { localStorage.setItem('hex_stats_v3', JSON.stringify(statsGlobal)); }
+
+export function guardar() { 
+    localStorage.setItem('hex_stats_v4', JSON.stringify(statsGlobal)); 
+}
