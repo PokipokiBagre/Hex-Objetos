@@ -1,5 +1,5 @@
 import { statsGlobal, estadoUI } from './stats-state.js';
-import { calcularBonos } from './stats-logic.js';
+import { calcularTodo, generarLineaCSV } from './stats-logic.js';
 
 export function dibujarUIStats() {
     dibujarSelector();
@@ -126,3 +126,4 @@ export function dibujarDisenador() {
         </div>
     `;
 }
+
