@@ -2,7 +2,7 @@ export let statsGlobal = {};
 export let estadoUI = {
     esAdmin: false,
     paginaActiva: 'publico',
-    principales: [] 
+    personajesPrincipales: [] 
 };
 
 export function guardar() { 
