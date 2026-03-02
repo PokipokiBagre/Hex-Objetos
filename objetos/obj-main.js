@@ -12,7 +12,7 @@ async function iniciar() {
     if (!cache) await cargarTodoDesdeCSV();
     else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
     
-    // SISTEMA DE POP-UP MOVIBLE
+    // SISTEMA DE POP-UP GLOBAL MOVIBLE
     const modal = document.createElement('div');
     modal.id = 'hex-modal-view';
     modal.className = 'hex-modal';
@@ -22,10 +22,9 @@ async function iniciar() {
     const modalImg = document.getElementById('hex-modal-img');
     let isDragging = false, startX, startY, initialX, initialY;
 
-    // Cerrar si haces clic en el desenfoque, no en la imagen
     modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
-    // Lógica para mover la imagen
+    // Lógica para mover la imagen con el ratón
     modalImg.onmousedown = (e) => {
         isDragging = true;
         startX = e.clientX; startY = e.clientY;
@@ -41,13 +40,14 @@ async function iniciar() {
 
     window.verImagen = (url) => {
         modalImg.src = url;
-        modalImg.style.left = '0px'; modalImg.style.top = '0px'; // Reset posición
+        modalImg.style.left = '0px'; modalImg.style.top = '0px'; 
         modal.style.display = 'flex';
     };
 
     const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
+    
     window.actualizarBitacoraTexto = () => {
         let lines = [];
         for (const j in estadoUI.cambiosSesion) {
@@ -67,12 +67,20 @@ async function iniciar() {
     };
 
     window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
+    
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
-        const i = prompt("Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
+        const i = prompt("System Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
     };
 
-    window.mostrarPagina = (id) => { document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); document.getElementById('pag-' + id).style.display = 'block'; refrescarUI(); };
+    window.mostrarPagina = (id) => { 
+        document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none'); 
+        const target = document.getElementById('pag-' + id);
+        if(target) target.style.display = 'block'; 
+        refrescarUI(); 
+    };
+
+    // Vinculación de botones al objeto global window
     window.setInv = (j) => { estadoUI.jugadorInv = j; dibujarInventarios(); };
     window.setCtrl = (j) => { estadoUI.jugadorControl = j; dibujarControl(); };
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
@@ -85,3 +93,4 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
+
