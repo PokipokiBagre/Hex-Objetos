@@ -8,16 +8,16 @@
 </head>
 <body>
     <div class="container-hex">
-        <div style="text-align: left; margin-bottom: 20px;">
-            <a href="../index.html" class="btn-volver">⬅ VOLVER AL INICIO</a>
+        <div style="text-align: left; margin-bottom: 10px;">
+            <a href="../index.html" style="color:#d4af37; text-decoration:none; font-size:0.8em;">⬅ VOLVER AL INICIO</a>
         </div>
 
         <h1>FICHA DE ESTADO</h1>
         
         <nav>
             <button onclick="window.setPage('publico')">JUGADOR</button>
-            <button onclick="window.actualizarStats()" style="background:#006400; font-weight: bold;">ACTUALIZAR</button>
-            <button onclick="window.accesoAdmin()" style="background:#2e004f; border-style: dashed;">ACCESO OP</button>
+            <button onclick="window.actualizarStats()" style="background:#006400; font-weight:bold;">ACTUALIZAR</button>
+            <button onclick="window.accesoAdmin()" style="background:#2e004f; border-style:dashed;">ACCESO OP</button>
         </nav>
 
         <div id="selector-jugadores"></div>
@@ -30,7 +30,6 @@
             <div id="panel-op-stats"></div>
         </section>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script type="module" src="stats-main.js?v=1.6"></script>
 </body>
 </html>
