@@ -13,7 +13,7 @@ export function dibujarUIStats() {
     const s = statsGlobal[j];
     const bonos = calcularBonos(j);
 
-    // Vida Roja (+1 cada 2 Física)
+    // Cálculos de vida con bonos
     const rojaPartes = s.vida.roja.split('/');
     const rojaActual = parseInt(rojaPartes[0]) || 0;
     const rojaTotalMax = (parseInt(rojaPartes[1]) || 10) + bonos.bonoRoja;
@@ -67,7 +67,6 @@ export function dibujarUIStats() {
 
 function dibujarSelector() {
     const container = document.getElementById('selector-jugadores');
-    // Genera los botones de los personajes cargados
     container.innerHTML = `<div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">` + 
         Object.keys(statsGlobal).sort().map(j => `
             <button onclick="window.setJugadorStats('${j}')" class="${estadoUI.jugadorActivo === j ? 'btn-active' : ''}">${j.toUpperCase()}</button>
@@ -83,16 +82,27 @@ export function dibujarAdminStats() {
         <h2>EDITOR OP: ${j}</h2>
         <div class="stat-card" style="max-width:650px; margin:0 auto;">
             <div style="background:#1a0033; padding:15px; border:1px dashed #d4af37; margin-bottom:20px;">
-                <textarea id="log-stats-op" class="search-bar" readonly style="height:60px; font-size:0.8em;">${estadoUI.logStats || 'Sin cambios...'}</textarea>
-                <button onclick="window.copyToClipboard('log-stats-op')" style="width:100%;">COPIAR LOG</button>
+                <textarea id="log-stats-op" class="search-bar" readonly style="height:60px; font-size:0.8em; width:100%; background:transparent; color:#fff; border:none; resize:none;">${estadoUI.logStats || 'Sin cambios...'}</textarea>
+                <button onclick="window.copyToClipboard('log-stats-op')" style="width:100%; margin-top:10px;">COPIAR LOG</button>
             </div>
-            <button onclick="window.descargarCSVStats()" style="width:100%; margin-bottom:10px; background:#d4af37; color:#000;">DESCARGAR CSV</button>
-            <button onclick="window.setPage('publico')" style="width:100%; background:#333;">CERRAR</button>
+            <button onclick="window.descargarCSVStats()" style="width:100%; margin-bottom:10px; background:#d4af37; color:#000; font-weight:bold;">DESCARGAR CSV ACTUALIZADO</button>
+            <button onclick="window.mostrarCreacionObjeto()" style="width:100%; margin-bottom:10px; background:#2e004f;">CREAR OBJETO</button>
+            <button onclick="window.setPage('publico')" style="width:100%; background:#333;">CERRAR PANEL</button>
         </div>
     `;
 }
 
 export function dibujarCreacionObjeto() {
-    let html = `<h2>Creación de Objetos</h2><div class="stat-card" style="max-width:600px; margin:0 auto;"><p>Panel de creación restaurado.</p><button onclick="window.setPage('admin')" style="width:100%; background:#444;">VOLVER</button></div>`;
+    let html = `
+        <h2>Creación de Objetos</h2>
+        <div class="stat-card" style="max-width:600px; margin:0 auto;">
+            <p style="text-align:center; opacity:0.8;">Panel de creación de objetos mágicos restaurado.</p>
+            <div style="border:1px solid #d4af3733; padding:20px; margin-bottom:20px;">
+                <p style="font-size:0.9em; color:#aaa;">(Formulario de forja disponible para ${estadoUI.jugadorActivo})</p>
+            </div>
+            <button onclick="window.setPage('admin')" style="width:100%; background:#444;">VOLVER AL EDITOR</button>
+        </div>
+    `;
     document.getElementById('panel-op-stats').innerHTML = html;
 }
+
