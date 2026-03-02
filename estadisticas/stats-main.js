@@ -4,48 +4,50 @@ import { dibujarUIStats, dibujarAdminStats } from './stats-ui.js';
 import { descargarCSVStats } from './stats-logic.js';
 
 async function iniciarStats() {
-    // 1. Funciones Globales
+    // 1. Carga de datos inicial (Igual que iniciar() en objetos)
+    try {
+        await cargarStatsDesdeCSV();
+        console.log("Datos cargados:", Object.keys(statsGlobal));
+    } catch (e) {
+        console.error("Error cargando CSV:", e);
+    }
+
+    // 2. Vinculación Global (window)
     window.setJugadorStats = (j) => { 
         estadoUI.jugadorActivo = j; 
         dibujarUIStats(); 
         if(estadoUI.esAdmin) dibujarAdminStats(); 
     };
 
-    window.setPage = (p) => { 
-        estadoUI.paginaActiva = p; 
-        document.querySelectorAll('.pagina').forEach(div => div.style.display = 'none');
-        const target = document.getElementById('pag-' + p);
+    window.setPage = (id) => { 
+        document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
+        const target = document.getElementById('pag-' + id);
         if(target) target.style.display = 'block';
         dibujarUIStats();
     };
 
-    window.actualizarStats = () => { 
-        if(confirm("¿Sincronizar datos?")) { 
-            localStorage.removeItem('hex_stats_v1'); 
-            location.reload(); 
+    window.actualizarStats = async () => { 
+        if(confirm("¿Sincronizar?")) { 
+            await cargarStatsDesdeCSV(); 
+            dibujarUIStats(); 
+            alert("OK"); 
         } 
     };
-
-    const _KEY = atob('Y2FuZXk='); 
+    
+    const _session = 'Y2FuZXk=';
     window.accesoAdmin = () => {
-        if(estadoUI.esAdmin) { window.setPage('admin'); return; }
-        const code = prompt("System Code:");
-        if(code === _KEY) { 
-            estadoUI.esAdmin = true;
-            window.setPage('admin');
+        if (estadoUI.esAdmin) { window.setPage('admin'); return; }
+        const i = prompt("Validation:");
+        if (i === atob(_session)) { 
+            estadoUI.esAdmin = true; 
+            window.setPage('admin'); 
         }
     };
 
     window.descargarCSVStats = descargarCSVStats;
 
-    // 2. Carga y Dibujo inicial
-    try {
-        console.log("Iniciando carga de personajes...");
-        await cargarStatsDesdeCSV();
-        dibujarUIStats();
-    } catch (e) {
-        console.error("Error crítico:", e);
-    }
+    // 3. Dibujo inicial
+    dibujarUIStats();
 }
 
 iniciarStats();
