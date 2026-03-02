@@ -6,15 +6,27 @@ import { descargarCSVStats } from './stat-logic.js';
 async function iniciarStats() {
     await cargarStatsDesdeCSV();
     
-    window.setJugadorStats = (j) => { estadoUI.jugadorActivo = j; dibujarUIStats(); if(estadoUI.esAdmin) dibujarAdminStats(); };
+    // Vinculación Global para que los botones funcionen
+    window.setJugadorStats = (j) => { 
+        estadoUI.jugadorActivo = j; 
+        dibujarUIStats(); 
+        if(estadoUI.esAdmin) dibujarAdminStats(); 
+    };
+
     window.setPage = (p) => { 
         estadoUI.paginaActiva = p; 
         document.querySelectorAll('.pagina').forEach(div => div.style.display = 'none');
         document.getElementById('pag-' + p).style.display = 'block';
         if(p === 'admin') dibujarAdminStats();
+        dibujarUIStats(); // Refresca para asegurar visibilidad
     };
 
-    window.actualizarStats = async () => { if(confirm("¿Sincronizar datos con Sheet?")) { localStorage.clear(); location.reload(); } };
+    window.actualizarStats = () => { 
+        if(confirm("¿Sincronizar datos con el Sheet?")) { 
+            localStorage.removeItem('hex_stats_v1'); 
+            location.reload(); 
+        } 
+    };
     
     window.accesoAdmin = () => {
         if(estadoUI.esAdmin) { window.setPage('admin'); return; }
@@ -22,16 +34,24 @@ async function iniciarStats() {
         if(pass === atob('Y2FuZXk=')) { // caney
             estadoUI.esAdmin = true;
             window.setPage('admin');
+        } else {
+            alert("Acceso denegado.");
         }
     };
 
     window.addHechizoAdmin = () => {
         const nom = document.getElementById('add-spell-name').value;
         const hex = document.getElementById('add-spell-hex').value;
-        if(!nom) return;
-        statsGlobal[estadoUI.jugadorActivo].learnedSpells.push({ afinidad: 'Manual', nombre: nom, costo: hex });
+        const afin = document.getElementById('add-spell-afin').value;
+        if(!nom || !estadoUI.jugadorActivo) return;
+        
+        statsGlobal[estadoUI.jugadorActivo].learnedSpells.push({ 
+            afinidad: afin, 
+            nombre: nom, 
+            costo: hex 
+        });
         guardarStats();
-        alert("Hechizo añadido localmente. Descarga el CSV para guardar cambios permanentes.");
+        alert("Hechizo añadido a la sesión actual. Descarga el CSV para guardar.");
         dibujarAdminStats();
     };
 
