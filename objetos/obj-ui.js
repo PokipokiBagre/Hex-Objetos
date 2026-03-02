@@ -183,7 +183,8 @@ export function dibujarCreacionObjeto() {
             <select id="new-obj-mat" class="search-bar" style="width:100%"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
         </div>
         <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
-        <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendary</option></select>
+        <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
+        
         <h3 style="margin-top:20px; font-size:1em;">Cantidades por Jugador</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
     
