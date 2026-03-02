@@ -4,8 +4,7 @@ import { dibujarUIStats, dibujarAdminStats, dibujarCreacionObjeto } from './stat
 import { descargarCSVStats } from './stats-logic.js';
 
 async function iniciarStats() {
-    await cargarStatsDesdeCSV();
-    
+    // 1. Vinculación prioritaria de funciones globales
     window.setJugadorStats = (j) => { 
         estadoUI.jugadorActivo = j; 
         dibujarUIStats(); 
@@ -33,28 +32,20 @@ async function iniciarStats() {
         if(pass === atob('Y2FuZXk=')) { 
             estadoUI.esAdmin = true;
             window.setPage('admin');
-        } else {
-            alert("Código incorrecto.");
         }
     };
 
-    window.mostrarCreacionObjeto = () => {
-        window.setPage('admin'); 
-        dibujarCreacionObjeto(); 
-    };
-
-    window.addHechizoAdmin = () => {
-        const nom = document.getElementById('add-spell-name').value;
-        const hex = document.getElementById('add-spell-hex').value;
-        const afin = document.getElementById('add-spell-afin').value;
-        if(!nom || !estadoUI.jugadorActivo) return;
-        
-        statsGlobal[estadoUI.jugadorActivo].learnedSpells.push({ afinidad: afin, nombre: nom, costo: hex });
-        guardarStats();
-        dibujarAdminStats();
-    };
-
+    window.mostrarCreacionObjeto = () => { window.setPage('admin'); dibujarCreacionObjeto(); };
     window.descargarCSVStats = descargarCSVStats;
-    dibujarUIStats();
+
+    // 2. Carga de datos
+    try {
+        await cargarStatsDesdeCSV();
+        dibujarUIStats();
+    } catch (e) {
+        console.error("Error crítico de datos:", e);
+    }
 }
+
 iniciarStats();
+
