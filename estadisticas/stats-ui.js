@@ -2,10 +2,7 @@ import { statsGlobal, estadoUI } from './stats-state.js';
 import { calcular } from './stats-logic.js';
 
 /**
- * Genera bloques segmentados para las barras de vida.
- * @param {number} cur - Valor actual.
- * @param {number} max - Valor máximo.
- * @param {string} cls - Clase CSS para el color.
+ * Genera bloques segmentados para las barras de vida con límite de ancho.
  */
 function generarBloques(cur, max, cls) {
     let h = `<div class="block-grid">`;
@@ -16,9 +13,6 @@ function generarBloques(cur, max, cls) {
     return h + `</div>`;
 }
 
-/**
- * Función principal que decide qué dibujar en la pantalla.
- */
 export function refrescarUI() {
     const catalog = document.getElementById('contenedor-catalog');
     const dash = document.getElementById('dashboard-stats');
@@ -35,36 +29,29 @@ export function refrescarUI() {
     }
 }
 
-/**
- * Dibuja la cuadrícula 4x4 de personajes.
- */
 function dibujarCatalogo(container) {
     const ids = Object.keys(statsGlobal).sort((a, b) => {
-        // Prioridad a los personajes que tienen objetos
-        const pA = estadoUI.principales.includes(a) ? 0 : 1;
-        const pB = estadoUI.principales.includes(b) ? 0 : 1;
+        const pA = (estadoUI.principales || []).includes(a) ? 0 : 1;
+        const pB = (estadoUI.principales || []).includes(b) ? 0 : 1;
         return pA - pB || a.localeCompare(b);
     });
 
     container.innerHTML = ids.map(id => {
         const d = calcular(id);
-        const img = `../img/imgpersonajes/${id.toLowerCase()}icon.png`;
+        const img = `../img/imgpersonajes/${id.toLowerCase().replace(/\s+/g, '')}icon.png`;
         return `
             <div class="personaje-card" onclick="window.setActivo('${id}')">
                 <img src="${img}" class="img-p" onerror="this.src='../img/icon.png'">
                 <div class="name-tag">${id.toUpperCase()}</div>
                 ${generarBloques(d.r, d.rM, 'b-red')}
-                ${estadoUI.principales.includes(id) ? '<small class="owner-tag">PROPIETARIO</small>' : ''}
+                ${(estadoUI.principales || []).includes(id) ? '<small class="owner-tag">PRINCIPAL</small>' : ''}
             </div>`;
     }).join('');
 }
 
-/**
- * Dibuja la ficha extendida de un personaje al hacer click.
- */
 function dibujarDetalle(id, container) {
     const d = calcular(id);
-    const img = `../img/imgpersonajes/${id.toLowerCase()}icon.png`;
+    const img = `../img/imgpersonajes/${id.toLowerCase().replace(/\s+/g, '')}icon.png`;
     
     container.innerHTML = `
         <div class="stat-card detail-view">
@@ -108,16 +95,12 @@ function dibujarDetalle(id, container) {
             <h3 class="gold-t">HECHIZOS APRENDIDOS (${d.sp.length})</h3>
             <div class="spell-container">
                 <table class="spell-table">
-                    <thead><tr><th>Hechizo</th></tr></thead>
                     <tbody>${d.sp.map(s => `<tr><td>${s}</td></tr>`).join('')}</tbody>
                 </table>
             </div>
         </div>`;
 }
 
-/**
- * Menú principal de acceso OP.
- */
 export function dibujarMenuOP() {
     const target = document.getElementById('panel-op-central');
     target.innerHTML = `
@@ -126,44 +109,35 @@ export function dibujarMenuOP() {
             <div class="op-grid">
                 <button onclick="window.mostrarDiseñador()" style="background:#4a004a;">DISEÑADOR DE PERSONAJE</button>
                 <button onclick="window.actualizarTodo()" style="background:#006400;">SINCRONIZAR CSV</button>
-                <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#000;">DESCARGAR TODO</button>
                 <button onclick="window.mostrarPagina('publico')" style="background:#333;">CERRAR</button>
             </div>
         </div>`;
 }
 
-/**
- * Formulario completo del Diseñador para columnas A-S.
- */
-export function dibujarDisenador() {
+export function dibujarDiseñador() {
     const target = document.getElementById('panel-op-central');
     target.innerHTML = `
         <div class="stat-card designer-form">
             <h2 class="gold-t">NUEVO PERSONAJE (A-S)</h2>
             <div class="form-grid">
-                <div class="input-group"><label>ID</label><input id="n-id" placeholder="Linda"></div>
+                <div class="input-group"><label>ID (Ej: Linda)</label><input id="n-id"></div>
                 <div class="input-group"><label>Hex</label><input id="n-hx" type="number" value="0"></div>
                 <div class="input-group"><label>Vex</label><input id="n-vx" type="number" value="0"></div>
-                
                 <div class="input-group"><label>Fis</label><input id="n-fi" type="number" value="0"></div>
                 <div class="input-group"><label>Ene</label><input id="n-en" type="number" value="0"></div>
                 <div class="input-group"><label>Esp</label><input id="n-es" type="number" value="0"></div>
-                
                 <div class="input-group"><label>Man</label><input id="n-ma" type="number" value="0"></div>
                 <div class="input-group"><label>Psi</label><input id="n-ps" type="number" value="0"></div>
                 <div class="input-group"><label>Osc</label><input id="n-os" type="number" value="0"></div>
-                
                 <div class="input-group"><label>Rojo Act</label><input id="n-ra" type="number" value="0"></div>
-                <div class="input-group"><label>Rojo MaxBase</label><input id="n-rm" type="number" placeholder="Ej: 11"></div>
+                <div class="input-group"><label>Rojo Max Base</label><input id="n-rm" type="number" placeholder="Ej: 11"></div>
                 <div class="input-group"><label>Azul Act</label><input id="n-aa" type="number" value="0"></div>
             </div>
-            
-            <div class="input-group full-width">
-                <label>Lista de Hechizos (Separados por comas)</label>
+            <div class="input-group full-width" style="margin-top:10px;">
+                <label>Lista Hechizos (Separados por comas)</label>
                 <textarea id="n-sp" placeholder="MENTALISMO, PSIONICA..."></textarea>
             </div>
-
-            <button onclick="window.agregarManual()" class="btn-save">AGREGAR PERSONAJE A LA LISTA</button>
-            <button onclick="window.mostrarPagina('admin')" class="btn-cancel">VOLVER</button>
+            <button onclick="window.agregarYRefrescar()" class="btn-save" style="background:green; margin-top:15px; width:100%; padding:10px; color:white; font-weight:bold;">CREAR PERSONAJE</button>
+            <button onclick="window.mostrarPagina('admin')" style="width:100%; margin-top:10px; background:#444; color:white;">VOLVER</button>
         </div>`;
 }
