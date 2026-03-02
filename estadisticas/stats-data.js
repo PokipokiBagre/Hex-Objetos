@@ -1,44 +1,47 @@
-import { statsGlobal, estadoUI, guardar } from './stats-state.js';
+import { statsGlobal, guardarStats } from './stats-state.js';
 
 export async function cargarStatsDesdeCSV() {
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZD7f7YtuNnIH1P_KWABhRFDos3GnX4dkkUUE0zpRgNiKPvtbX2kOx4N-CGi0Rc4FPKYYZxXbeJFR/pub?output=csv&cachebust=" + Date.now();
-    
-    // Detectar principales del sistema de objetos
-    const cacheObj = localStorage.getItem('hex_obj_v4');
-    if(cacheObj) {
-        const data = JSON.parse(cacheObj);
-        estadoUI.principales = Object.keys(data.inv || {}).filter(k => Object.values(data.inv[k]).some(v => v > 0));
-    }
-
     try {
         const res = await fetch(url);
-        const text = await res.text();
-        const filas = text.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
-
-        const parseSet = (str, len) => {
-            const arr = str ? str.split(',').map(v => parseInt(v.trim()) || 0) : [];
-            while(arr.length < len) arr.push(0); return arr;
-        };
+        const data = await res.text();
+        const filas = data.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
 
         filas.slice(1).forEach(f => {
-            if (!f[0]) return;
-            const dataA = f[0].split(',').map(s => s.trim());
-            const id = dataA[0];
+            const p = f[0]; if (!p) return;
             
-            statsGlobal[id] = {
-                nombreFull: dataA[1] || id,
-                bio: dataA[2] || "Sin datos.",
-                baseHexVex: parseSet(f[1], 4), // Hex, AumH, Vex, AumV
-                f_base: parseSet(f[2], 6),     // F-E-E-M-P-O
-                f_modDir: parseSet(f[3], 6), f_aumPerm: parseSet(f[4], 6),
-                f_disPerm: parseSet(f[5], 6), f_aumTemp: parseSet(f[6], 6),
-                f_disTemp: parseSet(f[7], 6), f_aumHech: parseSet(f[8], 6),
-                spells: { nom: f[10] ? f[10].split(',') : [], hex: f[11] ? f[11].split(',') : [] },
-                r_base: parseSet(f[12], 4), // RojaActual, RojaMaxBase, Azul, Oro
-                r_modDir: parseSet(f[13], 4), r_aumPerm: parseSet(f[15], 4), 
-                r_disPerm: parseSet(f[16], 4), r_aumTemp: parseSet(f[17], 4), r_disTemp: parseSet(f[18], 4)
+            // Índices corregidos según el header del CSV (A=0, B=1, etc.)
+            const afinidadesList = f[13] ? f[13].split(',').map(s => s.trim()) : [];
+            const nombresList = f[14] ? f[14].split(',').map(s => s.trim()) : [];
+            const hexList = f[15] ? f[15].split(',').map(s => s.trim()) : [];
+
+            const spells = nombresList.map((nombre, i) => ({
+                nombre,
+                afinidad: afinidadesList[i] || '?',
+                costo: hexList[i] || '0'
+            })).filter(s => s.nombre !== "");
+
+            statsGlobal[p] = {
+                nombreFull: f[1],
+                bio: f[2],
+                hex: parseInt(f[3]) || 0,
+                vex: parseInt(f[5]) || 0,
+                afin: {
+                    fis: parseInt(f[7]) || 0,
+                    ene: parseInt(f[8]) || 0,
+                    esp: parseInt(f[9]) || 0,
+                    man: parseInt(f[10]) || 0,
+                    psi: parseInt(f[11]) || 0,
+                    osc: parseInt(f[12]) || 0
+                },
+                learnedSpells: spells,
+                vida: {
+                    roja: f[16] || "0/10",
+                    azul: parseInt(f[17]) || 0,
+                    oro: parseInt(f[18]) || 0
+                }
             };
         });
-        guardar();
-    } catch (e) { console.error("Error CSV:", e); }
+        guardarStats();
+    } catch (e) { console.error("Error cargando Stats:", e); }
 }
