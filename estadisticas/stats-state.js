@@ -1,9 +1,8 @@
 export let statsGlobal = {}; 
 export let estadoUI = {
-    jugadorActivo: null,
+    jugadorActivo: null, // Solo mantenemos quién está seleccionado
     esAdmin: false,
-    paginaActiva: 'publico',
-    logStats: ""
+    paginaActiva: 'publico'
 };
 
 export function guardarStats() {
