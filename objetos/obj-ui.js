@@ -1,15 +1,20 @@
 import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
 
-function dibujarConFoco(containerId, html) {
+// Sistema de renderizado que preserva el foco para evitar lag al escribir
+function drawnHEXPreserveFocus(containerId, html) {
     const activeId = document.activeElement.id;
     const start = document.activeElement.selectionStart;
     const end = document.activeElement.selectionEnd;
+    
     const container = document.getElementById(containerId);
     if (container) {
         container.innerHTML = html;
         if (activeId) {
             const el = document.getElementById(activeId);
-            if (el) { el.focus(); if (el.setSelectionRange) el.setSelectionRange(start, end); }
+            if (el) {
+                el.focus();
+                if (el.setSelectionRange) el.setSelectionRange(start, end);
+            }
         }
     }
 }
@@ -18,7 +23,7 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
-// Normalización que permite la "ñ" para archivos en GitHub
+// Normalización que respeta la "ñ" para GitHub
 const normalizarNombre = (str) => {
     if (!str) return "";
     return str.toString().trim().toLowerCase()
@@ -56,7 +61,7 @@ export function dibujarInventarios() {
             <div style="text-align:left; flex:1;">
                 <h3>${j}</h3>
                 <p style="font-size:0.8em; color:#aaa;">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold; text-transform:uppercase;">${maxAf}</span></p>
-                <p style="font-size:0.85em; color:#eee;">${objGlobal[j]?.desc || "Sin descripción disponible."}</p>
+                <p style="font-size:0.85em; color:#eee;">${objGlobal[j]?.desc || "Sin descripción de personaje disponible."}</p>
             </div>
         </div>
         <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
@@ -94,7 +99,7 @@ export function dibujarInventarios() {
         });
         html += "</table></div>";
     }
-    dibujarConFoco('contenedor-jugadores', html);
+    drawnHEXPreserveFocus('contenedor-jugadores', html);
 }
 
 export function dibujarCatalogo() {
@@ -105,11 +110,12 @@ export function dibujarCatalogo() {
     });
     html += "</div><div class='filter-group'>";
     ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
-        const active = estadoUI.filtroMat === m ? 'style="background:#4a004a; border-color:#fff;"' : '';
+        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
         html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
     });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
     <div class="table-responsive"><table class='container-hex'><tr><th>Imagen</th><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
+    
     const term = (estadoUI.busquedaCat || "").toLowerCase();
     Object.keys(objGlobal).sort().forEach(o => {
         const item = objGlobal[o];
@@ -126,9 +132,10 @@ export function dibujarCatalogo() {
             </tr>`;
         }
     });
-    dibujarConFoco('tabla-todos-objetos', html + "</table></div>");
+    drawnHEXPreserveFocus('tabla-todos-objetos', html + "</table></div>");
 }
 
+// --- MANTENER INTACTO: FUNCIONES OP Y CONTROL ---
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -139,8 +146,8 @@ export function dibujarControl() {
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
-                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
-                 </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">`;
+                    <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+                 </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">`;
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = (estadoUI.busquedaOP || "").toLowerCase();
             if (!term || o.toLowerCase().includes(term)) {
