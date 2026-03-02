@@ -1,4 +1,4 @@
-import { statsGlobal, guardarStats } from './stat-state.js';
+import { statsGlobal, guardarStats } from './stats-state.js';
 
 export async function cargarStatsDesdeCSV() {
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZD7f7YtuNnIH1P_KWABhRFDos3GnX4dkkUUE0zpRgNiKPvtbX2kOx4N-CGi0Rc4FPKYYZxXbeJFR/pub?output=csv&cachebust=" + Date.now();
@@ -44,4 +44,5 @@ export async function cargarStatsDesdeCSV() {
         });
         guardarStats();
     } catch (e) { console.error("Error cargando Stats:", e); }
+
 }
