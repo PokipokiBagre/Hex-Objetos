@@ -8,22 +8,18 @@
 </head>
 <body>
     <div class="container-hex">
-        <div style="text-align: left; margin-bottom: 20px;"><a href="../index.html" style="color:#d4af37; text-decoration:none; font-weight:bold; font-size:0.9em;">⬅ VOLVER AL INICIO</a></div>
+        <div style="text-align: left; margin-bottom: 20px;"><a href="../index.html" style="color:#d4af37; text-decoration:none; font-weight:bold;">⬅ VOLVER AL INICIO</a></div>
         <h1>FICHA DE ESTADO</h1>
         <nav>
             <button onclick="window.mostrarPagina('publico')">PERSONAJES</button>
             <button onclick="window.actualizarTodo()" style="background:#006400;">SINCRONIZAR</button>
             <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">ACCESO OP</button>
         </nav>
-
         <section id="pag-publico" class="pagina">
             <div id="contenedor-catalog" class="catalog-grid"></div>
             <div id="dashboard-stats"></div>
         </section>
-
-        <section id="pag-admin" class="pagina" style="display:none;">
-            <div id="panel-op-central"></div>
-        </section>
+        <section id="pag-admin" class="pagina" style="display:none;"><div id="panel-op-central"></div></section>
     </div>
     <script type="module" src="stats-main.js?v=5.0"></script>
 </body>
