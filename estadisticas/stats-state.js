@@ -1,11 +1,10 @@
 export let statsGlobal = {}; 
 export let estadoUI = {
-    jugadorActivo: null,
     esAdmin: false,
     paginaActiva: 'publico',
-    logStats: ""
+    principales: [] 
 };
 
-export function guardarStats() {
-    localStorage.setItem('hex_stats_v1', JSON.stringify(statsGlobal));
+export function guardar() { 
+    localStorage.setItem('hex_stats_v2', JSON.stringify(statsGlobal)); 
 }
