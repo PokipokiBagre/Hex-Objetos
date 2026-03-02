@@ -1,20 +1,15 @@
 import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
 
-// Sistema de renderizado que preserva el foco para evitar lag al escribir
 function drawnHEXPreserveFocus(containerId, html) {
     const activeId = document.activeElement.id;
     const start = document.activeElement.selectionStart;
     const end = document.activeElement.selectionEnd;
-    
     const container = document.getElementById(containerId);
     if (container) {
         container.innerHTML = html;
         if (activeId) {
             const el = document.getElementById(activeId);
-            if (el) {
-                el.focus();
-                if (el.setSelectionRange) el.setSelectionRange(start, end);
-            }
+            if (el) { el.focus(); if (el.setSelectionRange) el.setSelectionRange(start, end); }
         }
     }
 }
@@ -23,7 +18,6 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
-// Normalización que respeta la "ñ" para que coincida con tus archivos en GitHub
 const normalizarNombre = (str) => {
     if (!str) return "";
     return str.toString().trim().toLowerCase()
@@ -58,7 +52,7 @@ export function dibujarInventarios() {
         html += `
         <div class="player-header">
             <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-            <div class="player-info">
+            <div style="text-align:left; flex:1;">
                 <h3>${j}</h3>
                 <p class="afinidad-tag">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold; text-transform:uppercase;">${maxAf}</span></p>
                 <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción de personaje disponible."}</p>
@@ -115,7 +109,6 @@ export function dibujarCatalogo() {
     });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
     <div class="table-responsive"><table class='container-hex'><tr><th>Imagen</th><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
-    
     const term = (estadoUI.busquedaCat || "").toLowerCase();
     Object.keys(objGlobal).sort().forEach(o => {
         const item = objGlobal[o];
@@ -135,7 +128,6 @@ export function dibujarCatalogo() {
     drawnHEXPreserveFocus('tabla-todos-objetos', html + "</table></div>");
 }
 
-// --- TUS FUNCIONES OP Y CONTROL (INTACTAS) ---
 export function dibujarControl() {
     let html = "<h2>Editor de Stock</h2><div style='text-align:center'>";
     Object.keys(invGlobal).sort().forEach(j => {
@@ -154,7 +146,7 @@ export function dibujarControl() {
                 const c = invGlobal[estadoUI.jugadorControl][o] || 0; const cl = c > 0 ? "item-con-stock" : "";
                 html += `<div style="background:rgba(30,0,60,0.9); border:1px solid #d4af37; padding:10px; border-radius:8px; text-align:center;">
                             <span style="font-size:0.85em; font-weight:bold; margin-bottom:10px; display:block;">${o} (<b>${c}</b>)</span>
-                            <div style="display:flex; gap:5px;"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)" style="flex:1;">+1</button><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="flex:1; background:#4a004a;">-1</button></div>
+                            <div style="display:flex; gap:5px;"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)" style="flex:1;">+1</button><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="flex:1; background:#4a0000;">-1</button></div>
                          </div>`;
             }
         });
