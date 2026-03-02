@@ -47,6 +47,28 @@ button:hover { background: #d4af37; color: #000; box-shadow: 0 0 15px #d4af37; }
 .spell-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
 .spell-table th { background: #d4af37; color: #000; padding: 10px; font-size: 0.8em; }
 .spell-table td { padding: 10px; border-bottom: 1px solid #d4af3722; font-size: 0.85em; }
+/* Barras Segmentadas */
+.segmented-bar { display: flex; gap: 3px; margin: 5px 0; justify-content: center; }
+.block { width: 12px; height: 18px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); border-radius: 2px; }
+.red-block.block-filled { background: #ff4d4d; box-shadow: 0 0 5px #f00; }
+.blue-block.block-filled { background: #00bfff; box-shadow: 0 0 5px #00bfff; }
+.gold-block.block-filled { background: #ffd700; box-shadow: 0 0 5px #ffd700; }
+
+/* Círculos de Energía */
+.resource-layout { display: flex; justify-content: space-around; align-items: center; padding: 20px; }
+.energy-section { display: flex; gap: 30px; align-items: center; }
+.energy-circle { 
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+    text-align: center; font-weight: bold; border: 2px solid #d4af37; 
+    box-shadow: 0 0 20px rgba(212,175,55,0.4); transition: 0.5s; 
+}
+.circle-hex { background: radial-gradient(circle, #301, #9932cc); }
+.circle-vex { background: radial-gradient(circle, #020, #32cd32); }
+.energy-circle span { font-size: 0.9em; text-shadow: 1px 1px 2px #000; }
+
+/* Menú OP */
+.op-grid-main { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px; }
 
 @media (max-width: 900px) { .catalog-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 500px) { .catalog-grid { grid-template-columns: 1fr; } }
+
