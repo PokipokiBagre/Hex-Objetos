@@ -2,7 +2,9 @@ export let statsGlobal = {};
 export let estadoUI = {
     personajeActivo: null,
     esAdmin: false,
-    paginaActiva: 'publico',
-    principales: [] 
+    paginaActiva: 'publico'
 };
-export function guardar() { localStorage.setItem('hex_stats_vFinal_v3', JSON.stringify(statsGlobal)); }
+
+export function guardar() { 
+    localStorage.setItem('hex_stats_vFusion', JSON.stringify(statsGlobal)); 
+}
