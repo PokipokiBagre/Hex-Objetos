@@ -22,7 +22,7 @@ async function iniciar() {
     const modalImg = document.getElementById('hex-modal-img');
     let isDragging = false, offsetX, offsetY;
 
-    // Lógica para cerrar si haces clic en el fondo borroso
+    // Lógica para cerrar si haces clic en el desenfoque, no en la imagen
     modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
     // Lógica de movimiento suave basada en el punto de clic
@@ -33,50 +33,64 @@ async function iniciar() {
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
         modalImg.style.cursor = 'grabbing';
+        modalImg.style.margin = '0'; // Desactivamos margin:auto CSS para moverlo
+        
+        // Fijamos la posición inicial exacta en píxeles para evitar saltos
+        modalImg.style.left = rect.left + 'px';
+        modalImg.style.top = rect.top + 'px';
+        modalImg.style.transform = 'none'; // Desactivamos el transform de centrado inicial
+        e.preventDefault();
     };
 
     window.onmousemove = (e) => {
         if (!isDragging) return;
-        // Calculamos la nueva posición restando el offset para evitar el salto
+        // Movemos la imagen basándonos en el desfasaje inicial (offsetX/Y)
         modalImg.style.left = (e.clientX - offsetX) + 'px';
         modalImg.style.top = (e.clientY - offsetY) + 'px';
-        modalImg.style.transform = 'none'; // Quita el centrado CSS para que no luche con el movimiento
     };
 
     window.onmouseup = () => { isDragging = false; modalImg.style.cursor = 'grab'; };
 
+    // Función global para ver imagen por URL
     window.verImagen = (url) => {
         modalImg.src = url;
+        // Reset posición inicial centrada
         modalImg.style.left = '50%'; modalImg.style.top = '50%'; 
-        modalImg.style.transform = 'translate(-50%, -50%)'; // Centrado inicial
+        modalImg.style.transform = 'translate(-50%, -50%)'; 
+        modalImg.style.margin = 'auto'; // Reactivamos el centrado CSS inicial
         modal.style.display = 'flex';
     };
 
-    // Funciones globales vinculadas a window para que los botones funcionen
+    // Función auxiliar para ver imagen por nombre (clickable amarillo)
+    window.verImagenByName = (name) => {
+        const normalized = name.toString().trim().toLowerCase()
+            .replace(/[áàäâ]/g, 'a').replace(/[éèëê]/g, 'e').replace(/[íìïî]/g, 'i')
+            .replace(/[óòöô]/g, 'o').replace(/[úùüû]/g, 'u')
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9ñ_]/g, ''); // Respeta la ñ
+        window.verImagen(`../img/imgobjetos/${normalized}.png`);
+    };
+
     const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
     
-    window.actualizarBitacoraTexto = () => {
-        let lines = [];
-        for (const j in estadoUI.cambiosSesion) {
-            for (const o in estadoUI.cambiosSesion[j]) {
-                const c = estadoUI.cambiosSesion[j][o]; if (c === 0) continue;
-                lines.push(`<${j} | ${c > 0 ? "OO" : "OP"}: ${o}${Math.abs(c) > 1 ? ' x' + Math.abs(c) : ''} | ${objGlobal[o]?.eff || "..."}>`);
-            }
-        }
-        estadoUI.logCopy = lines.join('\n'); refrescarUI();
-    };
-
     window.hexMod = (j, o, c) => {
         if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
         estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
         if (estadoUI.cambiosSesion[j][o] === 0) delete estadoUI.cambiosSesion[j][o];
-        window.actualizarBitacoraTexto(); modificar(j, o, c, refrescarUI);
+        let lines = [];
+        for (const player in estadoUI.cambiosSesion) {
+            for (const item in estadoUI.cambiosSesion[player]) {
+                const count = estadoUI.cambiosSesion[player][item]; if (count === 0) continue;
+                lines.push(`<${player} | ${count > 0 ? "OO" : "OP"}: ${item} | ${objGlobal[item]?.eff || "..."}>`);
+            }
+        }
+        estadoUI.logCopy = lines.join('\n');
+        modificar(j, o, c, refrescarUI);
     };
 
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
-    
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
         const i = prompt("System Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
@@ -102,3 +116,4 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
+
