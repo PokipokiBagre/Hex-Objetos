@@ -22,7 +22,7 @@ h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text
 .grid-item img { width: 100px; height: 100px; object-fit: cover; }
 .grid-item:hover { background: #2e004f; box-shadow: 0 0 15px #d4af37; }
 
-/* HILOS PROFESIONALES */
+/* HILOS CON EFECTO PROFESIONAL */
 .direct-access { display: flex; gap: 30px; justify-content: center; margin-top: 20px; flex-wrap: wrap; padding-bottom: 40px; }
 .access-card { position: relative; width: 320px; height: 180px; border: 2px solid #d4af37; overflow: hidden; border-radius: 4px; }
 .access-card img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.5); transition: 0.4s ease; }
