@@ -26,10 +26,7 @@ async function iniciar() {
         modalImg.style.left = rect.left + 'px'; modalImg.style.top = rect.top + 'px';
         modalImg.style.transform = 'none'; e.preventDefault();
     };
-    window.onmousemove = (e) => {
-        if (!isDragging) return;
-        modalImg.style.left = (e.clientX - offsetX) + 'px'; modalImg.style.top = (e.clientY - offsetY) + 'px';
-    };
+    window.onmousemove = (e) => { if (!isDragging) return; modalImg.style.left = (e.clientX - offsetX) + 'px'; modalImg.style.top = (e.clientY - offsetY) + 'px'; };
     window.onmouseup = () => { isDragging = false; modalImg.style.cursor = 'grab'; };
 
     window.verImagen = (url) => {
@@ -42,36 +39,43 @@ async function iniciar() {
         window.verImagen(`../img/imgobjetos/${norm}.png`);
     };
 
+    // ACTUALIZACIÓN EN TIEMPO REAL PARA CREACIÓN (RESTAURADO)
+    window.updateCreationLog = () => {
+        const n = document.getElementById('new-obj-name').value || "Objeto"; 
+        const e = document.getElementById('new-obj-eff').value || "Efecto";
+        let l = []; 
+        document.querySelectorAll('.cant-input').forEach(i => {
+            const c = parseInt(i.value) || 0; 
+            if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}>`);
+        });
+        const out = document.getElementById('copy-log-crea');
+        if (out) out.value = l.join('\n');
+    };
+
     const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
-    window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar datos?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
+    window.limpiarLog = () => { estadoUI.logCopy = ""; refrescarUI(); };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar datos?")) { await cargarTodoDesdeCSV(); alert("OK"); refrescarUI(); } };
     
+    // GENERADOR DE REGISTRO CON xNUM (RESTAURADO)
     window.hexMod = (j, o, c) => {
-        if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
-        estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
-        if (estadoUI.cambiosSesion[j][o] === 0) delete estadoUI.cambiosSesion[j][o];
-        let lines = [];
-        for (const p in estadoUI.cambiosSesion) {
-            for (const i in estadoUI.cambiosSesion[p]) {
-                const count = estadoUI.cambiosSesion[p][i]; if (count === 0) continue;
-                lines.push(`<${p} | ${count > 0 ? "OO" : "OP"}: ${i} | ${objGlobal[i]?.eff || "..."}>`);
-            }
-        }
-        estadoUI.logCopy = lines.join('\n');
+        const tag = c > 0 ? "OO" : "OP";
+        const mult = Math.abs(c) > 1 ? ` x${Math.abs(c)}` : "";
+        estadoUI.logCopy = `<${j} | ${tag}: ${o}${mult} | ${objGlobal[o]?.eff || "Sin efecto"}>`;
         modificar(j, o, c, refrescarUI);
     };
 
     window.ejecutarSyncLog = () => {
         if (estadoUI.esAdmin) { dibujarMenuOP(); window.mostrarPagina('op-menu'); return; }
-        const i = prompt("Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
+        const i = prompt("System Code:"); if (i === atob(_session)) { estadoUI.esAdmin = true; dibujarMenuOP(); window.mostrarPagina('op-menu'); }
     };
 
-    window.mostrarCreacionObjeto = () => { dibujarCreacionObjeto(); };
+    window.mostrarCreacionObjeto = () => { window.mostrarPagina('control'); dibujarCreacionObjeto(); };
     window.ejecutarAgregarObjeto = () => {
-        const d = { nombre: document.getElementById('new-name').value.trim(), eff: document.getElementById('new-eff').value, mat: document.getElementById('new-mat').value, rar: document.getElementById('new-rar').value };
-        if(!d.nombre) return alert("Nombre vacío");
-        agregarObjetoManual(d, {}, () => { alert("Objeto Creado"); refrescarUI(); window.mostrarPagina('catalogo'); });
+        const datos = { nombre: document.getElementById('new-obj-name').value.trim(), tipo: document.getElementById('new-obj-tipo').value, mat: document.getElementById('new-obj-mat').value, eff: document.getElementById('new-obj-eff').value.trim(), rar: document.getElementById('new-obj-rar').value };
+        const rep = {}; document.querySelectorAll('.cant-input').forEach(i => rep[i.dataset.player] = i.value);
+        if(!datos.nombre) return alert("Nombre vacío");
+        agregarObjetoManual(datos, rep, () => { alert("Objeto Creado"); refrescarUI(); window.mostrarPagina('op-menu'); });
     };
 
     window.mostrarPagina = (id) => { 
