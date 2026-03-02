@@ -18,7 +18,7 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
-// Normalización que respeta la "ñ" para Muñecos
+// Normalización que permite la "ñ" para archivos en GitHub
 const normalizarNombre = (str) => {
     if (!str) return "";
     return str.toString().trim().toLowerCase()
@@ -53,10 +53,10 @@ export function dibujarInventarios() {
         html += `
         <div class="player-header">
             <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-            <div class="player-info">
+            <div style="text-align:left; flex:1;">
                 <h3>${j}</h3>
-                <p class="afinidad-tag">Afinidad Máxima: <span>${maxAf}</span></p>
-                <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción disponible."}</p>
+                <p style="font-size:0.8em; color:#aaa;">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold; text-transform:uppercase;">${maxAf}</span></p>
+                <p style="font-size:0.85em; color:#eee;">${objGlobal[j]?.desc || "Sin descripción disponible."}</p>
             </div>
         </div>
         <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
@@ -110,7 +110,6 @@ export function dibujarCatalogo() {
     });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
     <div class="table-responsive"><table class='container-hex'><tr><th>Imagen</th><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
-    
     const term = (estadoUI.busquedaCat || "").toLowerCase();
     Object.keys(objGlobal).sort().forEach(o => {
         const item = objGlobal[o];
@@ -141,14 +140,14 @@ export function dibujarControl() {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
                     <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
-                 </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">`;
+                 </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">`;
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = (estadoUI.busquedaOP || "").toLowerCase();
             if (!term || o.toLowerCase().includes(term)) {
                 const c = invGlobal[estadoUI.jugadorControl][o] || 0; const cl = c > 0 ? "item-con-stock" : "";
-                html += `<div class="control-card ${cl}" style="background:rgba(30,0,60,0.9); border:1px solid #d4af37; padding:10px; border-radius:8px; text-align:center;">
+                html += `<div style="background:rgba(30,0,60,0.9); border:1px solid #d4af37; padding:10px; border-radius:8px; text-align:center;">
                             <span style="font-size:0.85em; font-weight:bold; margin-bottom:10px; display:block;">${o} (<b>${c}</b>)</span>
-                            <div style="display:flex; gap:5px;"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)" style="flex:1;">+1</button><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="flex:1; background:#4a004a;">-1</button></div>
+                            <div style="display:flex; gap:5px;"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)" style="flex:1;">+1</button><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="flex:1; background:#4a0000;">-1</button></div>
                          </div>`;
             }
         });
