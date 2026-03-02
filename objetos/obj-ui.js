@@ -1,12 +1,12 @@
 import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
 
-// Mantiene el foco y la posición del cursor al escribir
-function dibujarConFoco(html) {
+// Función para evitar la pérdida de foco al escribir
+function dibujarConFoco(containerId, html) {
     const activeId = document.activeElement.id;
     const start = document.activeElement.selectionStart;
     const end = document.activeElement.selectionEnd;
     
-    document.getElementById('contenedor-jugadores').innerHTML = html;
+    document.getElementById(containerId).innerHTML = html;
     
     if (activeId) {
         const el = document.getElementById(activeId);
@@ -85,7 +85,42 @@ export function dibujarInventarios() {
         });
         html += "</table></div>";
     }
-    dibujarConFoco(html); // Usamos la función de foco para el renderizado
+    dibujarConFoco('contenedor-jugadores', html);
+}
+
+export function dibujarCatalogo() {
+    let html = "<h2>Catálogo</h2><div class='filter-group'>";
+    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
+        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
+        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
+    });
+    html += "</div><div class='filter-group' style='margin-top:10px;'>";
+    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
+        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
+        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
+    });
+    html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
+    <div class="table-responsive"><table class='container-hex'><tr><th>Imagen</th><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
+    
+    const term = (estadoUI.busquedaCat || "").toLowerCase();
+    Object.keys(objGlobal).sort().forEach(o => {
+        const item = objGlobal[o];
+        const matchR = estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar;
+        const matchM = estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat;
+        
+        if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
+            const imgFile = normalizarNombre(o);
+            // Integración de imágenes en la tabla del catálogo
+            html += `<tr>
+                <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
+                <td style="font-weight:bold; color:#d4af37;">${o}</td>
+                <td style="text-align:left; font-size:0.85em;">${item.eff}</td>
+                <td>${item.mat}</td>
+                <td>${item.rar}</td>
+            </tr>`;
+        }
+    });
+    dibujarConFoco('tabla-todos-objetos', html + "</table></div>");
 }
 
 // --- MANTENER INTACTO: FUNCIONES OP Y CONTROL ---
@@ -125,29 +160,3 @@ export function dibujarMenuOP() {
             <button onclick="window.mostrarPagina('inventarios')" style="padding: 20px; background:#444;">Cerrar OP</button>
         </div>`;
 }
-
-export function dibujarCatalogo() {
-    let html = "<h2>Catálogo</h2><div class='filter-group'>";
-    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
-        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
-        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
-    });
-    html += "</div><div class='filter-group' style='margin-top:10px;'>";
-    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
-        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
-        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
-    });
-    html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
-    <div class="table-responsive"><table class='container-hex'><tr><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
-    const term = (estadoUI.busquedaCat || "").toLowerCase();
-    Object.keys(objGlobal).sort().forEach(o => {
-        const item = objGlobal[o];
-        const matchR = estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar;
-        const matchM = estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat;
-        if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
-            html += `<tr><td>${o}</td><td style="text-align:left; font-size:0.85em;">${item.eff}</td><td>${item.mat}</td><td>${item.rar}</td></tr>`;
-        }
-    });
-    document.getElementById('tabla-todos-objetos').innerHTML = html + "</table></div>";
-}
-
