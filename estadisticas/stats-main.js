@@ -4,7 +4,7 @@ import { dibujarUIStats, dibujarAdminStats } from './stats-ui.js';
 import { descargarCSVStats } from './stats-logic.js';
 
 async function iniciarStats() {
-    // Vinculación de funciones globales
+    // 1. Funciones Globales
     window.setJugadorStats = (j) => { 
         estadoUI.jugadorActivo = j; 
         dibujarUIStats(); 
@@ -19,19 +19,18 @@ async function iniciarStats() {
         dibujarUIStats();
     };
 
-    // Mensaje corregido sin mención a "Sheet"
     window.actualizarStats = () => { 
         if(confirm("¿Sincronizar datos?")) { 
             localStorage.removeItem('hex_stats_v1'); 
             location.reload(); 
         } 
     };
-    
-    const _SYS_OP_CODE = atob('Y2FuZXk='); 
+
+    const _KEY = atob('Y2FuZXk='); 
     window.accesoAdmin = () => {
         if(estadoUI.esAdmin) { window.setPage('admin'); return; }
-        const pass = prompt("System Code:");
-        if(pass === _SYS_OP_CODE) { 
+        const code = prompt("System Code:");
+        if(code === _KEY) { 
             estadoUI.esAdmin = true;
             window.setPage('admin');
         }
@@ -39,12 +38,13 @@ async function iniciarStats() {
 
     window.descargarCSVStats = descargarCSVStats;
 
+    // 2. Carga y Dibujo inicial
     try {
+        console.log("Iniciando carga de personajes...");
         await cargarStatsDesdeCSV();
-        // Forzamos el dibujo de la UI para que aparezcan los personajes cargados
-        dibujarUIStats(); 
+        dibujarUIStats();
     } catch (e) {
-        console.error("Error al cargar personajes:", e);
+        console.error("Error crítico:", e);
     }
 }
 
