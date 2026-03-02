@@ -4,28 +4,30 @@
     <meta charset="UTF-8">
     <title>HEX - FICHA DE ESTADO</title>
     <link rel="icon" type="image/png" href="../img/icon.png"> 
-    <link rel="stylesheet" href="../stylestats.css?v=1.5"> 
+    <link rel="stylesheet" href="stylestats.css?v=2.5"> 
 </head>
 <body>
     <div class="container-hex">
-        <div style="text-align: left; margin-bottom: 10px;"><a href="../index.html" class="back-link">⬅ Volver al Heptagrama</a></div>
+        <div style="text-align: left; margin-bottom: 20px;">
+            <a href="../index.html" class="btn-volver">⬅ VOLVER AL INICIO</a>
+        </div>
+
         <h1>FICHA DE ESTADO</h1>
+        
         <nav>
-            <button onclick="window.setPage('publico')">Vista Pública</button>
-            <button onclick="window.actualizarStats()" style="background:#006400;">Actualizar Sheet</button>
-            <button onclick="window.accesoAdmin()" style="background:#2e004f; border-style: dashed;">Acceso OP</button>
+            <button onclick="window.mostrarPagina('publico')">PERSONAJES</button>
+            <button onclick="window.actualizarTodo()" style="background:#006400;">SINCRONIZAR</button>
+            <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">ACCESO OP</button>
         </nav>
 
         <section id="pag-publico" class="pagina">
-            <div id="selector-jugadores" class="filter-group"></div>
-            <div id="dashboard-stats"></div>
+            <div id="contenedor-catalog" class="catalog-grid"></div>
         </section>
 
         <section id="pag-admin" class="pagina" style="display:none;">
             <div id="panel-op-stats"></div>
         </section>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script type="module" src="stats-main.js?v=1.5"></script>
+    <script type="module" src="stats-main.js?v=2.5"></script>
 </body>
 </html>
