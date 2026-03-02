@@ -3,9 +3,9 @@ export let estadoUI = {
     personajeActivo: null,
     esAdmin: false,
     paginaActiva: 'publico',
-    principales: [] 
+    principales: [] // Prioridad para el catálogo
 };
 
 export function guardar() { 
-    localStorage.setItem('hex_stats_v5', JSON.stringify(statsGlobal)); 
+    localStorage.setItem('hex_stats_vFinal', JSON.stringify(statsGlobal)); 
 }
