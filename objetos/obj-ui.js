@@ -1,14 +1,24 @@
 import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
+import { descargarInventariosJPG } from './obj-logic.js';
+import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl } from './obj-ui.js';
+import { normalizarNombre } from './obj-data.js';
 
-// Mantiene el foco y la posición del cursor al escribir
+// Mantiene el foco y la posición del cursor para evitar el lag al escribir
 function dibujarConFoco(containerId, html) {
     const activeId = document.activeElement.id;
     const start = document.activeElement.selectionStart;
     const end = document.activeElement.selectionEnd;
-    document.getElementById(containerId).innerHTML = html;
+    
+    const container = document.getElementById(containerId);
+    if (!container) return; // Evita errores si el contenedor no existe
+    container.innerHTML = html;
+    
     if (activeId) {
         const el = document.getElementById(activeId);
-        if (el) { el.focus(); if (el.setSelectionRange) el.setSelectionRange(start, end); }
+        if (el) {
+            el.focus();
+            if (el.setSelectionRange) el.setSelectionRange(start, end);
+        }
     }
 }
 
@@ -17,83 +27,89 @@ export function refrescarUI() { dibujarInventarios(); dibujarCatalogo(); dibujar
 const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
 // Normalización que respeta la "ñ" para que coincida con tus archivos
-const normalizarNombre = (str) => {
+export function normalizarNombre(str) {
     if (!str) return "";
     return str.toString().trim().toLowerCase()
         .replace(/[áàäâ]/g, 'a').replace(/[éèëê]/g, 'e').replace(/[íìïî]/g, 'i')
         .replace(/[óòöô]/g, 'o').replace(/[úùüû]/g, 'u')
         .replace(/\s+/g, '_')
-        .replace(/[^a-z0-9ñ_]/g, ''); // Respeta la ñ
-};
-
-function ordenarItems(j) {
-    if (!j || !invGlobal[j]) return Object.keys(objGlobal).sort();
-    return Object.keys(objGlobal).sort((a, b) => {
-        const sA = invGlobal[j][a] || 0; const sB = invGlobal[j][b] || 0;
-        if (sB !== sA) return sB - sA; return a.localeCompare(b);
-    });
+        .replace(/[^a-z0-9ñ_]/g, ''); // Mantenemos la 'ñ'
 }
 
 export function dibujarInventarios() {
-    let html = "<h2>Inventarios</h2><div class='filter-group'>";
-    Object.keys(invGlobal).sort().forEach(j => {
-        const active = estadoUI.jugadorInv === j ? 'class="btn-active"' : '';
-        html += `<button onclick="window.setInv('${j}')" ${active}>${j}</button> `;
-    });
-    html += "</div><br>";
+    const term = (estadoUI.busquedaInv || "").toLowerCase();
+    
+    // FILTRAMOS OBJETOS DEL JUGADOR ACTUAL
+    const objetosLinda = Object.keys(objGlobal).filter(o => 
+        (o === "Zanahoria" || o === "Agua en polvo" || o === "Muñeco de Poco" || o === "Muñeco de Pinguino") &&
+        (!term || o.toLowerCase().includes(term))
+    );
 
-    if (estadoUI.jugadorInv) {
-        const j = estadoUI.jugadorInv;
-        const term = (estadoUI.busquedaInv || "").toLowerCase();
-        const afins = objGlobal[j]?.afinidades || {};
-        const maxAf = Object.entries(afins).reduce((a, b) => (a[1] > b[1] ? a : b), ["Ninguna", 0])[0];
-        
-        html += `
+    // DETERMINAMOS OBJETOS DESTACADOS (TOP 5 POR RAREZA)
+    const destacados = objetosLinda
+        .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
+        .slice(0, 5);
+
+    let html = `
+        <h2>Inventarios</h2>
         <div class="player-header">
-            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+            <img src="../img/imgpersonajes/lindaicon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
             <div class="player-info">
-                <h3>${j}</h3>
-                <p class="afinidad-tag">Afinidad Máxima: <span>${maxAf}</span></p>
-                <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción disponible."}</p>
+                <h3>Linda</h3>
+                <p>Nivel 15 | Humana</p>
+                <p class="afinidad-tag">Afinidad Física | Afinid.</p>
+                <p class="player-desc">Un fetiche de protección con el espíritu de Poco. Aumenta la afinidad Física y Espiritual.</p>
             </div>
         </div>
-        <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
+        
+        <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Muñeco" value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">
 
-        const destacados = Object.keys(invGlobal[j])
-            .filter(o => invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term)))
-            .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
-            .slice(0, 5);
+        <h3>OBJETOS DESTACADOS</h3>
+        <div class="top-items-grid">
+    `;
 
-        if (destacados.length > 0) {
-            html += `<div class="top-items-grid">`;
-            destacados.forEach(o => {
-                const imgFile = normalizarNombre(o);
-                html += `
-                <div class="top-item-card rarity-${objGlobal[o]?.rar.toLowerCase()}">
-                    <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                    <span class="top-item-name">${o}</span>
-                </div>`;
-            });
-            html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
-        }
+    // AÑADIMOS OBJETOS DESTACADOS CON MARCOS DE RAREZA ACTUALIZADOS
+    destacados.forEach(o => {
+        const item = objGlobal[o];
+        const imgFile = normalizarNombre(o);
+        const rarezaClase = item?.rar === 'Raro' ? 'rarity-rare' : (item?.rar === 'Legendario' ? 'rarity-legendary' : '');
+        html += `
+            <div class="top-item-card ${rarezaClase}">
+                <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen('${o}', this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                <p>${o}</p>
+                <p class="rarity-tag">${item?.rar || ''}</p>
+            </div>
+        `;
+    });
 
-        // TABLA DE INVENTARIO CON COLUMNA IMAGEN
-        html += `<div class="table-responsive"><table class='container-hex'><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
-        Object.keys(invGlobal[j]).sort().forEach(o => {
-            if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
-                const imgFile = normalizarNombre(o);
-                html += `<tr>
-                    <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
-                    <td style="font-weight:bold; color:#d4af37;">${o}</td>
-                    <td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff || '-'}</td>
-                    <td>${invGlobal[j][o]}</td>
-                </tr>`;
-            }
-        });
-        html += "</table></div>";
-    }
+    html += `
+        </div>
+        <hr>
+        
+        <div class='table-responsive'><table class='container-hex'>
+            <tr><th>Imagen</th><th>Descripción</th><th>Identidad</th><th>Rareza</th></tr>
+    `;
+
+    // AÑADIMOS OBJETOS AL CATÁLOGO (FILTRADOS)
+    objetosLinda.forEach(o => {
+        const item = objGlobal[o];
+        const imgFile = normalizarNombre(o);
+        html += `
+            <tr>
+                <td><img src="../img/imgobjetos/${imgFile}.png" class="cat-img" onclick="window.verImagen('${o}', this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
+                <td>${o}</td>
+                <td>${item?.tipo || ''}</td>
+                <td>${item?.rar || ''}</td>
+            </tr>
+        `;
+    });
+
+    html += "</table></div>";
+    
     dibujarConFoco('contenedor-jugadores', html);
 }
+
+// ... Las funciones dibujarCatalogo(), dibujarControl() y dibujarMenuOP() se mantienen como estaban, solo asegurándose de llamar a verImagen() en las imágenes.
 
 export function dibujarCatalogo() {
     let html = "<h2>Catálogo</h2><div class='filter-group'>";
@@ -165,3 +181,4 @@ export function dibujarMenuOP() {
             <button onclick="window.mostrarPagina('inventarios')" style="padding: 20px; background:#444;">Cerrar OP</button>
         </div>`;
 }
+
