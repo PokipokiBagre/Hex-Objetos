@@ -1,22 +1,30 @@
-<div class="container-hex">
-    <div style="text-align: left; margin-bottom: 20px;">
-        <a href="../index.html" class="btn-volver">⬅ VOLVER AL INICIO</a>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>HEX - FICHA DE ESTADO</title>
+    <link rel="icon" type="image/png" href="../img/icon.png"> 
+    <link rel="stylesheet" href="stylestats.css?v=3.1"> 
+</head>
+<body>
+    <div class="container-hex">
+        <div style="text-align: left; margin-bottom: 10px;"><a href="../index.html" style="color:#d4af37; text-decoration:none; font-size:0.8em; font-weight:bold;">⬅ VOLVER AL INICIO</a></div>
+        <h1>FICHA DE ESTADO</h1>
+        <nav>
+            <button onclick="window.mostrarPagina('publico')">PERSONAJES</button>
+            <button onclick="window.actualizarTodo()" style="background:#006400;">SINCRONIZAR</button>
+            <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">ACCESO OP</button>
+        </nav>
+
+        <section id="pag-publico" class="pagina">
+            <div id="contenedor-catalog" class="catalog-grid"></div>
+            <div id="dashboard-stats"></div>
+        </section>
+
+        <section id="pag-admin" class="pagina" style="display:none;">
+            <div id="panel-op-central"></div>
+        </section>
     </div>
-
-    <h1>FICHA DE ESTADO</h1>
-    
-    <nav>
-        <button onclick="window.mostrarPagina('publico')">PERSONAJES</button>
-        <button onclick="window.actualizarTodo()" style="background:#006400; font-weight:bold;">SINCRONIZAR</button>
-        <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">ACCESO OP</button>
-    </nav>
-
-    <section id="pag-publico" class="pagina">
-        <div id="contenedor-catalog" class="catalog-grid"></div>
-    </section>
-
-    <section id="pag-admin" class="pagina" style="display:none;">
-        <div id="panel-op-stats"></div>
-    </section>
-</div>
-<script type="module" src="stats-main.js?v=2.1"></script>
+    <script type="module" src="stats-main.js?v=3.1"></script>
+</body>
+</html>
