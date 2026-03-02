@@ -12,7 +12,7 @@ async function iniciar() {
     if (!cache) await cargarTodoDesdeCSV();
     else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
     
-    // SISTEMA DE POP-UP GLOBAL MOVIBLE CORREGIDO
+    // SISTEMA DE POP-UP GLOBAL MOVIBLE
     const modal = document.createElement('div');
     modal.id = 'hex-modal-view';
     modal.className = 'hex-modal';
@@ -22,59 +22,50 @@ async function iniciar() {
     const modalImg = document.getElementById('hex-modal-img');
     let isDragging = false, offsetX, offsetY;
 
-    // Lógica para cerrar si haces clic en el desenfoque, no en la imagen
     modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
     // Lógica de movimiento suave basada en el punto de clic
     modalImg.onmousedown = (e) => {
         isDragging = true;
-        // Obtenemos el punto de clic relativo dentro de la propia imagen
         const rect = modalImg.getBoundingClientRect();
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
         modalImg.style.cursor = 'grabbing';
-        modalImg.style.margin = '0'; // Desactivamos margin:auto CSS para moverlo
-        
-        // Fijamos la posición inicial exacta en píxeles para evitar saltos
-        modalImg.style.left = rect.left + 'px';
+        modalImg.style.left = rect.left + 'px'; // Fijamos posición actual en píxeles
         modalImg.style.top = rect.top + 'px';
-        modalImg.style.transform = 'none'; // Desactivamos el transform de centrado inicial
+        modalImg.style.transform = 'none'; // Quita el centrado CSS inicial para moverlo
         e.preventDefault();
     };
 
     window.onmousemove = (e) => {
         if (!isDragging) return;
-        // Movemos la imagen basándonos en el desfasaje inicial (offsetX/Y)
         modalImg.style.left = (e.clientX - offsetX) + 'px';
         modalImg.style.top = (e.clientY - offsetY) + 'px';
     };
 
     window.onmouseup = () => { isDragging = false; modalImg.style.cursor = 'grab'; };
 
-    // Función global para ver imagen por URL
     window.verImagen = (url) => {
         modalImg.src = url;
-        // Reset posición inicial centrada
         modalImg.style.left = '50%'; modalImg.style.top = '50%'; 
-        modalImg.style.transform = 'translate(-50%, -50%)'; 
-        modalImg.style.margin = 'auto'; // Reactivamos el centrado CSS inicial
+        modalImg.style.transform = 'translate(-50%, -50%)'; // Reset posición inicial centrada
         modal.style.display = 'flex';
     };
 
-    // Función auxiliar para ver imagen por nombre (clickable amarillo)
     window.verImagenByName = (name) => {
         const normalized = name.toString().trim().toLowerCase()
             .replace(/[áàäâ]/g, 'a').replace(/[éèëê]/g, 'e').replace(/[íìïî]/g, 'i')
             .replace(/[óòöô]/g, 'o').replace(/[úùüû]/g, 'u')
             .replace(/\s+/g, '_')
-            .replace(/[^a-z0-9ñ_]/g, ''); // Respeta la ñ
+            .replace(/[^a-z0-9ñ_]/g, '');
         window.verImagen(`../img/imgobjetos/${normalized}.png`);
     };
 
+    // Funciones globales vinculadas a window
     const _session = 'Y2FuZXk=';
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
-    window.actualizarTodo = async () => { if(confirm("¿Sincronizar?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
+    window.actualizarTodo = async () => { if(confirm("¿Sincronizar datos?")) { await cargarTodoDesdeCSV(); refrescarUI(); alert("OK"); } };
     
     window.hexMod = (j, o, c) => {
         if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
@@ -103,7 +94,6 @@ async function iniciar() {
         refrescarUI(); 
     };
 
-    // Vinculación de los disparadores de UI a window
     window.setInv = (j) => { estadoUI.jugadorInv = j; dibujarInventarios(); };
     window.setCtrl = (j) => { estadoUI.jugadorControl = j; dibujarControl(); };
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
@@ -116,4 +106,3 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
-
