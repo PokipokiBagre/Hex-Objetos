@@ -1,43 +1,45 @@
-import { estadoUI, statsGlobal, guardarStats } from './stats-state.js';
+import { statsGlobal, estadoUI, guardar } from './stats-state.js';
 import { cargarStatsDesdeCSV } from './stats-data.js';
-import { dibujarUIStats, dibujarAdminStats } from './stats-ui.js';
-import { descargarCSVStats } from './stats-logic.js';
+import { refrescarUI, dibujarDisenador } from './stats-ui.js';
+import { generarLineaCSV } from './stats-logic.js';
 
-async function iniciarStats() {
+async function iniciar() {
     await cargarStatsDesdeCSV();
-    
-    window.setJugadorStats = (j) => { 
-        estadoUI.jugadorActivo = j; 
-        dibujarUIStats(); 
-        if(estadoUI.esAdmin) dibujarAdminStats(); 
+
+    window.mostrarPagina = (id) => {
+        document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
+        document.getElementById('pag-' + id).style.display = 'block';
+        if(id === 'admin') dibujarDisenador();
+        else refrescarUI();
     };
 
-    window.setPage = (p) => { 
-        estadoUI.paginaActiva = p; 
-        document.querySelectorAll('.pagina').forEach(div => div.style.display = 'none');
-        document.getElementById('pag-' + p).style.display = 'block';
-        if(p === 'admin') dibujarAdminStats();
+    window.crearPersonaje = () => {
+        const id = document.getElementById('new-id').value.trim();
+        const nom = document.getElementById('new-nom').value.trim();
+        const bio = document.getElementById('new-bio').value.trim();
+        if(!id) return alert("Falta ID");
+        
+        const linea = generarLineaCSV(id, nom, bio);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([linea], {type:'text/csv'}));
+        link.download = `NUEVO_PERSONAJE_${id}.csv`;
+        link.click();
+        alert("Archivo generado. Agrégalo a tu CSV maestro.");
     };
 
-    window.actualizarStats = async () => { 
-        if(confirm("¿Sincronizar datos con Sheet?")) { 
-            localStorage.clear(); 
-            location.reload(); 
-        } 
+    window.actualizarTodo = async () => { 
+        if(confirm("¿Sincronizar datos?")) { await cargarStatsDesdeCSV(); refrescarUI(); } 
     };
-    
-    window.accesoAdmin = () => {
-        if(estadoUI.esAdmin) { window.setPage('admin'); return; }
-        const pass = prompt("System Code:");
-        if(pass === atob('Y2FuZXk=')) { // pass: caney
-            estadoUI.esAdmin = true;
-            window.setPage('admin');
+
+    window.ejecutarSyncLog = () => {
+        const i = prompt("Validation:");
+        if (i === atob('Y2FuZXk=')) { 
+            estadoUI.esAdmin = true; 
+            window.mostrarPagina('admin'); 
         }
     };
 
-    window.descargarCSVStats = descargarCSVStats;
-
-    dibujarUIStats();
+    refrescarUI();
 }
 
-iniciarStats();
+iniciar();
