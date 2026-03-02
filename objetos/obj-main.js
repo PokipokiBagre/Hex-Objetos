@@ -53,24 +53,47 @@ async function iniciar() {
         estadoUI.logCopy = lines.join('\n');
     };
 
-    window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
+  window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
 
-    // CREACIÓN LOG
-    window.updateCreationLog = () => {
-        const n = document.getElementById('new-obj-name').value || "Objeto"; const e = document.getElementById('new-obj-eff').value || "Efecto";
-        let l = []; document.querySelectorAll('.cant-input').forEach(i => {
-            const c = parseInt(i.value) || 0; if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}>`);
-        });
-        const out = document.getElementById('copy-log-crea'); if (out) out.value = l.join('\n');
-    };
+window.updateCreationLog = () => {
+    const n = document.getElementById('new-obj-name').value || "Objeto";
+    const e = document.getElementById('new-obj-eff').value || "Efecto";
+    let l = [];
+    document.querySelectorAll('.cant-input').forEach(i => {
+        const c = parseInt(i.value) || 0;
+        if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}>`);
+    });
+    const out = document.getElementById('copy-log-crea');
+    if (out) out.value = l.join('\n');
+};
 
-    // MODIFICAR CON MEMORIA DE SESIÓN
-    window.hexMod = (j, o, c) => {
-        if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
-        estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
-        actualizarBitacoraAcumulada();
-        modificar(j, o, c, refrescarUI);
-    };
+// Asegurar que la función para abrir la creación esté vinculada
+window.mostrarCreacionObjeto = () => { 
+    window.mostrarPagina('control'); 
+    dibujarCreacionObjeto(); 
+};
+
+window.hexMod = (j, o, c) => {
+    // Acumular cambios en la sesión
+    if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
+    estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
+    
+    // Si el cambio neto vuelve a cero, lo quitamos del log
+    if (estadoUI.cambiosSesion[j][o] === 0) delete estadoUI.cambiosSesion[j][o];
+
+    // Generar el bloque de texto acumulado
+    let lines = [];
+    for (const player in estadoUI.cambiosSesion) {
+        for (const item in estadoUI.cambiosSesion[player]) {
+            const total = estadoUI.cambiosSesion[player][item];
+            const tag = total > 0 ? "OO" : "OP";
+            const mult = Math.abs(total) > 1 ? ` x${Math.abs(total)}` : "";
+            lines.push(`<${player} | ${tag}: ${item}${mult} | ${objGlobal[item]?.eff || "..."}>`);
+        }
+    }
+    estadoUI.logCopy = lines.join('\n');
+    modificar(j, o, c, refrescarUI);
+};
 
     // VINCULACIÓN GLOBAL
     const _session = 'Y2FuZXk=';
@@ -98,3 +121,4 @@ async function iniciar() {
     refrescarUI();
 }
 iniciar();
+
