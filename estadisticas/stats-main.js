@@ -1,53 +1,40 @@
-import { estadoUI, statsGlobal, guardarStats } from './stats-state.js';
+import { estadoUI, statsGlobal } from './stats-state.js';
 import { cargarStatsDesdeCSV } from './stats-data.js';
-import { dibujarUIStats, dibujarAdminStats } from './stats-ui.js';
-import { descargarCSVStats } from './stats-logic.js';
+import { dibujarUIStats } from './stats-ui.js';
 
 async function iniciarStats() {
-    // 1. Carga de datos inicial (Igual que iniciar() en objetos)
     try {
-        await cargarStatsDesdeCSV();
-        console.log("Datos cargados:", Object.keys(statsGlobal));
-    } catch (e) {
-        console.error("Error cargando CSV:", e);
-    }
-
-    // 2. Vinculación Global (window)
-    window.setJugadorStats = (j) => { 
-        estadoUI.jugadorActivo = j; 
-        dibujarUIStats(); 
-        if(estadoUI.esAdmin) dibujarAdminStats(); 
-    };
-
-    window.setPage = (id) => { 
-        document.querySelectorAll('.pagina').forEach(p => p.style.display = 'none');
-        const target = document.getElementById('pag-' + id);
-        if(target) target.style.display = 'block';
-        dibujarUIStats();
-    };
-
-    window.actualizarStats = async () => { 
-        if(confirm("¿Sincronizar?")) { 
-            await cargarStatsDesdeCSV(); 
+        console.log("Conectando con la base de datos...");
+        await cargarStatsDesdeCSV(); 
+        console.log("Conexión establecida. Jugadores detectados:", Object.keys(statsGlobal));
+        
+        // Vinculación de funciones a window
+        window.setJugadorStats = (j) => { 
+            estadoUI.jugadorActivo = j; 
             dibujarUIStats(); 
-            alert("OK"); 
-        } 
-    };
-    
-    const _session = 'Y2FuZXk=';
-    window.accesoAdmin = () => {
-        if (estadoUI.esAdmin) { window.setPage('admin'); return; }
-        const i = prompt("Validation:");
-        if (i === atob(_session)) { 
-            estadoUI.esAdmin = true; 
-            window.setPage('admin'); 
-        }
-    };
+        };
 
-    window.descargarCSVStats = descargarCSVStats;
+        window.setPage = (p) => { 
+            document.querySelectorAll('.pagina').forEach(div => div.style.display = 'none');
+            const target = document.getElementById('pag-' + p);
+            if(target) target.style.display = 'block';
+            dibujarUIStats();
+        };
 
-    // 3. Dibujo inicial
-    dibujarUIStats();
+        window.actualizarStats = async () => { 
+            if(confirm("¿Sincronizar datos?")) { 
+                await cargarStatsDesdeCSV(); 
+                dibujarUIStats(); 
+            } 
+        };
+
+        // Dibujo inicial (Linda, Corvin, etc aparecerán aquí)
+        dibujarUIStats();
+
+    } catch (e) {
+        document.getElementById('selector-jugadores').innerHTML = 
+            `<p style="color:red; text-align:center;">❌ ERROR DE CONEXIÓN: Verifica el CSV.</p>`;
+    }
 }
 
 iniciarStats();
