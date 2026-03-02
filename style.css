@@ -9,15 +9,20 @@ body {
 h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text-align: center; }
 .container-hex { width: 95%; margin: 0 auto; max-width: 1600px; }
 
-/* --- PORTADA Y HILOS --- */
-.hero-section { padding: 60px 20px; text-align: center; border: 1px solid #d4af37; background-size: cover; background-position: center; margin-bottom: 30px; }
-.main-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 900px; margin: 0 auto; }
-.grid-item { background: #1a0033; border: 1px solid #d4af37; padding: 20px; text-align: center; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: 0.3s; text-decoration: none; }
-.grid-item img { width: 100px; height: 100px; object-fit: cover; }
-.direct-access { display: flex; gap: 30px; justify-content: center; margin-top: 20px; flex-wrap: wrap; padding-bottom: 40px; }
-.access-card { position: relative; width: 320px; height: 180px; border: 2px solid #d4af37; overflow: hidden; border-radius: 4px; }
-.access-card img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.5); transition: 0.4s; }
-.access-card span { color: #ffffff !important; font-weight: bold; font-size: 1.1em; letter-spacing: 2px; text-transform: uppercase; text-shadow: 2px 2px 8px #000; }
+/* --- NAVEGACIÓN (CENTRADO FORZADO) --- */
+nav { 
+    display: flex !important; justify-content: center !important; 
+    gap: 15px; margin-bottom: 30px; flex-wrap: wrap; width: 100%; 
+}
+.filter-group { 
+    display: flex !important; justify-content: center !important; 
+    gap: 10px; flex-wrap: wrap; margin-bottom: 15px; width: 100%; 
+}
+
+button { background: #2e004f; color: #d4af37; border: 1px solid #d4af37; padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; transition: 0.3s; }
+button:hover { background: #d4af37; color: #120024; }
+.btn-active { background: #d4af37 !important; color: #120024 !important; font-weight: bold; }
+.btn-active-mat { background: #4a004a !important; color: #fff !important; border-color: #fff !important; }
 
 /* --- FICHA DE PERSONAJE --- */
 .player-header { display: flex; align-items: center; gap: 20px; background: rgba(30, 0, 60, 0.6); padding: 20px; border: 1px solid #d4af37; border-radius: 8px; margin-bottom: 20px; }
@@ -25,36 +30,32 @@ h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text
 .player-info { text-align: left; flex: 1; }
 .afinidad-tag { font-size: 0.8em; color: #aaa; margin: 5px 0; }
 .afinidad-tag span { color: #d4af37; font-weight: bold; text-transform: uppercase; }
-.player-desc { font-size: 0.85em; color: #eee; line-height: 1.4; }
 
-/* --- IMÁGENES (CON CONTRASTE DINÁMICO) --- */
+/* --- IMÁGENES (FILTRO DE CONTRASTE) --- */
 .top-items-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
 .top-item-card { background: #000; border: 1px solid rgba(212, 175, 55, 0.3); padding: 8px; text-align: center; border-radius: 4px; overflow: hidden; }
-.top-item-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; margin-bottom: 5px; border-radius: 2px; opacity: 0.8; transition: 0.3s; }
-.top-item-card:hover img { opacity: 1; transform: scale(1.05); }
+.top-item-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; opacity: 0.8; transition: 0.3s; cursor: pointer; }
 
-/* Miniaturas en el Catálogo */
-.cat-img { width: 45px; height: 45px; object-fit: cover; border: 1px solid #d4af37; border-radius: 4px; background: #000; opacity: 0.85; transition: 0.2s; }
-.cat-img:hover { opacity: 1; transform: scale(1.1); }
+/* Miniaturas en Tablas */
+.cat-img { width: 45px; height: 45px; object-fit: cover; border: 1px solid #d4af37; border-radius: 4px; background: #000; opacity: 0.85; transition: 0.2s; cursor: pointer; }
+.cat-img:hover, .top-item-card img:hover { opacity: 1; transform: scale(1.05); }
 
-/* --- SISTEMA DE TABLAS Y CENTRADO --- */
-.filter-group { display: flex !important; justify-content: center !important; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; width: 100%; }
-button { background: #2e004f; color: #d4af37; border: 1px solid #d4af37; padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; transition: 0.3s; }
-.btn-active { background: #d4af37 !important; color: #120024 !important; font-weight: bold; }
-.btn-active-mat { background: #4a004a !important; color: #fff !important; border-color: #fff !important; }
-.search-bar { width: 85%; max-width: 600px; display: block; margin: 0 auto 20px auto; padding: 12px; border: 1px solid #d4af37; background: #1a0033; color: white; text-align: center; }
+/* --- POP-UP DE IMAGEN (MODAL) --- */
+.hex-modal { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0, 0, 0, 0.9); display: none; justify-content: center; 
+    align-items: center; z-index: 2000; cursor: zoom-out; 
+}
+.hex-modal img { 
+    max-width: 85vw; max-height: 80vh; border: 2px solid #d4af37; 
+    box-shadow: 0 0 30px #000; background: #120024; 
+}
 
+/* --- TABLAS Y BUSCADOR --- */
 .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 15px; }
 table { width: 100%; border-collapse: collapse; background: rgba(30, 0, 60, 0.8); border: 1px solid #d4af37; min-width: 650px; }
 th { background: #d4af37; color: #120024; padding: 12px; border: 1px solid #120024; }
-td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: center; }
+td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: center; color: #fff; }
+.search-bar { width: 85%; max-width: 600px; display: block; margin: 0 auto 20px auto; padding: 12px; border: 1px solid #d4af37; background: #1a0033; color: white; text-align: center; }
 
-/* RAREZAS */
-.rarity-legendario { border-color: #ff4500 !important; box-shadow: 0 0 8px rgba(255, 69, 0, 0.4); }
-.rarity-raro { border-color: #00bfff !important; }
-
-@media (max-width: 750px) {
-    .main-grid, .direct-access { grid-template-columns: 1fr; }
-    .top-items-grid { grid-template-columns: repeat(3, 1fr); }
-    .cat-img { width: 35px; height: 35px; }
-}
+@media (max-width: 750px) { .top-items-grid { grid-template-columns: repeat(3, 1fr); } .cat-img { width: 35px; height: 35px; } }
