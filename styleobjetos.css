@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
 
-/* --- BASES DE OBJETOS --- */
+/* --- BASES GLOBALES --- */
 body { 
     font-family: 'Cinzel', serif; background-color: #120024; color: #ffffff; 
     margin: 0; padding: 20px; min-height: 100vh;
@@ -13,27 +13,28 @@ h1, h2, h3 { color: #d4af37; text-align: center; }
 nav, .filter-group { display: flex !important; justify-content: center !important; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; width: 100%; }
 button { background: #2e004f; color: #d4af37; border: 1px solid #d4af37; padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; transition: 0.2s ease; }
 button:active { transform: scale(0.95); box-shadow: inset 0 0 10px rgba(0,0,0,0.7); }
-.btn-active { background: #d4af37 !important; color: #120024 !important; font-weight: bold; }
+.btn-active { background: #d4af37 !important; color: #120024 !important; font-weight: bold; border: 2px solid #d4af37; }
 .btn-active-mat { background: #4a004a !important; color: #fff !important; border-color: #fff !important; }
 
-/* INVENTARIO Y RAREZAS */
+/* FICHA Y GRILLA */
 .player-header { display: flex; align-items: center; gap: 20px; background: rgba(30, 0, 60, 0.6); padding: 20px; border: 1px solid #d4af37; border-radius: 8px; margin-bottom: 20px; }
 .player-icon { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #d4af37; object-fit: cover; background: #000; }
 .top-items-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+
+/* RAREZAS Y DIFUMINADO PROFESIONAL */
 .top-item-card { background: #000; border: 1px solid rgba(212, 175, 55, 0.3); padding: 8px; text-align: center; border-radius: 4px; overflow: hidden; transition: 0.3s; }
 .top-item-card img, .cat-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; opacity: 0.8; transition: 0.4s ease; cursor: pointer; }
-.top-item-card img:hover, .cat-img:hover { opacity: 1; filter: blur(1px) brightness(0.85); transform: scale(1.02); }
+.top-item-card img:hover, .cat-img:hover { opacity: 1; filter: blur(1px) brightness(0.8); transform: scale(1.02); }
 
 .rarity-raro { border: 2px solid #8a2be2 !important; box-shadow: 0 0 15px rgba(138, 43, 226, 0.4); }
 .rarity-legendario { border: 2px solid #d4af37 !important; box-shadow: 0 0 20px rgba(212, 175, 55, 0.5); }
 
-/* EDITOR DE STOCK (ARREGLADO) */
+/* EDITOR DE STOCK */
 .grid-control { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 20px; }
 .control-card { background: rgba(30, 0, 60, 0.9); border: 1px solid #d4af37; padding: 15px; border-radius: 8px; text-align: center; }
 .item-con-stock { background: rgba(74, 0, 74, 0.4) !important; border: 2px solid #d4af37 !important; }
 .item-name { font-size: 0.9em; font-weight: bold; margin-bottom: 10px; display: block; color: #d4af37; }
 .item-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-.item-btns button { padding: 5px; font-size: 0.75em; width: 100%; }
 .btn-neg { background: #4a0000 !important; border-color: #ff4d4d !important; color: white; }
 
 /* MENÚ OP Y CREACIÓN */
@@ -41,7 +42,7 @@ button:active { transform: scale(0.95); box-shadow: inset 0 0 10px rgba(0,0,0,0.
 .op-grid button { padding: 20px; font-weight: bold; }
 .cant-input { width: 50px; float: right; background: #120024; color: white; border: 1px solid #d4af37; text-align: center; }
 
-/* POP-UP */
+/* POP-UP MOVIBLE CON BLUR */
 .hex-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 0, 36, 0.4); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 2000; }
 .hex-modal img { max-width: 80vw; max-height: 75vh; border: 2px solid #d4af37; box-shadow: 0 0 50px #000; background: #120024; cursor: grab; position: absolute; }
 
@@ -50,6 +51,7 @@ button:active { transform: scale(0.95); box-shadow: inset 0 0 10px rgba(0,0,0,0.
 table { width: 100%; border-collapse: collapse; background: rgba(30, 0, 60, 0.8); border: 1px solid #d4af37; min-width: 650px; }
 th { background: #d4af37; color: #120024; padding: 12px; border: 1px solid #120024; }
 td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: center; color: #fff; }
+
 .cat-img { width: 45px; height: 45px; object-fit: cover; border: 1px solid #d4af37; border-radius: 4px; background: #000; }
 .search-bar { width: 85%; max-width: 600px; display: block; margin: 0 auto 20px auto; padding: 12px; border: 1px solid #d4af37; background: #1a0033; color: white; text-align: center; }
 
