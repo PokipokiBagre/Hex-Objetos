@@ -54,7 +54,7 @@ export function dibujarInventarios() {
             <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
             <div style="text-align:left; flex:1;">
                 <h3>${j}</h3>
-                <p class="afinidad-tag">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold; text-transform:uppercase;">${maxAf}</span></p>
+                <p class="afinidad-tag">Afinidad Máxima: <span style="color:#d4af37; font-weight:bold;">${maxAf}</span></p>
                 <p class="player-desc">${objGlobal[j]?.desc || "Sin descripción de personaje disponible."}</p>
             </div>
         </div>
@@ -79,7 +79,7 @@ export function dibujarInventarios() {
             html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
         }
 
-        html += `<div class="table-responsive"><table class='container-hex'><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
+        html += `<div class="table-responsive"><table><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
         Object.keys(invGlobal[j]).sort().forEach(o => {
             if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
                 const imgFile = normalizarNombre(o);
@@ -108,7 +108,7 @@ export function dibujarCatalogo() {
         html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
     });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
-    <div class="table-responsive"><table class='container-hex'><tr><th>Imagen</th><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
+    <div class="table-responsive"><table><tr><th>Imagen</th><th>Nombre</th><th>Efecto</th><th>Material</th><th>Rareza</th></tr>`;
     const term = (estadoUI.busquedaCat || "").toLowerCase();
     Object.keys(objGlobal).sort().forEach(o => {
         const item = objGlobal[o];
@@ -135,18 +135,27 @@ export function dibujarControl() {
         html += `<button onclick="window.setCtrl('${j}')" ${active}>${j}</button> `;
     });
     html += `<br><br><button onclick="window.mostrarPagina('op-menu')" style="background:#444;">⬅ Menú OP</button></div><br>`;
+    
     if (estadoUI.jugadorControl) {
         html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                     <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; text-align:left;">${estadoUI.logCopy || 'Bitácora vacía...'}</textarea>
                     <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
-                 </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)"><div class="grid-control" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">`;
+                 </div><input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
+                 <div class="grid-control">`;
+        
         ordenarItems(estadoUI.jugadorControl).forEach(o => {
             const term = (estadoUI.busquedaOP || "").toLowerCase();
             if (!term || o.toLowerCase().includes(term)) {
-                const c = invGlobal[estadoUI.jugadorControl][o] || 0; const cl = c > 0 ? "item-con-stock" : "";
-                html += `<div style="background:rgba(30,0,60,0.9); border:1px solid #d4af37; padding:10px; border-radius:8px; text-align:center;">
-                            <span style="font-size:0.85em; font-weight:bold; margin-bottom:10px; display:block;">${o} (<b>${c}</b>)</span>
-                            <div style="display:flex; gap:5px;"><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)" style="flex:1;">+1</button><button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="flex:1; background:#4a0000;">-1</button></div>
+                const c = invGlobal[estadoUI.jugadorControl][o] || 0;
+                const cl = c > 0 ? "item-con-stock" : "";
+                html += `<div class="control-card ${cl}">
+                            <span class="item-name">${o} (<b>x${c}</b>)</span>
+                            <div class="item-btns">
+                                <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',1)">+1</button>
+                                <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-1)" style="background:#4a0000;">-1</button>
+                                <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',5)" style="background:#004d00;">+5</button>
+                                <button onclick="window.hexMod('${estadoUI.jugadorControl}','${o}',-5)" style="background:#8b0000;">-5</button>
+                            </div>
                          </div>`;
             }
         });
@@ -158,12 +167,27 @@ export function dibujarControl() {
 export function dibujarMenuOP() {
     document.getElementById('menu-op-central').innerHTML = `
         <h2>Acceso OP</h2>
-        <div class="main-grid" style="max-width: 700px; margin: 0 auto; gap: 15px;">
-            <button onclick="window.mostrarPagina('control')" style="padding: 20px;">Editor de Stock</button>
-            <button onclick="window.mostrarCreacionObjeto()" style="padding: 20px; background:#4a004a">Creación de Objetos</button>
-            <button onclick="window.descargarInventariosJPG()" style="padding: 20px; background:#8b0000; color: white;">Descargar JPGs</button>
-            <button onclick="window.descargarLog()" style="padding: 20px; background:#004a4a; color: white;">Descargar Log</button>
-            <button onclick="window.descargarEstadoCSV()" style="padding: 20px; background:#d4af37; color:#120024">Descargar CSV</button>
-            <button onclick="window.mostrarPagina('inventarios')" style="padding: 20px; background:#444;">Cerrar OP</button>
+        <div class="op-grid">
+            <button onclick="window.mostrarPagina('control')">Editor de Stock</button>
+            <button onclick="window.mostrarCreacionObjeto()" style="background:#4a004a">Creación de Objetos</button>
+            <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar JPGs</button>
+            <button onclick="window.descargarLog()" style="background:#004a4a">Descargar Log</button>
+            <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#000">Descargar CSV</button>
+            <button onclick="window.mostrarPagina('inventarios')" style="background:#444;">Cerrar OP</button>
         </div>`;
+}
+
+export function dibujarCreacionObjeto() {
+    let html = `<h2>Crear Nuevo Objeto</h2>
+    <div class="container-hex" style="max-width:500px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; margin:0 auto;">
+        <input type="text" id="new-name" class="search-bar" placeholder="Nombre del objeto...">
+        <textarea id="new-eff" class="search-bar" placeholder="Efecto..."></textarea>
+        <div style="display:flex; gap:10px;">
+            <select id="new-mat" class="search-bar" style="flex:1;"><option>Orgánico</option><option>Cristal</option><option>Metal</option><option>Sagrado</option></select>
+            <select id="new-rar" class="search-bar" style="flex:1;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
+        </div>
+        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:10px; background:#006400;">CREAR E INSERTAR</button>
+        <br><br><button onclick="window.mostrarPagina('op-menu')" style="width:100%; background:#444;">VOLVER</button>
+    </div>`;
+    document.getElementById('menu-op-central').innerHTML = html;
 }
