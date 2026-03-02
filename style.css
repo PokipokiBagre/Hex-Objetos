@@ -9,15 +9,9 @@ body {
 h1, h2, h3 { color: #d4af37; text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); text-align: center; }
 .container-hex { width: 95%; margin: 0 auto; max-width: 1600px; }
 
-/* --- NAVEGACIÓN (CENTRADO FORZADO) --- */
-nav { 
-    display: flex !important; justify-content: center !important; 
-    gap: 15px; margin-bottom: 30px; flex-wrap: wrap; width: 100%; 
-}
-.filter-group { 
-    display: flex !important; justify-content: center !important; 
-    gap: 10px; flex-wrap: wrap; margin-bottom: 15px; width: 100%; 
-}
+/* --- NAVEGACIÓN Y FILTROS (CENTRADO) --- */
+nav { display: flex !important; justify-content: center !important; gap: 15px; margin-bottom: 30px; flex-wrap: wrap; width: 100%; }
+.filter-group { display: flex !important; justify-content: center !important; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; width: 100%; }
 
 button { background: #2e004f; color: #d4af37; border: 1px solid #d4af37; padding: 10px 15px; cursor: pointer; font-family: 'Cinzel'; transition: 0.3s; }
 button:hover { background: #d4af37; color: #120024; }
@@ -30,26 +24,33 @@ button:hover { background: #d4af37; color: #120024; }
 .player-info { text-align: left; flex: 1; }
 .afinidad-tag { font-size: 0.8em; color: #aaa; margin: 5px 0; }
 .afinidad-tag span { color: #d4af37; font-weight: bold; text-transform: uppercase; }
+.player-desc { font-size: 0.85em; color: #eee; line-height: 1.4; }
 
-/* --- IMÁGENES (FILTRO DE CONTRASTE) --- */
+/* --- IMÁGENES Y MARCOS DE RAREZA --- */
 .top-items-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
 .top-item-card { background: #000; border: 1px solid rgba(212, 175, 55, 0.3); padding: 8px; text-align: center; border-radius: 4px; overflow: hidden; }
 .top-item-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; opacity: 0.8; transition: 0.3s; cursor: pointer; }
 
-/* Miniaturas en Tablas */
+/* Colores Solicitados */
+.rarity-raro { border: 2px solid #8a2be2 !important; box-shadow: 0 0 10px rgba(138, 43, 226, 0.5); }
+.rarity-legendario { border: 2px solid #d4af37 !important; box-shadow: 0 0 15px rgba(212, 175, 55, 0.6); }
+
 .cat-img { width: 45px; height: 45px; object-fit: cover; border: 1px solid #d4af37; border-radius: 4px; background: #000; opacity: 0.85; transition: 0.2s; cursor: pointer; }
 .cat-img:hover, .top-item-card img:hover { opacity: 1; transform: scale(1.05); }
 
-/* --- POP-UP DE IMAGEN (MODAL) --- */
+/* --- POP-UP MODERNO (CON BLUR Y MÓVIL) --- */
 .hex-modal { 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(0, 0, 0, 0.9); display: none; justify-content: center; 
-    align-items: center; z-index: 2000; cursor: zoom-out; 
+    background: rgba(18, 0, 36, 0.5); /* Fondo traslúcido */
+    backdrop-filter: blur(8px); /* Efecto desenfoque */
+    display: none; justify-content: center; align-items: center; z-index: 2000; 
 }
 .hex-modal img { 
-    max-width: 85vw; max-height: 80vh; border: 2px solid #d4af37; 
-    box-shadow: 0 0 30px #000; background: #120024; 
+    max-width: 80vw; max-height: 70vh; border: 2px solid #d4af37; 
+    box-shadow: 0 0 40px #000; background: #120024;
+    cursor: grab; position: relative; /* Para que sea movible */
 }
+.hex-modal img:active { cursor: grabbing; }
 
 /* --- TABLAS Y BUSCADOR --- */
 .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 15px; }
