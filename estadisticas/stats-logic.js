@@ -1,48 +1,32 @@
 import { statsGlobal } from './stats-state.js';
 
-export function calcularTodo(id) {
+export function calcularFicha(id) {
     const s = statsGlobal[id]; if(!s) return null;
-    const conv = (arr) => arr.map(v => parseInt(v) || 0);
 
-    // 1. Afinidades Finales FEEMPO
-    const f_b = conv(s.f_base);
-    const f_fin = f_b.map((b, i) => {
-        return b + conv(s.f_modDir)[i] + conv(s.f_aumPerm)[i] - conv(s.f_disPerm)[i] + 
-               conv(s.f_aumTemp)[i] - conv(s.f_disTemp)[i] + conv(s.f_aumHech)[i];
-    });
+    // 1. +1 Afinidad por cada hechizo de ese tipo aprendido
+    const getSpellBonus = (tipo) => s.learnedSpells.filter(sp => sp.afin.toLowerCase().includes(tipo.toLowerCase())).length;
 
-    // 2. Bonos RAD por Afinidades
-    const bonoRoja = Math.floor(f_fin[0] / 2); // Física / 2
-    const bonoAzul = Math.floor((f_fin[1] + f_fin[2] + f_fin[3] + f_fin[4]) / 4); // E-E-M-P promedio
+    const afinFin = {
+        fis: s.afin.fis + getSpellBonus('Física'),
+        ene: s.afin.ene + getSpellBonus('Energética'),
+        esp: s.afin.esp + getSpellBonus('Espiritual'),
+        man: s.afin.man + getSpellBonus('Mando'),
+        psi: s.afin.psi + getSpellBonus('Psíquica'),
+        osc: s.afin.osc + getSpellBonus('Oscura')
+    };
 
-    // 3. Vitalidad RAD Final (Roja, RojaMax, Azul, Oro)
-    const r_b = conv(s.r_base);
-    const r_fin = r_b.map((b, i) => {
-        // Aumento Permanente afecta a Base y Max simultáneamente
-        const perm = conv(s.r_aumPerm)[i];
-        const total = b + conv(s.r_modDir)[i] + perm - conv(s.r_disPerm)[i] + 
-                      conv(s.r_aumTemp)[i] - conv(s.r_disTemp)[i];
-        
-        if(i === 1) return total + bonoRoja; // Roja Max con bono
-        if(i === 2) return total + bonoAzul; // Azul con bono
-        return total;
-    });
+    // 2. Bonos Vitalidad: +1 Roja/2 Psi | +1 Azul/4 (Ene, Esp, Psi, Man)
+    const bRoja = Math.floor(afinFin.psi / 2);
+    const bAzul = Math.floor((afinFin.ene + afinFin.esp + afinFin.psi + afinFin.man) / 4);
 
-    // 4. Hex y Vex
-    const hexFinal = (parseInt(s.baseHV[0])||0) + (parseInt(s.baseHV[1])||0);
-    const vexMax = (parseInt(s.baseHV[2])||0) + (f_fin[5] * 75); // Vex Base + (Oscura * 75)
+    // 3. Capacidad Vex: (Oscura * 75) redondeado a 50
+    const rawVex = afinFin.osc * 75;
+    const bVex = Math.round(rawVex / 50) * 50;
 
     return {
-        nombre: s.nombreFull, bio: s.bio,
-        roja: r_fin[0], rojaMax: r_fin[1],
-        azul: r_fin[2], oro: r_fin[3],
-        hex: hexFinal, vex: vexMax, vexActual: parseInt(s.baseHV[2])||0,
-        afin: f_fin,
-        spells: s.spells.nom.map((n, i) => ({ nom: n, afin: s.spells.afin[i], hex: s.spells.hex[i] })).filter(x => x.nom)
+        roja: s.vida.actual, rojaMax: s.vida.maxBase + bRoja,
+        azul: s.vida.azul + bAzul, oro: s.vida.oro,
+        hex: s.hex, vexMax: s.vex + bVex, vexActual: s.vex,
+        afin: afinFin, spells: s.learnedSpells
     };
-}
-
-export function generarLineaCSV(id, n, b) {
-    // Genera una línea vacía con los 26 campos para el Diseñador
-    return `"${id},${n},${b}","0,0,0,0","0,0,0,0,0,0","0,0,0,0,0,0","0,0,0,0,0,0","0,0,0,0,0,0","0,0,0,0,0,0","0,0,0,0,0,0","0,0,0,0,0,0","","","","0,11,7,0","0,0,0,0,0,0,0,0,0,0,0,0,0"\n`;
 }
