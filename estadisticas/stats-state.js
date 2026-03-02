@@ -7,5 +7,5 @@ export let estadoUI = {
 };
 
 export function guardar() { 
-    localStorage.setItem('hex_stats_v4', JSON.stringify(statsGlobal)); 
+    localStorage.setItem('hex_stats_v5', JSON.stringify(statsGlobal)); 
 }
