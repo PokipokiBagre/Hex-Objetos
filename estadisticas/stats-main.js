@@ -84,7 +84,6 @@ window.toggleEstado = (estadoId) => {
     repintarConScroll('op');
 };
 
-// NUEVA FUNCIÓN: CLONACIÓN TÁCTICA DE ESTADOS Y BASES
 window.ejecutarClonacion = (tipo) => {
     const targetSelect = document.getElementById('clon-target');
     if(!targetSelect) return;
@@ -105,35 +104,26 @@ window.ejecutarClonacion = (tipo) => {
     const source = statsGlobal[sourceName];
     const target = statsGlobal[targetName];
 
-    // 1. Siempre se copian los Objetos Alterables (Buffs y Estados)
     target.buffs = JSON.parse(JSON.stringify(source.buffs));
     target.estados = JSON.parse(JSON.stringify(source.estados));
 
-    // 2. Si es 'Completo', se sobrescribe toda la anatomía del personaje
     if (tipo === 'completo') {
         target.vidaRojaActual = source.vidaRojaActual;
         target.vidaRojaMax = source.vidaRojaMax;
-        
         target.vidaAzul = source.vidaAzul;
-        target.baseVidaAzul = source.baseVidaAzul;
-        
         target.guardaDorada = source.guardaDorada;
-        target.baseGuardaDorada = source.baseGuardaDorada;
-
         target.afinidades = JSON.parse(JSON.stringify(source.afinidades));
         target.danoRojo = source.danoRojo;
         target.danoAzul = source.danoAzul;
         target.elimDorada = source.elimDorada;
-        
         target.hex = source.hex;
         target.vex = source.vex;
     }
 
     guardar();
-    alert(`Transferencia completada. ${targetName} ha sido sobreescrito con los datos de ${sourceName}.`);
-    
-    targetSelect.value = ""; // Resetea el dropdown
-    repintarConScroll('detalle'); // Refresca visualmente sin salto
+    alert(`Transferencia completada. ${targetName} ha sido actualizado.`);
+    targetSelect.value = "";
+    repintarConScroll('detalle');
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -144,7 +134,7 @@ window.ejecutarCreacionNPC = () => {
     statsGlobal[nombre] = {
         isPlayer: false, isNPC: true, hex: parseInt(document.getElementById('npc-hex').value) || 0, vex: parseInt(document.getElementById('npc-vex').value) || 0,
         vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0, vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
-        vidaAzul: vidaA, baseVidaAzul: vidaA, guardaDorada: guardaD, baseGuardaDorada: guardaD,
+        vidaAzul: vidaA, guardaDorada: guardaD,
         danoRojo: parseInt(document.getElementById('npc-dr').value) || 0, danoAzul: parseInt(document.getElementById('npc-da').value) || 0, elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
         afinidades: { fisica: parseInt(document.getElementById('npc-fis').value) || 0, energetica: parseInt(document.getElementById('npc-ene').value) || 0, espiritual: parseInt(document.getElementById('npc-esp').value) || 0, mando: parseInt(document.getElementById('npc-man').value) || 0, psiquica: parseInt(document.getElementById('npc-psi').value) || 0, oscura: parseInt(document.getElementById('npc-osc').value) || 0 },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
