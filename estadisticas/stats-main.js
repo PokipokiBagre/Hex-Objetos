@@ -1,7 +1,7 @@
 import { statsGlobal, estadoUI, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
-import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, calcularVidaAzulMax } from './stats-logic.js';
+import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax } from './stats-logic.js';
 
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
@@ -30,22 +30,20 @@ window.abrirMenuOP = () => {
 };
 
 window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = 'op'; refrescarVistas();
+    estadoUI.vistaActual = 'op';
+    refrescarVistas();
     const sub = document.getElementById('sub-vista-op');
     if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear();
     if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
 };
 
-// NUEVA FUNCIÓN MAESTRA: PROCESA LOS INPUTS MANUALES Y ASEGURA QUE SE RESPETEN LÍMITES DE VIDA
 window.cambioManual = (statId, valorStr, tipoAccion) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
-    const maxAzulPrev = calcularVidaAzulMax(p);
     
     let val = parseInt(valorStr);
-    if (isNaN(val)) val = 0; // Previene "NaN" si el usuario borra la celda por completo
+    if (isNaN(val)) val = 0; 
 
-    // Inyecta el valor directo dependiendo de dónde vino el input
     if (tipoAccion === 'buff') p.buffs[statId] = val;
     else if (tipoAccion === 'baseTop') p[statId] = Math.max(0, val);
     else if (tipoAccion === 'baseAfin') p.afinidades[statId] = Math.max(0, val);
@@ -55,86 +53,69 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
     }
     else if (tipoAccion === 'directo') p[statId] = Math.max(0, val);
     
-    // Auto-Cura/Resta la vitalidad actual si los LÍMITES cambian drásticamente
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
-    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
-
-    // Evita que la Vida Actual supere el nuevo Límite (si este se redujo manualmente)
-    const limiteReal = calcularVidaRojaMax(p);
-    if (p.vidaRojaActual > limiteReal) p.vidaRojaActual = limiteReal;
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
 
     guardar();
     if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle');
     else repintarConScroll('op');
 };
 
-// 1. Modifica Buffs Temporales (Botones)
 window.modificarBuff = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
+    const maxRojoPrev = calcularVidaRojaMax(p);
 
     p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
-    
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
-    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
 
     guardar(); repintarConScroll('detalle');
 };
 
-// 2. Modifica Base Directa (Botones)
 window.modBaseTop = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
     p[statId] = Math.max(0, (p[statId] || 0) + cantidad);
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('op');
 };
 
-// 3. Modifica Afinidades Base (Botones)
 window.modBaseAfin = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
+    const maxRojoPrev = calcularVidaRojaMax(p);
 
     p.afinidades[statId] = Math.max(0, (p.afinidades[statId] || 0) + cantidad);
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
-    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('op');
 };
 
-// 4. Modifica Hechizos Top (Botones)
 window.modSpellTop = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     if(!p.hechizos) p.hechizos = {};
     const maxRojoPrev = calcularVidaRojaMax(p);
     
-    p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
-    
+    p.hechizos[statId] = (p.hechizos[statId] || 0) + Math.max(0, cantidad); 
+    if(cantidad < 0) p.hechizos[statId] = Math.max(0, (p.hechizos[statId] || 0) + cantidad);
+    else p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
+
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('op');
 };
 
-// 5. Modifica Afinidades Hechizos (Botones)
 window.modSpellAfin = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     if(!p.hechizos) p.hechizos = {};
-    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
+    const maxRojoPrev = calcularVidaRojaMax(p);
 
     p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
-    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
-    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     guardar(); repintarConScroll('op');
 };
 
@@ -148,7 +129,6 @@ window.modLibre = (statId, cantidad) => {
     p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar(); repintarConScroll('detalle');
 };
 
-// Formulario de creación de NPC
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
     if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); }
