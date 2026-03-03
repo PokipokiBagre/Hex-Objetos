@@ -6,13 +6,14 @@
     <link rel="stylesheet" href="../stylestats.css">
 </head>
 <body>
-<div class="nav-bar">
-        <div style="display: flex; gap: 10px;">
+<div class="nav-bar" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gold-dim); padding-bottom: 15px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button onclick="window.location.href='../index.html'" style="background: #111; border-color: #555;">⬅ Volver al Inicio</button>
             <button onclick="window.mostrarCatalogo()">Volver al Catálogo</button>
+            <button onclick="window.forzarSincronizacion()" style="background: #004a00; border-color: #32cd32; color: #fff; font-weight: bold; box-shadow: 0 0 10px rgba(0,255,0,0.2);">ACTUALIZAR</button>
         </div>
-        <h2>FICHA DE ESTADO HEX</h2>
-        <button onclick="window.abrirMenuOP()">Acceso OP</button>
+        <h2 style="margin: 0;">FICHA DE ESTADO HEX</h2>
+        <button onclick="window.abrirMenuOP()" style="border-style: dashed;">Acceso OP</button>
     </div>
 
     <div id="vista-catalogo" class="catalogo-grid"></div>
@@ -33,4 +34,5 @@
     <script type="module" src="stats-main.js"></script>
 </body>
 </html>
+
 
