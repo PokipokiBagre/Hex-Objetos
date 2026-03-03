@@ -47,9 +47,12 @@ window.toggleIdentidad = (prop) => {
     guardar(); repintarConScroll('op');
 };
 
+// CONEXIÓN MAESTRA: Todo cambio recálcula Vida Roja y Vida Azul
 window.cambioManual = (statId, valorStr, tipoAccion) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
+    const maxAzulPrev = calcularVidaAzulMax(p);
+    
     let val = parseInt(valorStr); if (isNaN(val)) val = 0; 
 
     if (tipoAccion === 'buff') p.buffs[statId] = val;
@@ -59,7 +62,11 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
     else if (tipoAccion === 'directo') p[statId] = Math.max(0, val);
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
+    
     if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    
     const limiteReal = calcularVidaRojaMax(p);
     if (p.vidaRojaActual > limiteReal) p.vidaRojaActual = limiteReal;
 
@@ -69,10 +76,14 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
 
 window.modificarBuff = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    const maxRojoPrev = calcularVidaRojaMax(p);
+    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
     p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
+    
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
     if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    
     guardar(); repintarConScroll('detalle');
 };
 
@@ -87,10 +98,14 @@ window.modBaseTop = (statId, cantidad) => {
 
 window.modBaseAfin = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    const maxRojoPrev = calcularVidaRojaMax(p);
+    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
+    
     p.afinidades[statId] = Math.max(0, (p.afinidades[statId] || 0) + cantidad);
+    
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
     if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
     guardar(); repintarConScroll('op');
 };
 
@@ -105,10 +120,14 @@ window.modSpellTop = (statId, cantidad) => {
 
 window.modSpellAfin = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    const maxRojoPrev = calcularVidaRojaMax(p);
+    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
+    
     p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
+    
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
     if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
     guardar(); repintarConScroll('op');
 };
 
@@ -138,7 +157,7 @@ window.modGoldExtra = (cantidad) => {
 
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
-    if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + Math.max(-Math.abs(val), cantidad)); }
+    if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); }
 };
 
 window.modEstado = (estadoId, cantidad) => {
@@ -195,15 +214,12 @@ window.ejecutarCreacionNPC = () => {
     guardar(); window.abrirDetalle(nombre); window.scrollTo(0,0);
 };
 
-// ACTUALIZACIÓN SILENCIOSA Y CONTEXTUAL
 window.forzarSincronizacion = async () => {
     if(confirm("¿Seguro que deseas Actualizar? Esto descargará la última versión maestra, borrando NPCs locales y efectos de esta sesión.")) {
         const prevScroll = window.scrollY;
         await cargarTodoDesdeCSV(); 
-        
-        // Si estábamos viendo a un PJ y ese PJ sigue existiendo en el CSV descargado, lo dejamos ahí sin molestar
         if (estadoUI.personajeSeleccionado && !statsGlobal[estadoUI.personajeSeleccionado]) {
-            window.mostrarCatalogo(); // Si el personaje fue borrado, forzamos la ida al catálogo
+            window.mostrarCatalogo(); 
         } else {
             refrescarVistas();
             window.scrollTo(0, prevScroll);
