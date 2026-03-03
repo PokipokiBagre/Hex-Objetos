@@ -1,5 +1,5 @@
 import { statsGlobal, estadoUI, listaEstados, guardar } from './stats-state.js';
-import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
+import { cargarTodoDesdeCSV, procesarTextoCSV, cargarDiccionarioEstados } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, calcularVidaAzulMax } from './stats-logic.js';
 
@@ -138,7 +138,7 @@ window.modGoldExtra = (cantidad) => {
 
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
-    if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); }
+    if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + Math.max(-Math.abs(val), cantidad)); }
 };
 
 window.modEstado = (estadoId, cantidad) => {
@@ -179,7 +179,6 @@ window.ejecutarCreacionNPC = () => {
     if(!nombre) return alert("Falta dar un nombre.");
     const vidaA = parseInt(document.getElementById('npc-va').value) || 0; const guardaD = parseInt(document.getElementById('npc-gd').value) || 0;
     
-    // CREACIÓN DINÁMICA DE ESTADOS EN EL NUEVO PERSONAJE
     let stInit = {};
     listaEstados.forEach(e => { stInit[e.id] = (e.tipo === 'numero') ? 0 : false; });
 
@@ -193,12 +192,22 @@ window.ejecutarCreacionNPC = () => {
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         estados: stInit
     };
-    guardar(); alert("¡Personaje Forjado!"); window.abrirDetalle(nombre); window.scrollTo(0,0);
+    guardar(); window.abrirDetalle(nombre); window.scrollTo(0,0);
 };
 
+// ACTUALIZACIÓN SILENCIOSA Y CONTEXTUAL
 window.forzarSincronizacion = async () => {
     if(confirm("¿Seguro que deseas Actualizar? Esto descargará la última versión maestra, borrando NPCs locales y efectos de esta sesión.")) {
-        await cargarTodoDesdeCSV(); alert("Actualización completada."); window.mostrarCatalogo();
+        const prevScroll = window.scrollY;
+        await cargarTodoDesdeCSV(); 
+        
+        // Si estábamos viendo a un PJ y ese PJ sigue existiendo en el CSV descargado, lo dejamos ahí sin molestar
+        if (estadoUI.personajeSeleccionado && !statsGlobal[estadoUI.personajeSeleccionado]) {
+            window.mostrarCatalogo(); // Si el personaje fue borrado, forzamos la ida al catálogo
+        } else {
+            refrescarVistas();
+            window.scrollTo(0, prevScroll);
+        }
     }
 };
 
@@ -208,7 +217,7 @@ window.triggerSubirCSV = () => {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv';
     input.onchange = (e) => {
         const archivo = e.target.files[0]; if (!archivo) return; const lector = new FileReader();
-        lector.onload = function(ev) { procesarTextoCSV(ev.target.result); alert("CSV inyectado."); window.mostrarCatalogo(); };
+        lector.onload = function(ev) { procesarTextoCSV(ev.target.result); window.mostrarCatalogo(); };
         lector.readAsText(archivo);
     }; input.click();
 };
@@ -221,7 +230,12 @@ function refrescarVistas() {
 }
 
 async function iniciar() {
-    try { const cache = localStorage.getItem('hex_stats_v2'); if (!cache) await cargarTodoDesdeCSV(); else { Object.assign(statsGlobal, JSON.parse(cache).stats); } } 
-    catch (error) { console.error("Error crítico:", error); } finally { refrescarVistas(); }
+    try { 
+        await cargarDiccionarioEstados();
+        const cache = localStorage.getItem('hex_stats_v2'); 
+        if (!cache) { await cargarTodoDesdeCSV(); } else { Object.assign(statsGlobal, JSON.parse(cache).stats); } 
+    } 
+    catch (error) { console.error("Error crítico:", error); } 
+    finally { refrescarVistas(); }
 }
 iniciar();
