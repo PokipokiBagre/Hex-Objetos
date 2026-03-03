@@ -11,15 +11,11 @@ function repintarConScroll(vista) {
     if (container) {
         const h = container.getBoundingClientRect().height;
         container.style.minHeight = h + 'px';
-        
-        if (vista === 'detalle') dibujarDetalle();
-        else container.innerHTML = dibujarFormularioEditar();
-        
+        if (vista === 'detalle') dibujarDetalle(); else container.innerHTML = dibujarFormularioEditar();
         window.scrollTo(0, scrollY);
         requestAnimationFrame(() => container.style.minHeight = '');
     } else {
-        refrescarVistas();
-        window.scrollTo(0, scrollY);
+        refrescarVistas(); window.scrollTo(0, scrollY);
     }
 }
 
@@ -34,70 +30,125 @@ window.abrirMenuOP = () => {
 };
 
 window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = 'op';
-    refrescarVistas();
+    estadoUI.vistaActual = 'op'; refrescarVistas();
     const sub = document.getElementById('sub-vista-op');
     if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear();
     if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
 };
 
-// 1. Modifica Buffs Temporales (Desde Afuera)
-window.modificarBuff = (statId, cantidad) => {
+// NUEVA FUNCIÓN MAESTRA: PROCESA LOS INPUTS MANUALES Y ASEGURA QUE SE RESPETEN LÍMITES DE VIDA
+window.cambioManual = (statId, valorStr, tipoAccion) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
     const maxAzulPrev = calcularVidaAzulMax(p);
+    
+    let val = parseInt(valorStr);
+    if (isNaN(val)) val = 0; // Previene "NaN" si el usuario borra la celda por completo
+
+    // Inyecta el valor directo dependiendo de dónde vino el input
+    if (tipoAccion === 'buff') p.buffs[statId] = val;
+    else if (tipoAccion === 'baseTop') p[statId] = Math.max(0, val);
+    else if (tipoAccion === 'baseAfin') p.afinidades[statId] = Math.max(0, val);
+    else if (tipoAccion === 'spellTop' || tipoAccion === 'spellAfin') {
+        if(!p.hechizos) p.hechizos = {};
+        p.hechizos[statId] = val;
+    }
+    else if (tipoAccion === 'directo') p[statId] = Math.max(0, val);
+    
+    // Auto-Cura/Resta la vitalidad actual si los LÍMITES cambian drásticamente
+    const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+
+    // Evita que la Vida Actual supere el nuevo Límite (si este se redujo manualmente)
+    const limiteReal = calcularVidaRojaMax(p);
+    if (p.vidaRojaActual > limiteReal) p.vidaRojaActual = limiteReal;
+
+    guardar();
+    if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle');
+    else repintarConScroll('op');
+};
+
+// 1. Modifica Buffs Temporales (Botones)
+window.modificarBuff = (statId, cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
 
     p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
     const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    if (deltaAzul !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
 
     guardar(); repintarConScroll('detalle');
 };
 
-// 2. Modifica Base Directa (Desde Editor Interno)
+// 2. Modifica Base Directa (Botones)
 window.modBaseTop = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     const maxRojoPrev = calcularVidaRojaMax(p);
-    
     p[statId] = Math.max(0, (p[statId] || 0) + cantidad);
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
     if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    
     guardar(); repintarConScroll('op');
 };
 
-// 3. Modifica Afinidades Base (Desde Editor Interno)
+// 3. Modifica Afinidades Base (Botones)
 window.modBaseAfin = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    const maxRojoPrev = calcularVidaRojaMax(p);
-    const maxAzulPrev = calcularVidaAzulMax(p);
+    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
 
     p.afinidades[statId] = Math.max(0, (p.afinidades[statId] || 0) + cantidad);
     
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
     const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    if (deltaAzul !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+    guardar(); repintarConScroll('op');
+};
 
+// 4. Modifica Hechizos Top (Botones)
+window.modSpellTop = (statId, cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    if(!p.hechizos) p.hechizos = {};
+    const maxRojoPrev = calcularVidaRojaMax(p);
+    
+    p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
+    
+    const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    guardar(); repintarConScroll('op');
+};
+
+// 5. Modifica Afinidades Hechizos (Botones)
+window.modSpellAfin = (statId, cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    if(!p.hechizos) p.hechizos = {};
+    const maxRojoPrev = calcularVidaRojaMax(p); const maxAzulPrev = calcularVidaAzulMax(p);
+
+    p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad;
+    
+    const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
+    if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul > 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
     guardar(); repintarConScroll('op');
 };
 
 window.modificarDirecto = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar();
-    repintarConScroll('op');
+    p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar(); repintarConScroll('op');
 };
 
 window.modLibre = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar();
-    repintarConScroll('detalle');
+    p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar(); repintarConScroll('detalle');
 };
 
+// Formulario de creación de NPC
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
     if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); }
@@ -105,36 +156,24 @@ window.modForm = (inputId, cantidad) => {
 
 window.modEstado = (estadoId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    p.estados[estadoId] = Math.max(0, (p.estados[estadoId] || 0) + cantidad); guardar();
-    repintarConScroll('op');
+    p.estados[estadoId] = Math.max(0, (p.estados[estadoId] || 0) + cantidad); guardar(); repintarConScroll('op');
 };
 
 window.toggleEstado = (estadoId) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    p.estados[estadoId] = !p.estados[estadoId]; guardar();
-    repintarConScroll('op');
+    p.estados[estadoId] = !p.estados[estadoId]; guardar(); repintarConScroll('op');
 };
 
 window.ejecutarClonacion = (tipo) => {
     const sourceSelect = document.getElementById('clon-source');
     if(!sourceSelect) return;
-    
     const sourceName = sourceSelect.value;
-    if(!sourceName) {
-        alert("Por favor, selecciona un personaje de origen en la lista.");
-        return;
-    }
-
-    const targetName = estadoUI.personajeSeleccionado;
-    const msg = tipo === 'estados' 
-        ? `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?` 
-        : `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName} (sobrescribiendo la vida base, daño y afinidades originales de ${targetName})?`;
-
+    if(!sourceName) { alert("Por favor, selecciona un personaje de origen."); return; }
+    const targetName = estadoUI.personajeSeleccionado; 
+    const msg = tipo === 'estados' ? `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?` : `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName}?`;
     if(!confirm(msg)) return;
 
-    const source = statsGlobal[sourceName];
-    const target = statsGlobal[targetName];
-
+    const source = statsGlobal[sourceName]; const target = statsGlobal[targetName];
     target.buffs = JSON.parse(JSON.stringify(source.buffs));
     target.estados = JSON.parse(JSON.stringify(source.estados));
 
@@ -143,25 +182,24 @@ window.ejecutarClonacion = (tipo) => {
         target.vidaAzul = source.vidaAzul; target.baseVidaAzul = source.baseVidaAzul; 
         target.guardaDorada = source.guardaDorada; target.baseGuardaDorada = source.baseGuardaDorada;
         target.afinidades = JSON.parse(JSON.stringify(source.afinidades));
+        target.hechizos = JSON.parse(JSON.stringify(source.hechizos || {}));
         target.danoRojo = source.danoRojo; target.danoAzul = source.danoAzul; target.elimDorada = source.elimDorada;
         target.hex = source.hex; target.vex = source.vex;
     }
-
-    guardar(); alert(`Importación completada. ${targetName} ha recibido los datos de ${sourceName}.`);
-    sourceSelect.value = ""; repintarConScroll('detalle'); 
+    guardar(); alert(`Importación completada.`); sourceSelect.value = ""; repintarConScroll('detalle'); 
 };
 
 window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
-    if(!nombre) return alert("Falta dar un nombre al personaje.");
+    if(!nombre) return alert("Falta dar un nombre.");
     const vidaA = parseInt(document.getElementById('npc-va').value) || 0; const guardaD = parseInt(document.getElementById('npc-gd').value) || 0;
-
     statsGlobal[nombre] = {
         isPlayer: false, isNPC: true, hex: parseInt(document.getElementById('npc-hex').value) || 0, vex: parseInt(document.getElementById('npc-vex').value) || 0,
         vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0, vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
         vidaAzul: vidaA, baseVidaAzul: vidaA, guardaDorada: guardaD, baseGuardaDorada: guardaD,
         danoRojo: parseInt(document.getElementById('npc-dr').value) || 0, danoAzul: parseInt(document.getElementById('npc-da').value) || 0, elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
         afinidades: { fisica: parseInt(document.getElementById('npc-fis').value) || 0, energetica: parseInt(document.getElementById('npc-ene').value) || 0, espiritual: parseInt(document.getElementById('npc-esp').value) || 0, mando: parseInt(document.getElementById('npc-man').value) || 0, psiquica: parseInt(document.getElementById('npc-psi').value) || 0, oscura: parseInt(document.getElementById('npc-osc').value) || 0 },
+        hechizos: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
         estados: { veneno: 0, radiacion: 0, maldito: false, incapacitado: false, debilitado: false, angustia: false, petrificacion: false, secuestrado: false, huesos: false, comestible: false, cifrado: false, inversion: false, verde: false }
     };
@@ -169,10 +207,8 @@ window.ejecutarCreacionNPC = () => {
 };
 
 window.forzarSincronizacion = async () => {
-    if(confirm("¿Seguro que deseas Actualizar? Esto descargará la última versión maestra, pero borrará los NPCs locales, efectos de estado y buffs temporales de esta sesión.")) {
-        await cargarTodoDesdeCSV(); 
-        alert("Actualización completada exitosamente."); 
-        window.mostrarCatalogo();
+    if(confirm("¿Seguro que deseas Actualizar? Esto descargará la última versión maestra, borrando NPCs locales y efectos de esta sesión.")) {
+        await cargarTodoDesdeCSV(); alert("Actualización completada."); window.mostrarCatalogo();
     }
 };
 
@@ -198,5 +234,4 @@ async function iniciar() {
     try { const cache = localStorage.getItem('hex_stats_v2'); if (!cache) await cargarTodoDesdeCSV(); else { Object.assign(statsGlobal, JSON.parse(cache).stats); } } 
     catch (error) { console.error("Error crítico:", error); } finally { refrescarVistas(); }
 }
-
 iniciar();
