@@ -1,41 +1,25 @@
 import { statsGlobal } from './stats-state.js';
 
-export function calcularFichaCompleta(id) {
+export function calcularFicha(id) {
     const s = statsGlobal[id]; if(!s) return null;
 
-    // 1. BONO: +1 Afinidad por cada hechizo de ese tipo aprendido
-    const getBonoPorHechizos = (tipo) => s.hechizos.filter(h => h.afinidad.toLowerCase().includes(tipo.toLowerCase())).length;
+    // +1 Afin por cada hechizo de ese tipo aprendido
+    const getBonus = (tipo) => s.hechizos.afin.filter(a => a.toLowerCase().includes(tipo.toLowerCase())).length;
 
-    const afinidadesFinales = {
-        fisica: s.afin.fis + getBonoPorHechizos('Física'),
-        energetica: s.afin.ene + getBonoPorHechizos('Energética'),
-        espiritual: s.afin.esp + getBonoPorHechizos('Espiritual'),
-        mando: s.afin.man + getBonoPorHechizos('Mando'),
-        psiquica: s.afin.psi + getBonoPorHechizos('Psíquica'),
-        oscura: s.afin.osc + getBonoPorHechizos('Oscura')
+    const fFin = {
+        fis: s.fi + getBonus('Física'), ene: s.en + getBonus('Energética'),
+        esp: s.es + getBonus('Espiritual'), man: s.ma + getBonus('Mando'),
+        psi: s.ps + getBonus('Psíquica'), osc: s.os + getBonus('Oscura')
     };
 
-    // 2. VITALIDAD RAD: Base 10 + Bonos
-    // Roja: +1 Corazón por cada 2 afinidades Psíquicas
-    const bonoRoja = Math.floor(afinidadesFinales.psiquica / 2);
-    // Azul: +1 Corazón por cada 4 de (Ene, Esp, Psi, Man)
-    const bonoAzul = Math.floor((afinidadesFinales.energetica + afinidadesFinales.espiritual + afinidadesFinales.psiquica + afinidadesFinales.mando) / 4);
-
-    // 3. VEX: +75 por cada punto de Oscura, redondeado a 50
-    const rawVexBonus = afinidadesFinales.oscura * 75;
-    const bonoVex = Math.round(rawVexBonus / 50) * 50;
+    // Bonos RAD: +1 Roja/2 Psi | +1 Azul/4 (Ene, Esp, Psi, Man)
+    const bRoja = Math.floor(fFin.psi / 2);
+    const bAzul = Math.floor((fFin.ene + fFin.esp + fFin.psi + fFin.man) / 4);
 
     return {
-        id: s.id,
-        roja: s.vida.actual,
-        rojaMax: s.vida.maxBase + bonoRoja,
-        azul: s.vida.azul + bonoAzul,
-        oro: s.vida.oro,
-        hex: s.hex,
-        vexMax: s.vex + bonoVex,
-        vexActual: s.vex,
-        afin: afinidadesFinales,
-        hechizos: s.hechizos,
-        rad: s.rad
+        hx: s.hx, r: s.r, rm: s.rm + bRoja, az: s.az + bAzul, gd: s.gd,
+        afin: fFin,
+        spellCount: s.hechizos.noms.length,
+        spells: s.hechizos.noms.map((n, i) => ({ n, a: s.hechizos.afin[i], c: s.hechizos.cost[i] })).filter(x => x.n)
     };
 }
