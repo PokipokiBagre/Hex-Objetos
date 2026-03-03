@@ -85,45 +85,54 @@ window.toggleEstado = (estadoId) => {
 };
 
 window.ejecutarClonacion = (tipo) => {
-    const targetSelect = document.getElementById('clon-target');
-    if(!targetSelect) return;
+    const sourceSelect = document.getElementById('clon-source');
+    if(!sourceSelect) return;
     
-    const targetName = targetSelect.value;
-    if(!targetName) {
-        alert("Por favor, selecciona un personaje objetivo primero en la lista.");
+    const sourceName = sourceSelect.value;
+    if(!sourceName) {
+        alert("Por favor, selecciona un personaje de origen en la lista.");
         return;
     }
 
-    const sourceName = estadoUI.personajeSeleccionado;
+    const targetName = estadoUI.personajeSeleccionado; // El personaje que estás viendo
     const msg = tipo === 'estados' 
-        ? `¿Seguro que deseas copiar solo los BUFFS y ESTADOS ALTERADOS de ${sourceName} a ${targetName}?` 
-        : `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName} (incluyendo su vida base, daño y afinidades originales)?`;
+        ? `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?` 
+        : `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName} (sobrescribiendo la vida base, daño y afinidades originales de ${targetName})?`;
 
     if(!confirm(msg)) return;
 
     const source = statsGlobal[sourceName];
     const target = statsGlobal[targetName];
 
+    // 1. Siempre se copian los Objetos Alterables (Buffs y Estados)
     target.buffs = JSON.parse(JSON.stringify(source.buffs));
     target.estados = JSON.parse(JSON.stringify(source.estados));
 
+    // 2. Si es 'Completo', se sobrescribe toda la anatomía del personaje
     if (tipo === 'completo') {
         target.vidaRojaActual = source.vidaRojaActual;
         target.vidaRojaMax = source.vidaRojaMax;
+        
         target.vidaAzul = source.vidaAzul;
+        target.baseVidaAzul = source.baseVidaAzul; // Importante para que no se desborde erróneamente
+        
         target.guardaDorada = source.guardaDorada;
+        target.baseGuardaDorada = source.baseGuardaDorada;
+
         target.afinidades = JSON.parse(JSON.stringify(source.afinidades));
         target.danoRojo = source.danoRojo;
         target.danoAzul = source.danoAzul;
         target.elimDorada = source.elimDorada;
+        
         target.hex = source.hex;
         target.vex = source.vex;
     }
 
     guardar();
-    alert(`Transferencia completada. ${targetName} ha sido actualizado.`);
-    targetSelect.value = "";
-    repintarConScroll('detalle');
+    alert(`Importación completada. ${targetName} ha recibido los datos de ${sourceName}.`);
+    
+    sourceSelect.value = ""; // Resetea el dropdown
+    repintarConScroll('detalle'); // Refresca visualmente sin salto
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -175,3 +184,4 @@ async function iniciar() {
 }
 
 iniciar();
+
