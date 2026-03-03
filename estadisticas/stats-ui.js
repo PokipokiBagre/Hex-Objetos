@@ -3,7 +3,6 @@ import { calcularVidaRojaMax, calcularVexMax } from './stats-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 
-// Lógica para mostrar la suma total y el texto verde/rojo
 const calcTotal = (base, buff) => (base || 0) + (buff || 0);
 const bText = (val) => val > 0 ? `<span style="color:#00ff00; font-size:0.6em; vertical-align:middle;"> (+${val})</span>` : (val < 0 ? `<span style="color:red; font-size:0.6em; vertical-align:middle;"> (${val})</span>` : '');
 
@@ -40,7 +39,7 @@ export function dibujarDetalle() {
     let corazonesAzulesHTML = ''; for(let i=0; i < p.vidaAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`;
     let guardasHTML = ''; for(let i=0; i < p.guardaDorada; i++) guardasHTML += `<div class="guard-gold"></div>`;
 
-    contenedor.innerHTML = `
+    let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px;">
         <img src="../img/imgpersonajes/${normalizar(nombre)}icon.png" style="width: 120px; border-radius: 50%; border: 3px solid #d4af37;" onerror="${imgError}">
         <div>
@@ -79,7 +78,44 @@ export function dibujarDetalle() {
                 <div class="affinity-box"><label>Oscura</label><span>${calcTotal(p.afinidades.oscura, p.buffs.oscura)}${bText(p.buffs.oscura)}</span></div>
             </div>
         </div>
+    </div>
+    
+    <div style="margin-top:30px; background:#0a0014; border:1px solid var(--gold); padding:20px; border-radius:8px;">
+        <h3 style="margin-top:0; color:var(--gold); text-align:center;">Acciones Rápidas (Públicas)</h3>
+        <p style="text-align:center; color:#aaa; font-size:0.8em;">Alteraciones directas sin validación OP.</p>
+        <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+            <div class="edit-card">
+                <h4>Ganancia HEX</h4>
+                <div class="btn-row">
+                    <button class="btn-plus" style="background:#004a4a; border-color:#00ffff;" onclick="window.modLibre('hex', 300)">+300 Inicial</button>
+                    <button class="btn-minus" onclick="window.modLibre('hex', -50)">-50</button>
+                </div>
+            </div>
+            <div class="edit-card">
+                <h4>Vida Roja (Actual)</h4>
+                <div class="btn-row">
+                    <button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Curar)</button>
+                    <button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button>
+                </div>
+            </div>
+            <div class="edit-card">
+                <h4>Corazones Azules</h4>
+                <div class="btn-row">
+                    <button class="btn-plus" onclick="window.modLibre('vidaAzul', 1)">+1</button>
+                    <button class="btn-minus" onclick="window.modLibre('vidaAzul', -1)">-1</button>
+                </div>
+            </div>
+            <div class="edit-card">
+                <h4>Guarda Dorada</h4>
+                <div class="btn-row">
+                    <button class="btn-plus" onclick="window.modLibre('guardaDorada', 1)">+1</button>
+                    <button class="btn-minus" onclick="window.modLibre('guardaDorada', -1)">-1</button>
+                </div>
+            </div>
+        </div>
     </div>`;
+
+    contenedor.innerHTML = html;
 }
 
 export function dibujarMenuOP() {
@@ -96,41 +132,34 @@ export function dibujarMenuOP() {
 }
 
 export function dibujarFormularioCrear() {
+    // Array exhaustivo de campos para Crear NPC
     const fields = [
-        { id: 'npc-hex', label: 'HEX Inicial' },
-        { id: 'npc-vex', label: 'VEX Inicial' },
-        { id: 'npc-vr', label: 'Corazones Rojos Máx' },
-        { id: 'npc-va', label: 'Corazones Azules' }
+        { id: 'npc-hex', label: 'HEX Inicial', val: 0 }, { id: 'npc-vex', label: 'VEX Inicial', val: 0 },
+        { id: 'npc-vra', label: 'Corazones Rojos (Actual)', val: 10 }, { id: 'npc-vrm', label: 'Corazones Rojos (Límite Máx)', val: 10 },
+        { id: 'npc-va', label: 'Corazones Azules', val: 0 }, { id: 'npc-gd', label: 'Guarda Dorada', val: 0 },
+        { id: 'npc-dr', label: 'Daño Rojo', val: 0 }, { id: 'npc-da', label: 'Daño Azul', val: 0 }, { id: 'npc-ed', label: 'Elim. Dorada', val: 0 },
+        { id: 'npc-fis', label: 'Afin. Física', val: 0 }, { id: 'npc-ene', label: 'Afin. Energética', val: 0 }, { id: 'npc-esp', label: 'Afin. Espiritual', val: 0 },
+        { id: 'npc-man', label: 'Afin. Mando', val: 0 }, { id: 'npc-psi', label: 'Afin. Psíquica', val: 0 }, { id: 'npc-osc', label: 'Afin. Oscura', val: 0 }
     ];
     
     let html = `
-    <div style="text-align:center; max-width:900px; margin:0 auto;">
-        <h3 style="margin-top:0; color:var(--gold)">Crear NPC Manual</h3>
+    <div style="text-align:center; max-width:1000px; margin:0 auto;">
+        <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje / NPC</h3>
         <input type="text" id="npc-nombre" placeholder="Nombre del NPC..." style="width:100%; max-width:400px; margin-bottom:20px; padding:10px; background:#000; color:var(--gold); border:1px solid var(--gold); font-size:1.2em; text-align:center; font-family:'Cinzel', serif;">
-        <div class="edit-grid">`;
+        <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">`;
 
     fields.forEach(f => {
         html += `
         <div class="edit-card">
             <h4>${f.label}</h4>
-            <input type="number" id="${f.id}" value="0" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px;" readonly>
-            <div class="btn-row">
-                <button class="btn-plus" onclick="window.modForm('${f.id}', 1)">+1</button>
-                <button class="btn-minus" onclick="window.modForm('${f.id}', -1)">-1</button>
-            </div>
-            <div class="btn-row">
-                <button class="btn-plus5" onclick="window.modForm('${f.id}', 5)">+5</button>
-                <button class="btn-minus5" onclick="window.modForm('${f.id}', -5)">-5</button>
-            </div>
-            <div class="btn-row">
-                <button class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modForm('${f.id}', 50)">+50</button>
-                <button class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modForm('${f.id}', -50)">-50</button>
-            </div>
+            <input type="number" id="${f.id}" value="${f.val}" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px;" readonly>
+            <div class="btn-row"><button class="btn-plus" onclick="window.modForm('${f.id}', 1)">+1</button><button class="btn-minus" onclick="window.modForm('${f.id}', -1)">-1</button></div>
+            <div class="btn-row"><button class="btn-plus5" onclick="window.modForm('${f.id}', 5)">+5</button><button class="btn-minus5" onclick="window.modForm('${f.id}', -5)">-5</button></div>
         </div>`;
     });
 
     html += `</div>
-        <button onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">GUARDAR NPC</button>
+        <button onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">GUARDAR PERSONAJE</button>
     </div>`;
     return html;
 }
@@ -140,10 +169,10 @@ export function dibujarFormularioEditar() {
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
 
     const statsAEditar = [
-        { id: 'danoRojo', label: 'Daño Rojo Extra' }, { id: 'danoAzul', label: 'Daño Azul Extra' }, { id: 'elimDorada', label: 'Elim. Dorada' },
-        { id: 'fisica', label: 'Afin. Física' }, { id: 'energetica', label: 'Afin. Energética' }, { id: 'espiritual', label: 'Afin. Espiritual' },
-        { id: 'mando', label: 'Afin. Mando' }, { id: 'psiquica', label: 'Afin. Psíquica' }, { id: 'oscura', label: 'Afin. Oscura' },
-        { id: 'vidaRojaMaxExtra', label: 'Corazones (Directo)' }
+        { id: 'danoRojo', label: 'Daño Rojo Extra' }, { id: 'danoAzul', label: 'Daño Azul Extra' }, { id: 'elimDorada', label: 'Elim. Dorada Extra' },
+        { id: 'fisica', label: 'Afin. Física Extra' }, { id: 'energetica', label: 'Afin. Energética Extra' }, { id: 'espiritual', label: 'Afin. Espiritual Extra' },
+        { id: 'mando', label: 'Afin. Mando Extra' }, { id: 'psiquica', label: 'Afin. Psíquica Extra' }, { id: 'oscura', label: 'Afin. Oscura Extra' },
+        { id: 'vidaRojaMaxExtra', label: 'Corazones Límite Extra' }
     ];
 
     let html = `
@@ -152,7 +181,7 @@ export function dibujarFormularioEditar() {
         <button onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 15px;">⬅ Volver al Perfil</button>
         
         <div style="background:#111; border:1px dashed #d4af37; padding:15px; margin-bottom:20px; border-radius:8px; display:flex; justify-content:space-around;">
-            <span style="font-size:1.2em;">❤️ Vida Máx Actual: <strong style="color:var(--red-life); font-size:1.5em;">${calcularVidaRojaMax(p)}</strong></span>
+            <span style="font-size:1.2em;">❤️ Vida Límite Actual: <strong style="color:var(--red-life); font-size:1.5em;">${calcularVidaRojaMax(p)}</strong></span>
             <span style="font-size:1.2em;">🌀 VEX Máx Actual: <strong style="color:var(--blue-life); font-size:1.5em;">${calcularVexMax(p)}</strong></span>
         </div>
 
