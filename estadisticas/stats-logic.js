@@ -1,31 +1,36 @@
 import { statsGlobal } from './stats-state.js';
 
 export function calcularVidaRojaMax(p) {
-    const base = p.vidaRojaMax + (p.buffs?.vidaRojaMaxExtra || 0);
-    const deltaRed = Math.floor((p.afinidades.fisica + (p.buffs?.fisica || 0)) / 2) - Math.floor(p.afinidades.fisica / 2);
+    const base = p.vidaRojaMax + (p.hechizos?.vidaRojaMaxExtra || 0) + (p.buffs?.vidaRojaMaxExtra || 0);
+    const fisTotal = p.afinidades.fisica + (p.hechizos?.fisica || 0) + (p.buffs?.fisica || 0);
+    const deltaRed = Math.floor(fisTotal / 2) - Math.floor(p.afinidades.fisica / 2);
     return base + deltaRed;
 }
 
 export function calcularVidaAzulMax(p) {
     const baseS = p.afinidades.espiritual + p.afinidades.energetica + p.afinidades.psiquica + p.afinidades.mando;
-    const buffS = baseS + (p.buffs?.espiritual||0) + (p.buffs?.energetica||0) + (p.buffs?.psiquica||0) + (p.buffs?.mando||0);
-    const deltaBlue = Math.floor(buffS / 4) - Math.floor(baseS / 4);
+    const spellS = (p.hechizos?.espiritual||0) + (p.hechizos?.energetica||0) + (p.hechizos?.psiquica||0) + (p.hechizos?.mando||0);
+    const buffS = (p.buffs?.espiritual||0) + (p.buffs?.energetica||0) + (p.buffs?.psiquica||0) + (p.buffs?.mando||0);
+    const totalS = baseS + spellS + buffS;
     
+    const deltaBlue = Math.floor(totalS / 4) - Math.floor(baseS / 4);
     const baseFinal = p.baseVidaAzul !== undefined ? p.baseVidaAzul : p.vidaAzul;
-    return baseFinal + (p.buffs?.vidaAzulExtra || 0) + deltaBlue;
+    return baseFinal + (p.hechizos?.vidaAzulExtra || 0) + (p.buffs?.vidaAzulExtra || 0) + deltaBlue;
 }
 
 export function calcularVexMax(p) {
     if (p.isNPC) return p.vex;
-    const oscTotal = p.afinidades.oscura + (p.buffs?.oscura || 0);
+    const oscTotal = p.afinidades.oscura + (p.hechizos?.oscura || 0) + (p.buffs?.oscura || 0);
     return Math.round((oscTotal * 75) / 50) * 50;
 }
 
-// EMPAQUETADOR DE CSV: Devuelve "Base_Extra" (Ej: "41_10" o "21_-2")
-function formatExp(base, buff) {
+// EMPAQUETADOR DE 4 FASES: Devuelve "Total_Base_Hechizos_Extra" (Ej: "61_40_21_0")
+function formatExp(base, spells, extra) {
     const b = parseInt(base) || 0;
-    const bf = parseInt(buff) || 0;
-    return `${b}_${bf}`;
+    const s = parseInt(spells) || 0;
+    const e = parseInt(extra) || 0;
+    const t = b + s + e;
+    return `${t}_${b}_${s}_${e}`;
 }
 
 export function generarCSVExportacion() {
@@ -33,27 +38,25 @@ export function generarCSVExportacion() {
     
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        const af = p.afinidades;
-        const b = p.buffs;
+        const af = p.afinidades; const h = p.hechizos || {}; const b = p.buffs || {};
         const st = p.estados || {};
         
         const expVex = p.isPlayer ? 0 : p.vex;
         
-        // Empaquetamos Base y Buff
-        const eFis = formatExp(af.fisica, b.fisica);
-        const eEne = formatExp(af.energetica, b.energetica);
-        const eEsp = formatExp(af.espiritual, b.espiritual);
-        const eMan = formatExp(af.mando, b.mando);
-        const ePsi = formatExp(af.psiquica, b.psiquica);
-        const eOsc = formatExp(af.oscura, b.oscura);
+        const eFis = formatExp(af.fisica, h.fisica, b.fisica);
+        const eEne = formatExp(af.energetica, h.energetica, b.energetica);
+        const eEsp = formatExp(af.espiritual, h.espiritual, b.espiritual);
+        const eMan = formatExp(af.mando, h.mando, b.mando);
+        const ePsi = formatExp(af.psiquica, h.psiquica, b.psiquica);
+        const eOsc = formatExp(af.oscura, h.oscura, b.oscura);
         
-        const eVRMax = formatExp(p.vidaRojaMax, b.vidaRojaMaxExtra);
-        const eVA = formatExp(p.baseVidaAzul !== undefined ? p.baseVidaAzul : p.vidaAzul, b.vidaAzulExtra);
-        const eGD = formatExp(p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : p.guardaDorada, b.guardaDoradaExtra);
+        const eVRMax = formatExp(p.vidaRojaMax, h.vidaRojaMaxExtra, b.vidaRojaMaxExtra);
+        const eVA = formatExp(p.baseVidaAzul !== undefined ? p.baseVidaAzul : p.vidaAzul, h.vidaAzulExtra, b.vidaAzulExtra);
+        const eGD = formatExp(p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : p.guardaDorada, h.guardaDoradaExtra, b.guardaDoradaExtra);
         
-        const eDR = formatExp(p.danoRojo, b.danoRojo);
-        const eDA = formatExp(p.danoAzul, b.danoAzul);
-        const eED = formatExp(p.elimDorada, b.elimDorada);
+        const eDR = formatExp(p.danoRojo, h.danoRojo, b.danoRojo);
+        const eDA = formatExp(p.danoAzul, h.danoAzul, b.danoAzul);
+        const eED = formatExp(p.elimDorada, h.elimDorada, b.elimDorada);
 
         const arrEstados = [
             st.veneno||0, st.radiacion||0, st.maldito?1:0, st.incapacitado?1:0,
