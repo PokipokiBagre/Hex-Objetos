@@ -114,3 +114,39 @@ button:hover { background: var(--gold); color: var(--bg-dark); }
 .btn-minus:hover { background: #aa0000; }
 .btn-plus5:hover { background: #008888; }
 .btn-minus5:hover { background: #880000; }
+
+/* BORDE ESPECIAL PARA JUGADORES EN EL CATÁLOGO */
+.player-card {
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    background: #1e0535;
+}
+
+/* EFECTOS DE ESTADO (BADGES) */
+.status-container {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+}
+.status-badge {
+    padding: 4px 10px; border-radius: 4px; font-size: 0.75em; font-weight: bold;
+    text-transform: uppercase; border: 1px solid #fff; background: #222; color: #fff;
+    box-shadow: 2px 2px 0px #000;
+}
+.badge-veneno { background: #2e8b57; border-color: #00ff7f; color: #fff; }
+.badge-radiacion { background: #8b8b00; border-color: #ffff00; color: #fff; }
+.badge-maldito { background: #4a004a; border-color: #ff00ff; color: #fff; }
+.badge-incapacitado { background: #444; border-color: #888; color: #ddd; }
+.badge-debilitado { background: #8b0000; border-color: #ff4444; color: #fff; }
+.badge-angustia { background: #00008b; border-color: #4444ff; color: #fff; }
+.badge-petrificacion { background: #555; border-color: #aaa; color: #fff; }
+.badge-secuestrado { background: #111; border-color: #444; border-style: dashed; }
+.badge-huesos { background: #e0e0e0; border-color: #fff; color: #000; }
+.badge-comestible { background: #d2691e; border-color: #ffa500; color: #fff; }
+.badge-cifrado { background: #004a4a; border-color: #00ffff; color: #fff; }
+.badge-inversion { background: #8b008b; border-color: #dda0dd; color: #fff; }
+.badge-verde { background: #006400; border-color: #32cd32; color: #fff; }
+
+.status-toggle {
+    background: #111; color: gray; border: 1px solid #333; padding: 10px;
+    cursor: pointer; border-radius: 4px; transition: 0.2s; font-size: 0.8em;
+}
+.status-toggle.active { background: #d4af37; color: #000; font-weight: bold; }
