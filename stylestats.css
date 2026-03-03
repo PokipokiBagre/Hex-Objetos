@@ -162,3 +162,116 @@ button:hover { background: var(--gold); color: var(--bg-dark); }
     background: #111; color: gray; border: 1px solid #333; padding: 10px;
     cursor: pointer; border-radius: 4px; transition: 0.2s; font-size: 0.8em; font-weight: bold; text-transform: uppercase;
 }
+
+/* =======================================================
+   📱 ADAPTACIÓN PARA TELÉFONOS (RESPONSIVE MOBILE VIEW)
+   ======================================================= */
+@media (max-width: 768px) {
+    
+    /* 1. Dar espacio al final para la nueva barra inferior */
+    body {
+        padding-bottom: 90px !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    /* 2. Convertir la Nav Bar en una Barra de Aplicación Inferior */
+    .nav-bar {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        background: rgba(18, 0, 36, 0.98) !important;
+        border-top: 2px solid var(--gold) !important;
+        border-bottom: none !important;
+        padding: 10px 5px !important;
+        margin: 0 !important;
+        justify-content: space-around !important;
+        z-index: 9999 !important;
+        box-shadow: 0 -5px 15px rgba(0,0,0,0.8);
+        display: flex !important;
+    }
+    
+    /* Ocultar el título H2 en móvil para ganar espacio para los botones */
+    .nav-bar h2 { display: none !important; }
+
+    /* Adaptar los botones de la barra para que quepan todos */
+    .nav-bar > div {
+        display: flex !important;
+        width: 75% !important;
+        justify-content: space-around !important;
+        gap: 5px !important;
+    }
+    
+    .nav-bar button {
+        font-size: 0.7em !important;
+        padding: 10px 2px !important;
+        flex: 1;
+        text-align: center;
+        border-radius: 4px;
+    }
+
+    /* 3. Catálogo: 2 Personajes por fila */
+    .catalogo-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+    .char-card { padding: 10px !important; }
+    .char-card img { width: 65px !important; height: 65px !important; }
+    .char-card h3 { font-size: 1.1em !important; margin: 5px 0 !important; }
+    .char-card p { font-size: 0.75em !important; }
+
+    /* Filtros superiores compactos para que no rompan la pantalla */
+    .filter-group {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 1fr !important;
+        gap: 5px !important;
+        width: 100%;
+    }
+    .filter-group button { padding: 10px 2px !important; font-size: 0.75em !important; }
+
+    /* 4. Vista de Detalle y Edición en 1 Columna (Vertical) */
+    div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Reorganizar el Avatar y Título del personaje */
+    div[style*="display: flex; align-items: center; gap: 20px; border-bottom"] {
+        flex-direction: column !important;
+        text-align: center !important;
+    }
+    div[style*="display: flex; align-items: center; gap: 20px; border-bottom"] > div {
+        text-align: center !important;
+    }
+    div[style*="display: flex; align-items: center; gap: 20px; border-bottom"] button {
+        margin-left: 0 !important;
+        width: 100%;
+        margin-top: 15px;
+        padding: 15px !important;
+    }
+
+    /* Ajustar círculos de HEX/VEX */
+    .stat-circle { width: 90px !important; height: 90px !important; margin: 5px !important; }
+    .stat-circle .inner { width: 74px !important; height: 74px !important; font-size: 0.9em !important; }
+
+    /* 5. Botones de +1 y -1 "Engordados" para facilitar uso táctil */
+    .btn-row button {
+        padding: 18px 5px !important;
+        font-size: 1.3em !important;
+    }
+    .edit-card input[type="number"] {
+        font-size: 1.6em !important;
+        padding: 12px !important;
+        width: 90% !important;
+    }
+    
+    /* Herramienta de clonación apilada */
+    div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] {
+        flex-direction: column;
+    }
+    div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] > select,
+    div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] > button {
+        width: 100% !important;
+    }
+}
