@@ -2,9 +2,11 @@ import { statsGlobal, estadoUI } from './stats-state.js';
 import { calcularVidaRojaMax, calcularVexMax } from './stats-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-const bText = (val) => val > 0 ? `<span style="color:#00ff00; font-size:0.8em"> (+${val})</span>` : (val < 0 ? `<span style="color:red; font-size:0.8em"> (${val})</span>` : '');
 
-// Previene bucles infinitos de 404
+// Lógica para mostrar la suma total y el texto verde/rojo
+const calcTotal = (base, buff) => (base || 0) + (buff || 0);
+const bText = (val) => val > 0 ? `<span style="color:#00ff00; font-size:0.6em; vertical-align:middle;"> (+${val})</span>` : (val < 0 ? `<span style="color:red; font-size:0.6em; vertical-align:middle;"> (${val})</span>` : '');
+
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
 export function dibujarCatalogo() {
@@ -55,26 +57,26 @@ export function dibujarDetalle() {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
         <div>
             <h3 style="margin-top:0;">Vitalidad</h3>
-            <div class="health-box"><label style="color:var(--red-life);">VIDA ROJA (${p.vidaRojaActual}/${vidaRojaVisual}) ${bText(p.buffs.vidaRojaMaxExtra)}</label><div class="health-grid">${corazonesRojosHTML}</div></div>
+            <div class="health-box"><label style="color:var(--red-life);">VIDA ROJA (${p.vidaRojaActual}/${vidaRojaVisual})</label><div class="health-grid">${corazonesRojosHTML}</div></div>
             <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${p.vidaAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
             <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${p.guardaDorada})</label><div class="health-grid">${guardasHTML}</div></div>
             
             <h3 style="margin-top:20px;">Ofensiva</h3>
             <div class="affinities-grid">
-                <div class="affinity-box"><label style="color:var(--red-life)">Daño Rojo</label><span>${p.danoRojo}${bText(p.buffs.danoRojo)}</span></div>
-                <div class="affinity-box"><label style="color:var(--blue-life)">Daño Azul</label><span>${p.danoAzul}${bText(p.buffs.danoAzul)}</span></div>
-                <div class="affinity-box"><label style="color:var(--gold)">Elim. Dorada</label><span>${p.elimDorada}${bText(p.buffs.elimDorada)}</span></div>
+                <div class="affinity-box"><label style="color:var(--red-life)">Daño Rojo</label><span>${calcTotal(p.danoRojo, p.buffs.danoRojo)}${bText(p.buffs.danoRojo)}</span></div>
+                <div class="affinity-box"><label style="color:var(--blue-life)">Daño Azul</label><span>${calcTotal(p.danoAzul, p.buffs.danoAzul)}${bText(p.buffs.danoAzul)}</span></div>
+                <div class="affinity-box"><label style="color:var(--gold)">Elim. Dorada</label><span>${calcTotal(p.elimDorada, p.buffs.elimDorada)}${bText(p.buffs.elimDorada)}</span></div>
             </div>
         </div>
         <div>
             <h3 style="margin-top:0;">Afinidades</h3>
             <div class="affinities-grid">
-                <div class="affinity-box"><label>Física</label><span>${p.afinidades.fisica}${bText(p.buffs.fisica)}</span></div>
-                <div class="affinity-box"><label>Energética</label><span>${p.afinidades.energetica}${bText(p.buffs.energetica)}</span></div>
-                <div class="affinity-box"><label>Espiritual</label><span>${p.afinidades.espiritual}${bText(p.buffs.espiritual)}</span></div>
-                <div class="affinity-box"><label>Mando</label><span>${p.afinidades.mando}${bText(p.buffs.mando)}</span></div>
-                <div class="affinity-box"><label>Psíquica</label><span>${p.afinidades.psiquica}${bText(p.buffs.psiquica)}</span></div>
-                <div class="affinity-box"><label>Oscura</label><span>${p.afinidades.oscura}${bText(p.buffs.oscura)}</span></div>
+                <div class="affinity-box"><label>Física</label><span>${calcTotal(p.afinidades.fisica, p.buffs.fisica)}${bText(p.buffs.fisica)}</span></div>
+                <div class="affinity-box"><label>Energética</label><span>${calcTotal(p.afinidades.energetica, p.buffs.energetica)}${bText(p.buffs.energetica)}</span></div>
+                <div class="affinity-box"><label>Espiritual</label><span>${calcTotal(p.afinidades.espiritual, p.buffs.espiritual)}${bText(p.buffs.espiritual)}</span></div>
+                <div class="affinity-box"><label>Mando</label><span>${calcTotal(p.afinidades.mando, p.buffs.mando)}${bText(p.buffs.mando)}</span></div>
+                <div class="affinity-box"><label>Psíquica</label><span>${calcTotal(p.afinidades.psiquica, p.buffs.psiquica)}${bText(p.buffs.psiquica)}</span></div>
+                <div class="affinity-box"><label>Oscura</label><span>${calcTotal(p.afinidades.oscura, p.buffs.oscura)}${bText(p.buffs.oscura)}</span></div>
             </div>
         </div>
     </div>`;
@@ -94,42 +96,66 @@ export function dibujarMenuOP() {
 }
 
 export function dibujarFormularioCrear() {
-    return `
-    <div style="text-align:left; max-width:600px; margin:0 auto; background:#150029; padding:20px; border:1px solid var(--gold);">
-        <h4 style="margin-top:0">Crear Personaje / NPC</h4>
-        <input type="text" id="npc-nombre" placeholder="Nombre" style="width:100%; margin-bottom:10px; padding:5px; background:#000; color:white; border:1px solid #444;">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-            <div><label>HEX</label><input type="number" id="npc-hex" value="0" style="width:100%; background:#000; color:white; border:1px solid #444;"></div>
-            <div><label>VEX</label><input type="number" id="npc-vex" value="0" style="width:100%; background:#000; color:white; border:1px solid #444;"></div>
-            <div><label>Vida Roja Max</label><input type="number" id="npc-vr" value="10" style="width:100%; background:#000; color:white; border:1px solid #444;"></div>
-            <div><label>Vida Azul</label><input type="number" id="npc-va" value="0" style="width:100%; background:#000; color:white; border:1px solid #444;"></div>
-        </div>
-        <button onclick="window.ejecutarCreacionNPC()" style="width:100%; background:var(--gold); color:black;">GUARDAR NPC</button>
+    const fields = [
+        { id: 'npc-hex', label: 'HEX Inicial' },
+        { id: 'npc-vex', label: 'VEX Inicial' },
+        { id: 'npc-vr', label: 'Corazones Rojos Máx' },
+        { id: 'npc-va', label: 'Corazones Azules' }
+    ];
+    
+    let html = `
+    <div style="text-align:center; max-width:900px; margin:0 auto;">
+        <h3 style="margin-top:0; color:var(--gold)">Crear NPC Manual</h3>
+        <input type="text" id="npc-nombre" placeholder="Nombre del NPC..." style="width:100%; max-width:400px; margin-bottom:20px; padding:10px; background:#000; color:var(--gold); border:1px solid var(--gold); font-size:1.2em; text-align:center; font-family:'Cinzel', serif;">
+        <div class="edit-grid">`;
+
+    fields.forEach(f => {
+        html += `
+        <div class="edit-card">
+            <h4>${f.label}</h4>
+            <input type="number" id="${f.id}" value="0" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px;" readonly>
+            <div class="btn-row">
+                <button class="btn-plus" onclick="window.modForm('${f.id}', 1)">+1</button>
+                <button class="btn-minus" onclick="window.modForm('${f.id}', -1)">-1</button>
+            </div>
+            <div class="btn-row">
+                <button class="btn-plus5" onclick="window.modForm('${f.id}', 5)">+5</button>
+                <button class="btn-minus5" onclick="window.modForm('${f.id}', -5)">-5</button>
+            </div>
+            <div class="btn-row">
+                <button class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modForm('${f.id}', 50)">+50</button>
+                <button class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="window.modForm('${f.id}', -50)">-50</button>
+            </div>
+        </div>`;
+    });
+
+    html += `</div>
+        <button onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">GUARDAR NPC</button>
     </div>`;
+    return html;
 }
 
 export function dibujarFormularioEditar() {
     const p = statsGlobal[estadoUI.personajeSeleccionado];
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
 
-    // Array con todos los stats editables
     const statsAEditar = [
-        { id: 'danoRojo', label: 'Daño Rojo Extra' },
-        { id: 'danoAzul', label: 'Daño Azul Extra' },
-        { id: 'elimDorada', label: 'Elim. Dorada' },
-        { id: 'fisica', label: 'Afin. Física' },
-        { id: 'energetica', label: 'Afin. Energética' },
-        { id: 'espiritual', label: 'Afin. Espiritual' },
-        { id: 'mando', label: 'Afin. Mando' },
-        { id: 'psiquica', label: 'Afin. Psíquica' },
-        { id: 'oscura', label: 'Afin. Oscura' },
+        { id: 'danoRojo', label: 'Daño Rojo Extra' }, { id: 'danoAzul', label: 'Daño Azul Extra' }, { id: 'elimDorada', label: 'Elim. Dorada' },
+        { id: 'fisica', label: 'Afin. Física' }, { id: 'energetica', label: 'Afin. Energética' }, { id: 'espiritual', label: 'Afin. Espiritual' },
+        { id: 'mando', label: 'Afin. Mando' }, { id: 'psiquica', label: 'Afin. Psíquica' }, { id: 'oscura', label: 'Afin. Oscura' },
         { id: 'vidaRojaMaxExtra', label: 'Corazones (Directo)' }
     ];
 
     let html = `
     <div style="text-align:center; max-width:900px; margin:0 auto;">
         <h3 style="margin-top:0; color:var(--gold)">Alteración Temporal: ${estadoUI.personajeSeleccionado}</h3>
-        <button onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 10px;">⬅ Volver al Perfil</button>
+        <button onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 15px;">⬅ Volver al Perfil</button>
+        
+        <div style="background:#111; border:1px dashed #d4af37; padding:15px; margin-bottom:20px; border-radius:8px; display:flex; justify-content:space-around;">
+            <span style="font-size:1.2em;">❤️ Vida Máx Actual: <strong style="color:var(--red-life); font-size:1.5em;">${calcularVidaRojaMax(p)}</strong></span>
+            <span style="font-size:1.2em;">🌀 VEX Máx Actual: <strong style="color:var(--blue-life); font-size:1.5em;">${calcularVexMax(p)}</strong></span>
+        </div>
+
         <div class="edit-grid">`;
 
     statsAEditar.forEach(s => {
@@ -141,14 +167,8 @@ export function dibujarFormularioEditar() {
         <div class="edit-card">
             <h4>${s.label}</h4>
             <span style="color: ${colorVal}">${displayVal}</span>
-            <div class="btn-row">
-                <button class="btn-plus" onclick="window.modificarBuff('${s.id}', 1)">+1</button>
-                <button class="btn-minus" onclick="window.modificarBuff('${s.id}', -1)">-1</button>
-            </div>
-            <div class="btn-row">
-                <button class="btn-plus5" onclick="window.modificarBuff('${s.id}', 5)">+5</button>
-                <button class="btn-minus5" onclick="window.modificarBuff('${s.id}', -5)">-5</button>
-            </div>
+            <div class="btn-row"><button class="btn-plus" onclick="window.modificarBuff('${s.id}', 1)">+1</button><button class="btn-minus" onclick="window.modificarBuff('${s.id}', -1)">-1</button></div>
+            <div class="btn-row"><button class="btn-plus5" onclick="window.modificarBuff('${s.id}', 5)">+5</button><button class="btn-minus5" onclick="window.modificarBuff('${s.id}', -5)">-5</button></div>
         </div>`;
     });
 
