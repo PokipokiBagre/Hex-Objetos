@@ -22,13 +22,17 @@ export function procesarTextoCSV(texto) {
 
     for (let k in statsGlobal) delete statsGlobal[k];
 
-    // Usamos el índice para determinar quién es jugador (0 a 5 = primeros 6)
+    // Los primeros 6 son Jugadores (índice 0 a 5)
     filas.slice(1).forEach((f, index) => {
         const nombre = f[0]; 
         if (!nombre) return;
-        const cols = Array.from({length: 16}, (_, i) => f[i] || '0');
         
+        // Ampliado a 17 columnas para abarcar la columna Q (Estado)
+        const cols = Array.from({length: 17}, (_, i) => f[i] || '');
         const esJugador = index < 6;
+
+        // Decodificamos la columna de Estado (Ej: "3-7-0-1-0-0-0...")
+        const est = cols[16].split('-');
 
         statsGlobal[nombre] = {
             isPlayer: esJugador,
@@ -46,7 +50,23 @@ export function procesarTextoCSV(texto) {
             danoRojo: parseInt(cols[13]) || 0, danoAzul: parseInt(cols[14]) || 0, elimDorada: parseInt(cols[15]) || 0,
             
             buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
-            estados: { veneno: 0, radiacion: 0, maldito: false, incapacitado: false, debilitado: false, angustia: false, petrificacion: false, secuestrado: false, huesos: false, comestible: false, cifrado: false, inversion: false, verde: false }
+            
+            // Se asignan los valores decodificados (si la columna estaba vacía, se asumen 0 y false)
+            estados: { 
+                veneno: parseInt(est[0]) || 0, 
+                radiacion: parseInt(est[1]) || 0, 
+                maldito: est[2] === '1', 
+                incapacitado: est[3] === '1', 
+                debilitado: est[4] === '1', 
+                angustia: est[5] === '1', 
+                petrificacion: est[6] === '1', 
+                secuestrado: est[7] === '1', 
+                huesos: est[8] === '1', 
+                comestible: est[9] === '1', 
+                cifrado: est[10] === '1', 
+                inversion: est[11] === '1', 
+                verde: est[12] === '1' 
+            }
         };
     });
     guardar();
