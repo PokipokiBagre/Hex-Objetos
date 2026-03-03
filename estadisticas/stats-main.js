@@ -3,7 +3,6 @@ import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax } from './stats-logic.js';
 
-// FUNCION ANTE-PARPADEOS: Captura y restaura la posición actual
 function conScrollGuardado(accion) {
     const scrollAnterior = window.scrollY;
     accion();
@@ -45,6 +44,17 @@ window.modificarBuff = (statId, cantidad) => {
     });
 };
 
+// NUEVO: Modifica valores puros (como HEX/VEX en NPCs) desde el panel de edición
+window.modificarDirecto = (statId, cantidad) => {
+    conScrollGuardado(() => {
+        const p = statsGlobal[estadoUI.personajeSeleccionado];
+        if(!p) return;
+        p[statId] = Math.max(0, (p[statId] || 0) + cantidad);
+        guardar();
+        document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
+    });
+};
+
 window.modLibre = (statId, cantidad) => {
     conScrollGuardado(() => {
         const p = statsGlobal[estadoUI.personajeSeleccionado];
@@ -52,11 +62,8 @@ window.modLibre = (statId, cantidad) => {
         
         p[statId] = Math.max(0, (p[statId] || 0) + cantidad);
         
-        // La vida actual nunca debe superar el límite máximo de ese personaje
-        if (statId === 'vidaRojaActual') {
-            const max = calcularVidaRojaMax(p);
-            if (p.vidaRojaActual > max) p.vidaRojaActual = max;
-        }
+        // La vida roja puede superar el límite visualmente (se dibujan como extra)
+        // Por lo tanto, NO limitaremos la vidaRojaActual a max
         
         guardar();
         refrescarVistas();
@@ -75,14 +82,18 @@ window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
     if(!nombre) return alert("Falta dar un nombre al personaje.");
     
+    // Al forjar, marcamos los valores base iguales a los actuales para que no empiecen con estado "Extra"
+    const vidaA = parseInt(document.getElementById('npc-va').value) || 0;
+    const guardaD = parseInt(document.getElementById('npc-gd').value) || 0;
+
     statsGlobal[nombre] = {
         isNPC: true,
         hex: parseInt(document.getElementById('npc-hex').value) || 0,
         vex: parseInt(document.getElementById('npc-vex').value) || 0,
         vidaRojaActual: parseInt(document.getElementById('npc-vra').value) || 0,
         vidaRojaMax: parseInt(document.getElementById('npc-vrm').value) || 0,
-        vidaAzul: parseInt(document.getElementById('npc-va').value) || 0,
-        guardaDorada: parseInt(document.getElementById('npc-gd').value) || 0,
+        vidaAzul: vidaA, baseVidaAzul: vidaA,
+        guardaDorada: guardaD, baseGuardaDorada: guardaD,
         danoRojo: parseInt(document.getElementById('npc-dr').value) || 0,
         danoAzul: parseInt(document.getElementById('npc-da').value) || 0,
         elimDorada: parseInt(document.getElementById('npc-ed').value) || 0,
@@ -106,11 +117,14 @@ window.forzarSincronizacion = async () => {
 };
 
 window.descargarAumentada = () => { descargarArchivoCSV(generarCSVExportacion(), "HEX_ESTADOS_AUMENTADO.csv"); };
+
 window.subirAumentada = (e) => {
     const archivo = e.target.files[0]; if (!archivo) return;
     const lector = new FileReader();
     lector.onload = function(ev) { procesarTextoCSV(ev.target.result); alert("CSV inyectado."); window.mostrarCatalogo(); };
     lector.readAsText(archivo);
+    // Reiniciar el input para poder subir el mismo archivo dos veces si se desea
+    e.target.value = null; 
 };
 
 function refrescarVistas() {
@@ -136,4 +150,3 @@ async function iniciar() {
 }
 
 iniciar();
-
