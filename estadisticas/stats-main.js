@@ -28,6 +28,19 @@ window.mostrarPaginaOP = (subvista) => {
     if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
 };
 
+// NUEVA LÓGICA DE BOTONES INSTANTÁNEOS
+window.modificarBuff = (statId, cantidad) => {
+    const p = statsGlobal[estadoUI.personajeSeleccionado];
+    if(!p) return;
+    if(!p.buffs) p.buffs = { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0 };
+
+    p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
+    guardar();
+    
+    // Refrescamos la vista de edición para ver el número cambiar
+    document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
+};
+
 window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
     if(!nombre) return alert("Falta el nombre");
@@ -45,23 +58,8 @@ window.ejecutarCreacionNPC = () => {
     guardar(); alert("NPC Creado"); window.abrirDetalle(nombre);
 };
 
-window.ejecutarEdicionBuffs = () => {
-    const p = statsGlobal[estadoUI.personajeSeleccionado];
-    if(!p) return;
-    p.buffs = {
-        danoRojo: parseInt(document.getElementById('b-dr').value) || 0,
-        danoAzul: parseInt(document.getElementById('b-da').value) || 0,
-        elimDorada: parseInt(document.getElementById('b-ed').value) || 0,
-        psiquica: parseInt(document.getElementById('b-psi').value) || 0,
-        espiritual: parseInt(document.getElementById('b-esp').value) || 0,
-        vidaRojaMaxExtra: parseInt(document.getElementById('b-vrx').value) || 0,
-        fisica: p.buffs.fisica, energetica: p.buffs.energetica, mando: p.buffs.mando, oscura: p.buffs.oscura // preserva el resto
-    };
-    guardar(); alert("Buffs actualizados"); window.abrirDetalle(estadoUI.personajeSeleccionado);
-};
-
 window.forzarSincronizacion = async () => {
-    if(confirm("¿Seguro? Borrarás los NPCs locales y resetarás buffs.")) {
+    if(confirm("¿Seguro? Borrarás los NPCs locales y resetearás buffs.")) {
         await cargarTodoDesdeCSV(); alert("Sincronización completada."); window.mostrarCatalogo();
     }
 };
@@ -97,4 +95,5 @@ async function iniciar() {
 }
 
 iniciar();
+
 
