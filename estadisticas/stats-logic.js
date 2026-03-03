@@ -6,14 +6,12 @@ export function calcularVidaRojaMax(p) {
     return basePura + Math.floor(fisTotal / 2);
 }
 
-export function calcularVidaAzulMax(p) {
-    const baseS = p.afinidades.espiritual + p.afinidades.energetica + p.afinidades.psiquica + p.afinidades.mando;
-    const spellS = (p.hechizos?.espiritual||0) + (p.hechizos?.energetica||0) + (p.hechizos?.psiquica||0) + (p.hechizos?.mando||0);
-    const buffS = (p.buffs?.espiritual||0) + (p.buffs?.energetica||0) + (p.buffs?.psiquica||0) + (p.buffs?.mando||0);
-    const totalS = baseS + spellS + buffS;
-    const deltaBlue = Math.floor(totalS / 4) - Math.floor(baseS / 4);
-    const baseFinal = p.baseVidaAzul !== undefined ? p.baseVidaAzul : p.vidaAzul;
-    return baseFinal + (p.hechizos?.vidaAzulExtra || 0) + (p.buffs?.vidaAzulExtra || 0) + deltaBlue;
+// NUEVO: Monitorea el total de la Piscina Mística dividida entre 4
+export function getMysticBonus(p) {
+    const t = (p.afinidades.espiritual||0) + (p.afinidades.energetica||0) + (p.afinidades.psiquica||0) + (p.afinidades.mando||0) +
+              (p.hechizos?.espiritual||0) + (p.hechizos?.energetica||0) + (p.hechizos?.psiquica||0) + (p.hechizos?.mando||0) +
+              (p.buffs?.espiritual||0) + (p.buffs?.energetica||0) + (p.buffs?.psiquica||0) + (p.buffs?.mando||0);
+    return Math.floor(t / 4);
 }
 
 export function calcularVexMax(p) {
@@ -41,12 +39,12 @@ export function generarCSVExportacion() {
         const ePsi = formatExp(af.psiquica, h.psiquica, b.psiquica); const eOsc = formatExp(af.oscura, h.oscura, b.oscura);
         
         const eVRMax = formatExp(p.vidaRojaMax, h.vidaRojaMaxExtra, b.vidaRojaMaxExtra);
-        const eVA = formatExp(p.baseVidaAzul !== undefined ? p.baseVidaAzul : p.vidaAzul, h.vidaAzulExtra, b.vidaAzulExtra);
-        const eGD = formatExp(p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : p.guardaDorada, h.guardaDoradaExtra, b.guardaDoradaExtra);
+        // Consumibles limpios (Base_Hechizos_Buffs)
+        const eVA = formatExp(p.vidaAzul, h.vidaAzulExtra, b.vidaAzulExtra);
+        const eGD = formatExp(p.guardaDorada, h.guardaDoradaExtra, b.guardaDoradaExtra);
         
         const eDR = formatExp(p.danoRojo, h.danoRojo, b.danoRojo); const eDA = formatExp(p.danoAzul, h.danoAzul, b.danoAzul); const eED = formatExp(p.elimDorada, h.elimDorada, b.elimDorada);
 
-        // MAPEO DINÁMICO DE ESTADOS
         const arrEstados = listaEstados.map(e => {
             let val = st[e.id];
             if (e.tipo === 'numero') return val || 0;
