@@ -1,30 +1,19 @@
 import { statsGlobal } from './stats-state.js';
 
 export function calcularVidaRojaMax(p) {
-    const base = p.vidaRojaMax + (p.hechizos?.vidaRojaMaxExtra || 0) + (p.buffs?.vidaRojaMaxExtra || 0);
-    const fisTotal = p.afinidades.fisica + (p.hechizos?.fisica || 0) + (p.buffs?.fisica || 0);
-    const deltaRed = Math.floor(fisTotal / 2) - Math.floor(p.afinidades.fisica / 2);
-    return base + deltaRed;
-}
-
-export function calcularVidaAzulMax(p) {
-    const baseS = p.afinidades.espiritual + p.afinidades.energetica + p.afinidades.psiquica + p.afinidades.mando;
-    const spellS = (p.hechizos?.espiritual||0) + (p.hechizos?.energetica||0) + (p.hechizos?.psiquica||0) + (p.hechizos?.mando||0);
-    const buffS = (p.buffs?.espiritual||0) + (p.buffs?.energetica||0) + (p.buffs?.psiquica||0) + (p.buffs?.mando||0);
-    const totalS = baseS + spellS + buffS;
-    
-    const deltaBlue = Math.floor(totalS / 4) - Math.floor(baseS / 4);
-    const baseFinal = p.baseVidaAzul !== undefined ? p.baseVidaAzul : p.vidaAzul;
-    return baseFinal + (p.hechizos?.vidaAzulExtra || 0) + (p.buffs?.vidaAzulExtra || 0) + deltaBlue;
+    // La base absoluta es el valor dictado + las alteraciones directas a la vitalidad
+    const basePura = (p.vidaRojaMax||0) + (p.hechizos?.vidaRojaMaxExtra||0) + (p.buffs?.vidaRojaMaxExtra||0);
+    // El bono por afinidad se calcula sumando la Física en sus 3 fases
+    const fisTotal = (p.afinidades.fisica||0) + (p.hechizos?.fisica||0) + (p.buffs?.fisica||0);
+    return basePura + Math.floor(fisTotal / 2);
 }
 
 export function calcularVexMax(p) {
     if (p.isNPC) return p.vex;
-    const oscTotal = p.afinidades.oscura + (p.hechizos?.oscura || 0) + (p.buffs?.oscura || 0);
+    const oscTotal = (p.afinidades.oscura||0) + (p.hechizos?.oscura||0) + (p.buffs?.oscura||0);
     return Math.round((oscTotal * 75) / 50) * 50;
 }
 
-// EMPAQUETADOR DE 4 FASES: Devuelve "Total_Base_Hechizos_Extra" (Ej: "61_40_21_0")
 function formatExp(base, spells, extra) {
     const b = parseInt(base) || 0;
     const s = parseInt(spells) || 0;
