@@ -28,22 +28,27 @@ window.mostrarPaginaOP = (subvista) => {
     if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
 };
 
-// NUEVA LÓGICA DE BOTONES INSTANTÁNEOS
 window.modificarBuff = (statId, cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado];
     if(!p) return;
-    if(!p.buffs) p.buffs = { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0 };
-
     p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
     guardar();
-    
-    // Refrescamos la vista de edición para ver el número cambiar
+    // Se redibuja para mostrar la Vida/VEX actualizada en tiempo real
     document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
+};
+
+// Modifica visualmente los inputs de creación de NPC antes de guardar
+window.modForm = (inputId, cantidad) => {
+    const input = document.getElementById(inputId);
+    if(input) {
+        let val = parseInt(input.value) || 0;
+        input.value = Math.max(0, val + cantidad); // Evita números negativos
+    }
 };
 
 window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
-    if(!nombre) return alert("Falta el nombre");
+    if(!nombre) return alert("Falta dar un nombre al NPC.");
     statsGlobal[nombre] = {
         isNPC: true,
         hex: parseInt(document.getElementById('npc-hex').value) || 0,
@@ -55,7 +60,7 @@ window.ejecutarCreacionNPC = () => {
         afinidades: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0 },
         buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0 }
     };
-    guardar(); alert("NPC Creado"); window.abrirDetalle(nombre);
+    guardar(); alert("¡NPC Forjado!"); window.abrirDetalle(nombre);
 };
 
 window.forzarSincronizacion = async () => {
@@ -95,5 +100,4 @@ async function iniciar() {
 }
 
 iniciar();
-
 
