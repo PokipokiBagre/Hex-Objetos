@@ -70,7 +70,7 @@ export function dibujarDetalle() {
     let estadosHTML = ''; let descEstadosHTML = '';
     const st = p.estados;
     if(st.veneno > 0) { estadosHTML += `<div class="status-badge badge-veneno">Veneno (${st.veneno})</div>`; descEstadosHTML += `<p><strong>Veneno (${st.veneno}):</strong> El objetivo pierde ${st.veneno} corazones rojos cada turno.</p>`; }
-    if(st.radiacion > 0) { estadosHTML += `<div class="status-badge badge-radiacion">Radiación (${st.radiacion})</div>`; descEstadosHTML += `<p><strong>Radiación (${st.radiacion}):</strong> Recibe ${st.radiacion} de daño rojo constante y ${st.radiacion} de daño azul al lanzar hechizos. Riesgo de Cáncer.</p>`; }
+    if(st.radiacion > 0) { estadosHTML += `<div class="status-badge badge-radiacion">Radiación (${st.radiacion})</div>`; descEstadosHTML += `<p><strong>Radiación (${st.radiacion}):</strong> Recibe ${st.radiacion} de daño rojo constante y ${st.radiacion} de daño azul al lanzar hechizos. Riesgo de autocastear Cáncer.</p>`; }
     if(st.maldito) { estadosHTML += `<div class="status-badge badge-maldito">Maldito</div>`; descEstadosHTML += `<p><strong>Maldito:</strong> Prohíbe al objetivo adquirir corazones extra.</p>`; }
     if(st.incapacitado) { estadosHTML += `<div class="status-badge badge-incapacitado">Incapacitado</div>`; descEstadosHTML += `<p><strong>Incapacitado:</strong> El daño por Ataques Simples se reduce a 0.</p>`; }
     if(st.debilitado) { estadosHTML += `<div class="status-badge badge-debilitado">Debilitado</div>`; descEstadosHTML += `<p><strong>Debilitado:</strong> Si recibe daño rojo, ese daño se duplica automáticamente.</p>`; }
@@ -157,21 +157,37 @@ export function dibujarDetalle() {
         </div>
     </div>`;
 
-    // ALTERACIONES TEMPORALES (TODOS LOS EXTRAS PASAN A LA PANTALLA PRINCIPAL)
-    const pVitalidadE = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo Extra', val: p.buffs.vidaRojaMaxExtra }, { id: 'vidaAzulExtra', label: 'C. Azules Extra', val: p.buffs.vidaAzulExtra }, { id: 'guardaDoradaExtra', label: 'Guarda Dorada Extra', val: p.buffs.guardaDoradaExtra } ];
-    const pOfensivaE = [ { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
-    const pAfinidadesE = [ { id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura } ];
+    // ARRAY UNIFICADO: Vida y Daño Extra fluyen juntos para eliminar huecos
+    const pVidaDanoE = [ 
+        { id: 'vidaRojaMaxExtra', label: 'Límite Rojo Extra', val: p.buffs.vidaRojaMaxExtra }, 
+        { id: 'vidaAzulExtra', label: 'C. Azules Extra', val: p.buffs.vidaAzulExtra }, 
+        { id: 'guardaDoradaExtra', label: 'Guarda Dorada Extra', val: p.buffs.guardaDoradaExtra },
+        { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, 
+        { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, 
+        { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } 
+    ];
+    // ARRAY UNIFICADO: Afinidades
+    const pAfinidadesE = [ 
+        { id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, 
+        { id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, 
+        { id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, 
+        { id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, 
+        { id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, 
+        { id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura } 
+    ];
 
     html += `
     <div style="margin-top:20px; background:#110022; border:1px solid #00ffff; padding:20px; border-radius:8px;">
         <h3 style="margin-top:0; color:#00ffff; text-align:center;">Alteraciones Temporales (Extras)</h3>
-        <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:15px;">Estos valores representan buffs o debuffs aplicados sobre la base.</p>
-        <div class="edit-grid" style="margin-bottom: 20px;">${pVitalidadE.map(f => genCard(f, 'buff')).join('')}</div>
-        <div class="edit-grid" style="margin-bottom: 20px;">${pOfensivaE.map(f => genCard(f, 'buff')).join('')}</div>
-        <div class="edit-grid" style="margin-bottom: 20px;">${pAfinidadesE.map(f => genCard(f, 'buff')).join('')}</div>
+        <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:20px;">Estos valores representan buffs o debuffs aplicados sobre la base.</p>
+        
+        <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">1. Buffs de Vida y Daño</h4>
+        <div class="edit-grid" style="margin-bottom: 30px;">${pVidaDanoE.map(f => genCard(f, 'buff')).join('')}</div>
+        
+        <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">2. Afinidades Temporales</h4>
+        <div class="edit-grid" style="margin-bottom: 10px;">${pAfinidadesE.map(f => genCard(f, 'buff')).join('')}</div>
     </div>`;
 
-    // IMPORTACIÓN DE ESTADOS
     let opcionesPersonajes = Object.keys(statsGlobal)
         .filter(n => n !== nombre)
         .map(n => `<option value="${n}">${n}</option>`)
@@ -206,12 +222,10 @@ export function dibujarMenuOP() {
     `;
 }
 
-// GENERADOR DE TARJETAS INTELIGENTE
 function genCard(f, tipoAccion) {
     let btns = '';
     let clickMod = '';
     
-    // Selecciona a qué función matemática atacar según lo que se esté editando
     if (tipoAccion === 'buff') clickMod = 'window.modificarBuff';
     else if (tipoAccion === 'directo') clickMod = 'window.modificarDirecto';
     else if (tipoAccion === 'baseTop') clickMod = 'window.modBaseTop';
@@ -240,31 +254,46 @@ function genCard(f, tipoAccion) {
 
 export function dibujarFormularioCrear() {
     const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
-    const pVitalidad = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 } ];
-    const pOfensiva = [ { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
+    
+    // Unificación en creación de NPC
+    const pVidaDano = [ 
+        { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, 
+        { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 },
+        { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 }
+    ];
+    
     const pAfinidades = [ { id:'npc-fis', label:'Afin. Física', val:0 }, { id:'npc-ene', label:'Afin. Energética', val:0 }, { id:'npc-esp', label:'Afin. Espiritual', val:0 }, { id:'npc-man', label:'Afin. Mando', val:0 }, { id:'npc-psi', label:'Afin. Psíquica', val:0 }, { id:'npc-osc', label:'Afin. Oscura', val:0 } ];
     
     return `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
         <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje / NPC</h3>
         <input type="text" id="npc-nombre" placeholder="Nombre del NPC..." style="width:100%; max-width:400px; margin-bottom:20px; padding:10px; background:#000; color:var(--gold); border:1px solid var(--gold); font-size:1.2em; text-align:center;">
-        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Energía</h3><div class="edit-grid" style="margin-bottom: 20px;">${pEnergia.map(f => genCard(f, 'form')).join('')}</div>
-        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Vitalidad</h3><div class="edit-grid" style="margin-bottom: 20px;">${pVitalidad.map(f => genCard(f, 'form')).join('')}</div>
-        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Ofensiva</h3><div class="edit-grid" style="margin-bottom: 20px;">${pOfensiva.map(f => genCard(f, 'form')).join('')}</div>
-        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">4. Afinidades</h3><div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, 'form')).join('')}</div>
+        
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Energía Base</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pEnergia.map(f => genCard(f, 'form')).join('')}</div>
+        
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Vitalidad y Ofensiva Base</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pVidaDano.map(f => genCard(f, 'form')).join('')}</div>
+        
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Base</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, 'form')).join('')}</div>
+        
         <button onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">GUARDAR PERSONAJE</button>
     </div>`;
 }
 
-// ESTE ES AHORA EL EDITOR DE "BASES PERMANENTES" Y "EFECTOS DE ESTADO"
 export function dibujarFormularioEditar() {
     const p = statsGlobal[estadoUI.personajeSeleccionado];
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
     
-    // Mapeamos a las BASES (No a los buffs temporales)
-    const pVitalidad = [ { id: 'vidaRojaMax', label: 'Límite Rojo Base', val: p.vidaRojaMax } ];
-    const pOfensiva = [ { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
-    const pAfinidades = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
+    // Arrays Unificados para Bases
+    const pVidaDanoBase = [ 
+        { id: 'vidaRojaMax', label: 'Límite Rojo Base', val: p.vidaRojaMax },
+        { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, 
+        { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, 
+        { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } 
+    ];
+    const pAfinidadesBase = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
 
     let html = `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
@@ -300,10 +329,10 @@ export function dibujarFormularioEditar() {
     });
     html += `</div>`;
 
-    // Edición de las Bases (Usa un tipo especial para redirigir la matemática a las Variables de Afinidades)
-    html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Vitalidad Límite Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pVitalidad.map(f => genCard(f, 'baseTop')).join('')}</div>
-             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Ofensiva Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pOfensiva.map(f => genCard(f, 'baseTop')).join('')}</div>
-             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, 'baseAfin')).join('')}</div>
+    html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Vitalidad y Ofensiva Base</h3>
+             <div class="edit-grid" style="margin-bottom: 20px;">${pVidaDanoBase.map(f => genCard(f, 'baseTop')).join('')}</div>
+             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Afinidades Base</h3>
+             <div class="edit-grid" style="margin-bottom: 20px;">${pAfinidadesBase.map(f => genCard(f, 'baseAfin')).join('')}</div>
     </div>`;
 
     return html;
