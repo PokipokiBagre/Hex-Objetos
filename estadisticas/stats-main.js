@@ -3,7 +3,6 @@ import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax } from './stats-logic.js';
 
-// ELIMINADOR DE PARPADEOS DEFINITIVO: Ancla la altura del div específico
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -48,7 +47,6 @@ window.modificarBuff = (statId, cantidad) => {
     const maxRojoPrev = calcularVidaRojaMax(p);
     p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
     
-    // Auto-curar SOLO si aumentó el máximo rojo real a través de los Buffs/Afinidades extra
     const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
     if (deltaRojo > 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
 
@@ -84,6 +82,58 @@ window.toggleEstado = (estadoId) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.estados[estadoId] = !p.estados[estadoId]; guardar();
     repintarConScroll('op');
+};
+
+// NUEVA FUNCIÓN: CLONACIÓN TÁCTICA DE ESTADOS Y BASES
+window.ejecutarClonacion = (tipo) => {
+    const targetSelect = document.getElementById('clon-target');
+    if(!targetSelect) return;
+    
+    const targetName = targetSelect.value;
+    if(!targetName) {
+        alert("Por favor, selecciona un personaje objetivo primero en la lista.");
+        return;
+    }
+
+    const sourceName = estadoUI.personajeSeleccionado;
+    const msg = tipo === 'estados' 
+        ? `¿Seguro que deseas copiar solo los BUFFS y ESTADOS ALTERADOS de ${sourceName} a ${targetName}?` 
+        : `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName} (incluyendo su vida base, daño y afinidades originales)?`;
+
+    if(!confirm(msg)) return;
+
+    const source = statsGlobal[sourceName];
+    const target = statsGlobal[targetName];
+
+    // 1. Siempre se copian los Objetos Alterables (Buffs y Estados)
+    target.buffs = JSON.parse(JSON.stringify(source.buffs));
+    target.estados = JSON.parse(JSON.stringify(source.estados));
+
+    // 2. Si es 'Completo', se sobrescribe toda la anatomía del personaje
+    if (tipo === 'completo') {
+        target.vidaRojaActual = source.vidaRojaActual;
+        target.vidaRojaMax = source.vidaRojaMax;
+        
+        target.vidaAzul = source.vidaAzul;
+        target.baseVidaAzul = source.baseVidaAzul;
+        
+        target.guardaDorada = source.guardaDorada;
+        target.baseGuardaDorada = source.baseGuardaDorada;
+
+        target.afinidades = JSON.parse(JSON.stringify(source.afinidades));
+        target.danoRojo = source.danoRojo;
+        target.danoAzul = source.danoAzul;
+        target.elimDorada = source.elimDorada;
+        
+        target.hex = source.hex;
+        target.vex = source.vex;
+    }
+
+    guardar();
+    alert(`Transferencia completada. ${targetName} ha sido sobreescrito con los datos de ${sourceName}.`);
+    
+    targetSelect.value = ""; // Resetea el dropdown
+    repintarConScroll('detalle'); // Refresca visualmente sin salto
 };
 
 window.ejecutarCreacionNPC = () => {
