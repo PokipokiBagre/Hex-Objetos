@@ -1,10 +1,9 @@
-export let statsGlobal = {}; 
+export let statsGlobal = {};
 export let estadoUI = {
-    personajeActivo: null,
-    esAdmin: false,
-    paginaActiva: 'publico'
+    vistaActual: 'catalogo',
+    personajeSeleccionado: null
 };
 
-export function guardar() { 
-    localStorage.setItem('hex_stats_vFinal', JSON.stringify(statsGlobal)); 
+export function guardar() {
+    localStorage.setItem('hex_stats_v1', JSON.stringify({ stats: statsGlobal }));
 }
