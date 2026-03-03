@@ -1,10 +1,17 @@
 import { statsGlobal, estadoUI, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
-import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax } from './stats-logic.js';
+import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, calcularVidaAzulMax } from './stats-logic.js';
 
-function conScrollGuardado(accion) {
-    const scrollAnterior = window.scrollY; accion(); window.scrollTo(0, scrollAnterior);
+// ELIMINADOR DE PARPADEOS: Congela el height del contenedor padre para que no colapse a 0.
+function actualizarSinParpadeo(containerId, html) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const prevScroll = window.scrollY;
+    container.style.minHeight = container.getBoundingClientRect().height + 'px';
+    container.innerHTML = html;
+    window.scrollTo(0, prevScroll);
+    requestAnimationFrame(() => { container.style.minHeight = ''; });
 }
 
 window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
@@ -18,34 +25,49 @@ window.abrirMenuOP = () => {
 };
 
 window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = 'op'; refrescarVistas();
-    const sub = document.getElementById('sub-vista-op');
-    if(subvista === 'crear') sub.innerHTML = dibujarFormularioCrear();
-    if(subvista === 'editar') sub.innerHTML = dibujarFormularioEditar();
+    estadoUI.vistaActual = 'op';
+    refrescarVistas();
+    if(subvista === 'crear') actualizarSinParpadeo('sub-vista-op', dibujarFormularioCrear());
+    if(subvista === 'editar') actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
 };
 
 window.modificarBuff = (statId, cantidad) => {
-    conScrollGuardado(() => {
-        const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-        p.buffs[statId] = (p.buffs[statId] || 0) + cantidad; guardar();
-        if (estadoUI.vistaActual === 'detalle') refrescarVistas(); else document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
-    });
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    
+    // Capturamos el máximo antes del cambio
+    const maxRojoPrev = calcularVidaRojaMax(p);
+    const maxAzulPrev = calcularVidaAzulMax(p);
+
+    p.buffs[statId] = (p.buffs[statId] || 0) + cantidad;
+    
+    // Si la matemática de afinidades detectó un corazón extra, lo sumamos al Actual también
+    const deltaRojo = calcularVidaRojaMax(p) - maxRojoPrev;
+    const deltaAzul = calcularVidaAzulMax(p) - maxAzulPrev;
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    if (deltaAzul !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaAzul);
+
+    guardar();
+    
+    if (estadoUI.vistaActual === 'detalle') actualizarSinParpadeo('vista-detalle', ''); // Redibuja via refrescarVistas
+    else actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
+    
+    if (estadoUI.vistaActual === 'detalle') refrescarVistas();
 };
 
 window.modificarDirecto = (statId, cantidad) => {
-    conScrollGuardado(() => {
-        const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-        p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar();
-        document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
-    });
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar();
+    actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
 };
 
 window.modLibre = (statId, cantidad) => {
-    conScrollGuardado(() => {
-        const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-        p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar();
-        refrescarVistas();
-    });
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar();
+    
+    // Anulamos el parpadeo del menú público
+    const prevScroll = window.scrollY;
+    refrescarVistas();
+    window.scrollTo(0, prevScroll);
 };
 
 window.modForm = (inputId, cantidad) => {
@@ -54,19 +76,15 @@ window.modForm = (inputId, cantidad) => {
 };
 
 window.modEstado = (estadoId, cantidad) => {
-    conScrollGuardado(() => {
-        const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-        p.estados[estadoId] = Math.max(0, (p.estados[estadoId] || 0) + cantidad); guardar();
-        document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
-    });
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    p.estados[estadoId] = Math.max(0, (p.estados[estadoId] || 0) + cantidad); guardar();
+    actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
 };
 
 window.toggleEstado = (estadoId) => {
-    conScrollGuardado(() => {
-        const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-        p.estados[estadoId] = !p.estados[estadoId]; guardar();
-        document.getElementById('sub-vista-op').innerHTML = dibujarFormularioEditar();
-    });
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
+    p.estados[estadoId] = !p.estados[estadoId]; guardar();
+    actualizarSinParpadeo('sub-vista-op', dibujarFormularioEditar());
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -94,23 +112,13 @@ window.forzarSincronizacion = async () => {
 
 window.descargarAumentada = () => { descargarArchivoCSV(generarCSVExportacion(), "HEX_ESTADOS_AUMENTADO.csv"); };
 
-// REPARACIÓN: Creación de input al vuelo en lugar de depender del HTML oculto.
 window.triggerSubirCSV = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv';
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv';
     input.onchange = (e) => {
-        const archivo = e.target.files[0];
-        if (!archivo) return;
-        const lector = new FileReader();
-        lector.onload = function(ev) {
-            procesarTextoCSV(ev.target.result);
-            alert("CSV inyectado localmente.");
-            window.mostrarCatalogo();
-        };
+        const archivo = e.target.files[0]; if (!archivo) return; const lector = new FileReader();
+        lector.onload = function(ev) { procesarTextoCSV(ev.target.result); alert("CSV inyectado."); window.mostrarCatalogo(); };
         lector.readAsText(archivo);
-    };
-    input.click();
+    }; input.click();
 };
 
 function refrescarVistas() {
