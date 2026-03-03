@@ -16,12 +16,7 @@ const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.p
 function asegurarEstructuras(p) {
     if(!p.buffs) p.buffs = {}; if(!p.hechizos) p.hechizos = {};
     if(!p.estados) p.estados = {};
-    
-    // Inyección dinámica de variables de estado faltantes
-    listaEstados.forEach(e => {
-        if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false;
-    });
-
+    listaEstados.forEach(e => { if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false; });
     const props = ['fisica', 'energetica', 'espiritual', 'mando', 'psiquica', 'oscura', 'danoRojo', 'danoAzul', 'elimDorada', 'vidaRojaMaxExtra', 'vidaAzulExtra', 'guardaDoradaExtra'];
     props.forEach(pr => { p.buffs[pr] = p.buffs[pr] || 0; p.hechizos[pr] = p.hechizos[pr] || 0; if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; });
     if(p.isActive === undefined) p.isActive = true;
@@ -65,21 +60,38 @@ export function dibujarDetalle() {
     if(!p) return; asegurarEstructuras(p);
     const contenedor = document.getElementById('vista-detalle');
 
-    let vidaRojaVisual = calcularVidaRojaMax(p); let vidaAzulVisual = calcularVidaAzulMax(p); let vexVisual = calcularVexMax(p);
+    let vidaRojaVisual = calcularVidaRojaMax(p); 
+    let vexVisual = calcularVexMax(p);
     let hexPercent = Math.min((p.hex / 4000) * 100, 100); let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
-    // VITALIDAD
-    let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual); let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual); let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
-    let corazonesRojosHTML = ''; for(let i=0; i<normalRojo; i++) corazonesRojosHTML += `<div class="heart-red"></div>`; for(let i=0; i<vaciosRojo; i++) corazonesRojosHTML += `<div class="heart-red empty"></div>`; for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
+    // VIDA ROJA
+    let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual); 
+    let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual); 
+    let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
+    let corazonesRojosHTML = ''; 
+    for(let i=0; i<normalRojo; i++) corazonesRojosHTML += `<div class="heart-red"></div>`; 
+    for(let i=0; i<vaciosRojo; i++) corazonesRojosHTML += `<div class="heart-red empty"></div>`; 
+    for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    let normalAzul = Math.min(p.vidaAzul, vidaAzulVisual); let extraAzul = Math.max(0, p.vidaAzul - vidaAzulVisual);
-    let corazonesAzulesHTML = ''; for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`; for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
+    // REGLA ESTRICTA AZUL: Solo la Base de Vida Azul y las Afinidades Base generan Claros.
+    const mysticBase = (p.afinidades.espiritual||0) + (p.afinidades.energetica||0) + (p.afinidades.psiquica||0) + (p.afinidades.mando||0);
+    const limitClarosAzul = (p.baseVidaAzul||0) + Math.floor(mysticBase / 4);
+
+    let normalAzul = Math.min(p.vidaAzul, limitClarosAzul); 
+    let extraAzul = Math.max(0, p.vidaAzul - limitClarosAzul);
+    let corazonesAzulesHTML = ''; 
+    for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`; 
+    for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    let limitBaseGuarda = p.baseGuardaDorada || 0;
-    let normalGuarda = Math.min(p.guardaDorada, limitBaseGuarda); let extraGuarda = Math.max(0, p.guardaDorada - limitBaseGuarda);
-    let guardasHTML = ''; for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`; for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
+    // REGLA ESTRICTA DORADA: Solo la Base de Guarda Dorada genera Claros.
+    const limitClarosGuarda = p.baseGuardaDorada || 0;
+    let normalGuarda = Math.min(p.guardaDorada, limitClarosGuarda); 
+    let extraGuarda = Math.max(0, p.guardaDorada - limitClarosGuarda);
+    let guardasHTML = ''; 
+    for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`; 
+    for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
     // RENDERIZADOR DINÁMICO DE ESTADOS CON TOOLTIPS
@@ -89,7 +101,6 @@ export function dibujarDetalle() {
         if (e.tipo === 'numero' && val > 0) {
             estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
         } else if (e.tipo === 'booleano' && val) {
-            // El color del texto depende si el fondo es claro u oscuro (ej: blanco para hueso)
             let colorTexto = e.id === 'huesos' ? '#000' : '#fff';
             let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid';
             estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`;
@@ -141,12 +152,39 @@ export function dibujarDetalle() {
     <div style="margin-top:30px; background:#0a0014; border:1px solid var(--gold); padding:20px; border-radius:8px;">
         <h3 style="margin-top:0; color:var(--gold); text-align:center;">Acciones Rápidas (Vida y Energía)</h3>
         <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
-            <div class="edit-card"><h4>Ganancia HEX</h4><div class="btn-row"><button class="btn-plus" onclick="window.modLibre('hex', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('hex', -1)">-1</button></div><div class="btn-row"><button class="btn-plus" onclick="window.modLibre('hex', 10)">+10</button><button class="btn-minus" onclick="window.modLibre('hex', -10)">-10</button></div><div class="btn-row"><button class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 50)">+50</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -50)">-50</button></div><div class="btn-row"><button class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 100)">+100</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -100)">-100</button></div><div class="btn-row"><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button></div></div>
-            <div class="edit-card"><h4>Vida Roja (Actual)</h4><div class="btn-row"><button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button><button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button></div><div class="btn-row"><button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button><button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button></div></div>
-            <div class="edit-card"><h4>Corazones Azules Base</h4><div class="btn-row"><button class="btn-plus" onclick="window.modLibre('vidaAzul', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('vidaAzul', -1)">-1</button></div><div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('vidaAzul', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('vidaAzul', -5)">-5</button></div></div>
-            <div class="edit-card"><h4>C. Azules <span style="color:#00ff00">(EXTRA)</span></h4><div class="btn-row"><button class="btn-plus" style="background:#330066;" onclick="window.modBlueExtra(1)">+1</button><button class="btn-minus" onclick="window.modBlueExtra(-1)">-1</button></div><div class="btn-row"><button class="btn-plus5" style="background:#004a4a;" onclick="window.modBlueExtra(5)">+5</button><button class="btn-minus5" onclick="window.modBlueExtra(-5)">-5</button></div></div>
-            <div class="edit-card"><h4>Guarda Dorada Base</h4><div class="btn-row"><button class="btn-plus" onclick="window.modLibre('guardaDorada', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('guardaDorada', -1)">-1</button></div><div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('guardaDorada', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('guardaDorada', -5)">-5</button></div></div>
-            <div class="edit-card"><h4>Guarda Dorada <span style="color:#00ff00">(EXTRA)</span></h4><div class="btn-row"><button class="btn-plus" style="background:#330066;" onclick="window.modGoldExtra(1)">+1</button><button class="btn-minus" onclick="window.modGoldExtra(-1)">-1</button></div><div class="btn-row"><button class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div></div>
+            <div class="edit-card">
+                <h4>Ganancia HEX</h4>
+                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('hex', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('hex', -1)">-1</button></div>
+                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('hex', 10)">+10</button><button class="btn-minus" onclick="window.modLibre('hex', -10)">-10</button></div>
+                <div class="btn-row"><button class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 50)">+50</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -50)">-50</button></div>
+                <div class="btn-row"><button class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 100)">+100</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -100)">-100</button></div>
+                <div class="btn-row"><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>Vida Roja (Actual)</h4>
+                <div class="btn-row"><button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button><button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button></div>
+                <div class="btn-row"><button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button><button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>Corazones Azules Base</h4>
+                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('vidaAzul', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('vidaAzul', -1)">-1</button></div>
+                <div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('vidaAzul', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('vidaAzul', -5)">-5</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>C. Azules <span style="color:#00ff00">(EXTRA)</span></h4>
+                <div class="btn-row"><button class="btn-plus" style="background:#330066;" onclick="window.modBlueExtra(1)">+1</button><button class="btn-minus" onclick="window.modBlueExtra(-1)">-1</button></div>
+                <div class="btn-row"><button class="btn-plus5" style="background:#004a4a;" onclick="window.modBlueExtra(5)">+5</button><button class="btn-minus5" onclick="window.modBlueExtra(-5)">-5</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>Guarda Dorada Base</h4>
+                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('guardaDorada', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('guardaDorada', -1)">-1</button></div>
+                <div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('guardaDorada', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('guardaDorada', -5)">-5</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>Guarda Dorada <span style="color:#00ff00">(EXTRA)</span></h4>
+                <div class="btn-row"><button class="btn-plus" style="background:#330066;" onclick="window.modGoldExtra(1)">+1</button><button class="btn-minus" onclick="window.modGoldExtra(-1)">-1</button></div>
+                <div class="btn-row"><button class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
+            </div>
         </div>
     </div>`;
 
@@ -169,7 +207,9 @@ export function dibujarDetalle() {
         <h3 style="margin-top:0; color:var(--gold);">Importación de Estados</h3>
         <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa los estados alterados o clona toda la ficha <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
         <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
-            <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;"><option value="" disabled selected>-- Selecciona Origen --</option>${opcionesPersonajes}</select>
+            <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;">
+                <option value="" disabled selected>-- Selecciona Origen --</option>${opcionesPersonajes}
+            </select>
             <button onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados Alterados</button>
             <button onclick="window.ejecutarClonacion('completo')" style="background:#4a0000; border:1px solid #ff4444; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar por Completo</button>
         </div>
@@ -261,7 +301,6 @@ export function dibujarFormularioEditar() {
         html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">0. Energía Base (NPC)</h3><div class="edit-grid" style="margin-bottom: 20px;">${pNPC.map(f => genCard(f, 'directo')).join('')}</div>`;
     }
 
-    // RENDERIZADOR DINÁMICO DE BOTONES DE ESTADO
     html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top:30px;">Efectos de Estado</h3>
              <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom:20px;">`;
     
@@ -296,3 +335,6 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
+    return html;
+}
+
