@@ -25,11 +25,10 @@ export function procesarTextoCSV(texto) {
     filas.slice(1).forEach(f => {
         const nombre = f[0]; 
         if (!nombre) return;
-        
         const cols = Array.from({length: 16}, (_, i) => f[i] || '0');
 
         statsGlobal[nombre] = {
-            isNPC: false, // Por defecto, los del CSV usan fórmulas
+            isNPC: false,
             hex: parseInt(cols[1]) || 0,
             vex: parseInt(cols[2]) || 0,
             afinidades: {
@@ -38,12 +37,15 @@ export function procesarTextoCSV(texto) {
                 psiquica: parseInt(cols[7]) || 0, oscura: parseInt(cols[8]) || 0
             },
             vidaRojaActual: parseInt(cols[9]) || 0, vidaRojaMax: parseInt(cols[10]) || 0,
-            vidaAzul: parseInt(cols[11]) || 0, guardaDorada: parseInt(cols[12]) || 0,
-            // DAÑOS AÑADIDOS
+            
+            // Se guardan los "Base" para calcular corazones desbordados visualmente
+            vidaAzul: parseInt(cols[11]) || 0, baseVidaAzul: parseInt(cols[11]) || 0,
+            guardaDorada: parseInt(cols[12]) || 0, baseGuardaDorada: parseInt(cols[12]) || 0,
+            
             danoRojo: parseInt(cols[13]) || 0, danoAzul: parseInt(cols[14]) || 0, elimDorada: parseInt(cols[15]) || 0,
-            // BUFFS TEMPORALES
-            buffs: { fisica: 0, energetica: 0, espiritual: 0, mando: 0, psiquica: 0, oscura: 0, danoRojo: 0, danoAzul: 0, elimDorada: 0, vidaRojaMaxExtra: 0 }
+            buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0 }
         };
     });
     guardar();
 }
+
