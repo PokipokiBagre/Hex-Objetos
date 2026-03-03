@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+
 :root {
-    --bg-dark: #0a0014;
+    --bg-dark: #120024;
     --gold: #d4af37;
     --gold-dim: rgba(212, 175, 55, 0.3);
     --red-life: #cc0000;
@@ -7,15 +9,17 @@
 }
 
 body {
+    font-family: 'Cinzel', serif;
     background-color: var(--bg-dark);
-    color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image: radial-gradient(circle, #1a0033 0%, #000 100%);
+    color: #ffffff;
     margin: 0;
     padding: 20px;
+    min-height: 100vh;
     text-align: center;
 }
 
-h1, h2, h3 { color: var(--gold); }
+h1, h2, h3 { color: var(--gold); text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
 
 /* Botones OP */
 button {
@@ -150,3 +154,4 @@ button:hover { background: var(--gold); color: var(--bg-dark); }
     cursor: pointer; border-radius: 4px; transition: 0.2s; font-size: 0.8em;
 }
 .status-toggle.active { background: #d4af37; color: #000; font-weight: bold; }
+
