@@ -169,9 +169,8 @@ export function dibujarDetalle() {
         </div>
     </div>`;
 
-    // BLOQUE DE CLONACIÓN
     let opcionesPersonajes = Object.keys(statsGlobal)
-        .filter(n => n !== nombre) // No mostrarse a sí mismo
+        .filter(n => n !== nombre)
         .map(n => `<option value="${n}">${n}</option>`)
         .join('');
 
