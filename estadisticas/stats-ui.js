@@ -1,5 +1,5 @@
 import { statsGlobal, estadoUI } from './stats-state.js';
-import { calcularVidaRojaMax, calcularVexMax } from './stats-logic.js';
+import { calcularVidaRojaMax, calcularVidaAzulMax, calcularVexMax } from './stats-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 const calcTotal = (base, buff) => (base || 0) + (buff || 0);
@@ -38,6 +38,7 @@ export function dibujarDetalle() {
 
     const contenedor = document.getElementById('vista-detalle');
     let vidaRojaVisual = calcularVidaRojaMax(p);
+    let vidaAzulVisual = calcularVidaAzulMax(p);
     let vexVisual = calcularVexMax(p);
     let hexPercent = Math.min((p.hex / 4000) * 100, 100);
     let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
@@ -51,19 +52,16 @@ export function dibujarDetalle() {
     for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    const baseS = p.afinidades.espiritual + p.afinidades.energetica + p.afinidades.psiquica + p.afinidades.mando;
-    const buffS = baseS + (p.buffs.espiritual||0) + (p.buffs.energetica||0) + (p.buffs.psiquica||0) + (p.buffs.mando||0);
-    const deltaBlue = Math.floor(buffS / 4) - Math.floor(baseS / 4); 
-
-    let normalAzul = Math.max(0, p.vidaAzul);
-    let extraAzul = Math.max(0, (p.buffs.vidaAzulExtra || 0) + deltaBlue);
+    let extraAzul = Math.max(0, p.vidaAzul - vidaAzulVisual);
+    let normalAzul = Math.min(p.vidaAzul, vidaAzulVisual);
     let corazonesAzulesHTML = ''; 
     for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`;
     for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    let normalGuarda = Math.max(0, p.guardaDorada);
-    let extraGuarda = Math.max(0, p.buffs.guardaDoradaExtra || 0);
+    let baseGuarda = p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : p.guardaDorada;
+    let extraGuarda = Math.max(0, p.guardaDorada - baseGuarda);
+    let normalGuarda = Math.min(p.guardaDorada, baseGuarda);
     let guardasHTML = ''; 
     for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`;
     for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
@@ -72,18 +70,18 @@ export function dibujarDetalle() {
     let estadosHTML = ''; let descEstadosHTML = '';
     const st = p.estados;
     if(st.veneno > 0) { estadosHTML += `<div class="status-badge badge-veneno">Veneno (${st.veneno})</div>`; descEstadosHTML += `<p><strong>Veneno (${st.veneno}):</strong> El objetivo pierde ${st.veneno} corazones rojos cada turno.</p>`; }
-    if(st.radiacion > 0) { estadosHTML += `<div class="status-badge badge-radiacion">Radiación (${st.radiacion})</div>`; descEstadosHTML += `<p><strong>Radiación (${st.radiacion}):</strong> Recibe ${st.radiacion} de daño rojo constante y ${st.radiacion} de daño azul al lanzar hechizos. Riesgo de autocastear Cáncer (Dado 5).</p>`; }
-    if(st.maldito) { estadosHTML += `<div class="status-badge badge-maldito">Maldito</div>`; descEstadosHTML += `<p><strong>Maldito:</strong> Prohíbe al objetivo adquirir corazones extra (vitalidad adicional).</p>`; }
+    if(st.radiacion > 0) { estadosHTML += `<div class="status-badge badge-radiacion">Radiación (${st.radiacion})</div>`; descEstadosHTML += `<p><strong>Radiación (${st.radiacion}):</strong> Recibe ${st.radiacion} de daño rojo constante y ${st.radiacion} de daño azul al lanzar hechizos. Riesgo de Cáncer.</p>`; }
+    if(st.maldito) { estadosHTML += `<div class="status-badge badge-maldito">Maldito</div>`; descEstadosHTML += `<p><strong>Maldito:</strong> Prohíbe al objetivo adquirir corazones extra.</p>`; }
     if(st.incapacitado) { estadosHTML += `<div class="status-badge badge-incapacitado">Incapacitado</div>`; descEstadosHTML += `<p><strong>Incapacitado:</strong> El daño por Ataques Simples se reduce a 0.</p>`; }
     if(st.debilitado) { estadosHTML += `<div class="status-badge badge-debilitado">Debilitado</div>`; descEstadosHTML += `<p><strong>Debilitado:</strong> Si recibe daño rojo, ese daño se duplica automáticamente.</p>`; }
-    if(st.angustia) { estadosHTML += `<div class="status-badge badge-angustia">Angustia</div>`; descEstadosHTML += `<p><strong>Angustia:</strong> Aumenta el costo de casteo de todos los hechizos en 500 HEX.</p>`; }
-    if(st.petrificacion) { estadosHTML += `<div class="status-badge badge-petrificacion">Petrificación</div>`; descEstadosHTML += `<p><strong>Petrificación:</strong> Inmovilización total; no puede lanzar hechizos ni realizar Ataques Simples.</p>`; }
-    if(st.secuestrado) { estadosHTML += `<div class="status-badge badge-secuestrado">Secuestrado</div>`; descEstadosHTML += `<p><strong>Secuestrado:</strong> Retirado de la acción. No puede realizar movimientos.</p>`; }
-    if(st.huesos) { estadosHTML += `<div class="status-badge badge-huesos">En los Huesos</div>`; descEstadosHTML += `<p><strong>En los Huesos:</strong> La vida ya no se pierde de 1 en 1, sino en bloques fijos de 3, 7 o 13.</p>`; }
-    if(st.comestible) { estadosHTML += `<div class="status-badge badge-comestible">Comestible</div>`; descEstadosHTML += `<p><strong>Comestible:</strong> Unifica barras. Al ser atacado, entrega 3 corazones a aliados y 5 a enemigos.</p>`; }
-    if(st.cifrado) { estadosHTML += `<div class="status-badge badge-cifrado">Cifrado</div>`; descEstadosHTML += `<p><strong>Cifrado:</strong> Genera 10 de HEX por cada palabra "cifrada" en su diálogo (Tope 1200).</p>`; }
-    if(st.inversion) { estadosHTML += `<div class="status-badge badge-inversion">Inversión</div>`; descEstadosHTML += `<p><strong>Inversión:</strong> Cualquier curación o restauración de vida se transforma en daño equivalente.</p>`; }
-    if(st.verde) { estadosHTML += `<div class="status-badge badge-verde">Verde</div>`; descEstadosHTML += `<p><strong>Verde:</strong> Estado de 'buena persona'. Permite reciclar objetos para ganar 20 de HEX instantáneamente.</p>`; }
+    if(st.angustia) { estadosHTML += `<div class="status-badge badge-angustia">Angustia</div>`; descEstadosHTML += `<p><strong>Angustia:</strong> Aumenta el costo de casteo de hechizos en 500 HEX.</p>`; }
+    if(st.petrificacion) { estadosHTML += `<div class="status-badge badge-petrificacion">Petrificación</div>`; descEstadosHTML += `<p><strong>Petrificación:</strong> Inmovilización total.</p>`; }
+    if(st.secuestrado) { estadosHTML += `<div class="status-badge badge-secuestrado">Secuestrado</div>`; descEstadosHTML += `<p><strong>Secuestrado:</strong> Retirado de la acción.</p>`; }
+    if(st.huesos) { estadosHTML += `<div class="status-badge badge-huesos">En los Huesos</div>`; descEstadosHTML += `<p><strong>En los Huesos:</strong> La vida se pierde en bloques fijos de 3, 7 o 13.</p>`; }
+    if(st.comestible) { estadosHTML += `<div class="status-badge badge-comestible">Comestible</div>`; descEstadosHTML += `<p><strong>Comestible:</strong> Unifica barras. Entrega 3 corazones a aliados y 5 a enemigos al ser atacado.</p>`; }
+    if(st.cifrado) { estadosHTML += `<div class="status-badge badge-cifrado">Cifrado</div>`; descEstadosHTML += `<p><strong>Cifrado:</strong> Genera 10 de HEX por palabra "cifrada" (Tope 1200).</p>`; }
+    if(st.inversion) { estadosHTML += `<div class="status-badge badge-inversion">Inversión</div>`; descEstadosHTML += `<p><strong>Inversión:</strong> La curación se transforma en daño.</p>`; }
+    if(st.verde) { estadosHTML += `<div class="status-badge badge-verde">Verde</div>`; descEstadosHTML += `<p><strong>Verde:</strong> Permite reciclar objetos para ganar 20 de HEX.</p>`; }
 
     let bloqueDescripciones = descEstadosHTML !== '' ? `<div style="margin-top:10px; padding:10px 15px; background:rgba(0,0,0,0.5); border-left:3px solid var(--gold); font-size:0.85em; color:#ccc; border-radius:4px; text-align:left;">${descEstadosHTML}</div>` : '';
 
@@ -94,7 +92,7 @@ export function dibujarDetalle() {
             <h1 style="margin: 0;">${nombre.toUpperCase()} ${p.isNPC ? '<span style="font-size:0.4em; color:#aaa">[NPC]</span>' : ''}</h1>
             <div class="status-container">${estadosHTML}</div>
         </div>
-        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="margin-left:auto; background:#4a004a; border-color:#d4af37;">Editar / Buffs</button>` : ''}
+        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="margin-left:auto; background:#1a0033; border-color:#d4af37;">Editar Ficha Base</button>` : ''}
     </div>
     ${bloqueDescripciones}
 
@@ -107,8 +105,8 @@ export function dibujarDetalle() {
         <div>
             <h3 style="margin-top:0;">Vitalidad</h3>
             <div class="health-box"><label style="color:var(--red-life);">VIDA ROJA (${p.vidaRojaActual}/${vidaRojaVisual})</label><div class="health-grid">${corazonesRojosHTML}</div></div>
-            <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${normalAzul + extraAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
-            <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${normalGuarda + extraGuarda})</label><div class="health-grid">${guardasHTML}</div></div>
+            <div class="health-box"><label style="color:var(--blue-life);">VIDA AZUL (${p.vidaAzul})</label><div class="health-grid">${corazonesAzulesHTML}</div></div>
+            <div class="health-box"><label style="color:var(--gold);">GUARDA DORADA (${p.guardaDorada})</label><div class="health-grid">${guardasHTML}</div></div>
             
             <h3 style="margin-top:20px;">Ofensiva</h3>
             <div class="affinities-grid">
@@ -131,7 +129,7 @@ export function dibujarDetalle() {
     </div>
     
     <div style="margin-top:30px; background:#0a0014; border:1px solid var(--gold); padding:20px; border-radius:8px;">
-        <h3 style="margin-top:0; color:var(--gold); text-align:center;">Acciones Rápidas</h3>
+        <h3 style="margin-top:0; color:var(--gold); text-align:center;">Acciones Rápidas (Vida y Energía)</h3>
         <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
             <div class="edit-card">
                 <h4>Ganancia HEX</h4>
@@ -147,30 +145,35 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button><button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button></div>
             </div>
             <div class="edit-card">
-                <h4>C. Azules (Base)</h4>
+                <h4>Corazones Azules Base</h4>
                 <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('vidaAzul', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('vidaAzul', -1)">-1</button></div>
                 <div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('vidaAzul', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('vidaAzul', -5)">-5</button></div>
             </div>
             <div class="edit-card">
-                <h4>C. Azules <span style="color:#00ff00">(EXTRA)</span></h4>
-                <div class="btn-row"><button class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaAzulExtra', 1)">+1</button><button class="btn-minus" onclick="window.modificarBuff('vidaAzulExtra', -1)">-1</button></div>
-                <div class="btn-row"><button class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaAzulExtra', 5)">+5</button><button class="btn-minus5" onclick="window.modificarBuff('vidaAzulExtra', -5)">-5</button></div>
-            </div>
-            <div class="edit-card">
-                <h4>Guarda Dorada (Base)</h4>
+                <h4>Guarda Dorada Base</h4>
                 <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('guardaDorada', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('guardaDorada', -1)">-1</button></div>
                 <div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('guardaDorada', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('guardaDorada', -5)">-5</button></div>
-            </div>
-            <div class="edit-card">
-                <h4>Guarda Dorada <span style="color:#00ff00">(EXTRA)</span></h4>
-                <div class="btn-row"><button class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('guardaDoradaExtra', 1)">+1</button><button class="btn-minus" onclick="window.modificarBuff('guardaDoradaExtra', -1)">-1</button></div>
-                <div class="btn-row"><button class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('guardaDoradaExtra', 5)">+5</button><button class="btn-minus5" onclick="window.modificarBuff('guardaDoradaExtra', -5)">-5</button></div>
             </div>
         </div>
     </div>`;
 
-let opcionesPersonajes = Object.keys(statsGlobal)
-        .filter(n => n !== nombre) // No mostrarse a sí mismo
+    // ALTERACIONES TEMPORALES (TODOS LOS EXTRAS PASAN A LA PANTALLA PRINCIPAL)
+    const pVitalidadE = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo Extra', val: p.buffs.vidaRojaMaxExtra }, { id: 'vidaAzulExtra', label: 'C. Azules Extra', val: p.buffs.vidaAzulExtra }, { id: 'guardaDoradaExtra', label: 'Guarda Dorada Extra', val: p.buffs.guardaDoradaExtra } ];
+    const pOfensivaE = [ { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
+    const pAfinidadesE = [ { id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura } ];
+
+    html += `
+    <div style="margin-top:20px; background:#110022; border:1px solid #00ffff; padding:20px; border-radius:8px;">
+        <h3 style="margin-top:0; color:#00ffff; text-align:center;">Alteraciones Temporales (Extras)</h3>
+        <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:15px;">Estos valores representan buffs o debuffs aplicados sobre la base.</p>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pVitalidadE.map(f => genCard(f, 'buff')).join('')}</div>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pOfensivaE.map(f => genCard(f, 'buff')).join('')}</div>
+        <div class="edit-grid" style="margin-bottom: 20px;">${pAfinidadesE.map(f => genCard(f, 'buff')).join('')}</div>
+    </div>`;
+
+    // IMPORTACIÓN DE ESTADOS
+    let opcionesPersonajes = Object.keys(statsGlobal)
+        .filter(n => n !== nombre)
         .map(n => `<option value="${n}">${n}</option>`)
         .join('');
 
@@ -203,11 +206,20 @@ export function dibujarMenuOP() {
     `;
 }
 
+// GENERADOR DE TARJETAS INTELIGENTE
 function genCard(f, tipoAccion) {
     let btns = '';
-    const clickMod = tipoAccion === 'buff' ? 'window.modificarBuff' : (tipoAccion === 'directo' ? 'window.modificarDirecto' : 'window.modForm');
-    const visualVal = tipoAccion === 'buff' ? (f.val > 0 ? `+${f.val}` : f.val) : f.val;
-    const colorStyle = tipoAccion === 'buff' ? (f.val > 0 ? 'color:#00ff00;' : (f.val < 0 ? 'color:red;' : 'color:var(--gold);')) : 'color:white;';
+    let clickMod = '';
+    
+    // Selecciona a qué función matemática atacar según lo que se esté editando
+    if (tipoAccion === 'buff') clickMod = 'window.modificarBuff';
+    else if (tipoAccion === 'directo') clickMod = 'window.modificarDirecto';
+    else if (tipoAccion === 'baseTop') clickMod = 'window.modBaseTop';
+    else if (tipoAccion === 'baseAfin') clickMod = 'window.modBaseAfin';
+    else if (tipoAccion === 'form') clickMod = 'window.modForm';
+
+    const visualVal = (tipoAccion === 'buff') ? (f.val > 0 ? `+${f.val}` : f.val) : f.val;
+    const colorStyle = (tipoAccion === 'buff') ? (f.val > 0 ? 'color:#00ff00;' : (f.val < 0 ? 'color:red;' : 'color:var(--gold);')) : 'color:white;';
 
     if (f.esHex) {
         btns = `<div class="btn-row"><button class="btn-plus" onclick="${clickMod}('${f.id}', 10)">+10</button><button class="btn-minus" onclick="${clickMod}('${f.id}', -10)">-10</button></div>
@@ -244,28 +256,26 @@ export function dibujarFormularioCrear() {
     </div>`;
 }
 
+// ESTE ES AHORA EL EDITOR DE "BASES PERMANENTES" Y "EFECTOS DE ESTADO"
 export function dibujarFormularioEditar() {
     const p = statsGlobal[estadoUI.personajeSeleccionado];
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
-    asegurarBuffs(p);
-
-    const pVitalidad = [ { id: 'vidaRojaMaxExtra', label: 'C. Rojos Límite Extra', val: p.buffs.vidaRojaMaxExtra }, { id: 'vidaAzulExtra', label: 'C. Azules Extra', val: p.buffs.vidaAzulExtra }, { id: 'guardaDoradaExtra', label: 'Guarda Dorada Extra', val: p.buffs.guardaDoradaExtra } ];
-    const pOfensiva = [ { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
-    const pAfinidades = [ { id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura } ];
+    
+    // Mapeamos a las BASES (No a los buffs temporales)
+    const pVitalidad = [ { id: 'vidaRojaMax', label: 'Límite Rojo Base', val: p.vidaRojaMax } ];
+    const pOfensiva = [ { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
+    const pAfinidades = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
 
     let html = `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
-        <h3 style="margin-top:0; color:var(--gold)">Alteración Temporal: ${estadoUI.personajeSeleccionado}</h3>
+        <h3 style="margin-top:0; color:var(--gold)">Edición de Ficha Base: ${estadoUI.personajeSeleccionado}</h3>
         <button onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 15px;">⬅ Volver al Perfil</button>
-        
-        <div style="background:#111; border:1px dashed #d4af37; padding:15px; margin-bottom:20px; border-radius:8px; display:flex; justify-content:space-around;">
-            <span style="font-size:1.2em;">❤️ Vida Límite Actual: <strong style="color:var(--red-life); font-size:1.5em;">${calcularVidaRojaMax(p)}</strong></span>
-            <span style="font-size:1.2em;">🌀 VEX Máx Actual: <strong style="color:var(--blue-life); font-size:1.5em;">${calcularVexMax(p)}</strong></span>
-        </div>`;
+        <p style="color:#aaa; font-size:0.85em; margin-bottom:15px;">Estos valores son permanentes y se guardarán en la estructura original del personaje.</p>
+        `;
 
     if (p.isNPC) {
-        const pNPC = [ { id: 'hex', label: 'Subir/Bajar HEX', val: p.hex, esHex:true }, { id: 'vex', label: 'Subir/Bajar VEX', val: p.vex, esHex:true } ];
-        html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">0. Energía Base (Exclusivo NPC)</h3><div class="edit-grid" style="margin-bottom: 20px;">${pNPC.map(f => genCard(f, 'directo')).join('')}</div>`;
+        const pNPC = [ { id: 'hex', label: 'Base HEX', val: p.hex, esHex:true }, { id: 'vex', label: 'Base VEX', val: p.vex, esHex:true } ];
+        html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">0. Energía Base (NPC)</h3><div class="edit-grid" style="margin-bottom: 20px;">${pNPC.map(f => genCard(f, 'directo')).join('')}</div>`;
     }
 
     const st = p.estados;
@@ -278,10 +288,10 @@ export function dibujarFormularioEditar() {
 
     html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top:30px;">Efectos de Estado</h3>
              <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom:20px;">
-                <div class="edit-card"><h4>Veneno (Daño)</h4><span style="color:#00ff00; font-size:1.5em; font-weight:bold;">${st.veneno}</span>
+                <div class="edit-card"><h4>Veneno</h4><span style="color:#00ff00; font-size:1.5em; font-weight:bold;">${st.veneno}</span>
                     <div class="btn-row"><button class="btn-plus" onclick="window.modEstado('veneno', 1)">+1</button><button class="btn-minus" onclick="window.modEstado('veneno', -1)">-1</button></div>
                 </div>
-                <div class="edit-card"><h4>Radiación (Daño)</h4><span style="color:#ffff00; font-size:1.5em; font-weight:bold;">${st.radiacion}</span>
+                <div class="edit-card"><h4>Radiación</h4><span style="color:#ffff00; font-size:1.5em; font-weight:bold;">${st.radiacion}</span>
                     <div class="btn-row"><button class="btn-plus" onclick="window.modEstado('radiacion', 1)">+1</button><button class="btn-minus" onclick="window.modEstado('radiacion', -1)">-1</button></div>
                 </div>`;
     sBool.forEach(s => {
@@ -290,11 +300,11 @@ export function dibujarFormularioEditar() {
     });
     html += `</div>`;
 
-    html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Vitalidad Extra</h3><div class="edit-grid" style="margin-bottom: 20px;">${pVitalidad.map(f => genCard(f, 'buff')).join('')}</div>
-             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Ofensiva Extra</h3><div class="edit-grid" style="margin-bottom: 20px;">${pOfensiva.map(f => genCard(f, 'buff')).join('')}</div>
-             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Extra</h3><div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, 'buff')).join('')}</div>
+    // Edición de las Bases (Usa un tipo especial para redirigir la matemática a las Variables de Afinidades)
+    html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Vitalidad Límite Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pVitalidad.map(f => genCard(f, 'baseTop')).join('')}</div>
+             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Ofensiva Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pOfensiva.map(f => genCard(f, 'baseTop')).join('')}</div>
+             <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, 'baseAfin')).join('')}</div>
     </div>`;
 
     return html;
 }
-
