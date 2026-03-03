@@ -55,4 +55,69 @@ td { padding: 10px; border: 1px solid rgba(212, 175, 55, 0.3); text-align: cente
 .cat-img { width: 45px; height: 45px; object-fit: cover; border: 1px solid #d4af37; border-radius: 4px; background: #000; }
 .search-bar { width: 85%; max-width: 600px; display: block; margin: 0 auto 20px auto; padding: 12px; border: 1px solid #d4af37; background: #1a0033; color: white; text-align: center; }
 
-@media (max-width: 750px) { .top-items-grid { grid-template-columns: repeat(3, 1fr); } .grid-control { grid-template-columns: 1fr 1fr; } }
+/* =======================================================
+   📱 ADAPTACIÓN PARA TELÉFONOS (SISTEMA DE OBJETOS)
+   ======================================================= */
+@media (max-width: 768px) {
+    /* Espacio para la barra inferior */
+    body {
+        padding-bottom: 90px !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    /* Convertir Nav en App Bar Inferior */
+    nav {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        background: rgba(18, 0, 36, 0.98) !important;
+        border-top: 2px solid #d4af37 !important;
+        padding: 10px 5px !important;
+        margin: 0 !important;
+        justify-content: space-around !important;
+        z-index: 9999 !important;
+        box-shadow: 0 -5px 15px rgba(0,0,0,0.8);
+        display: flex !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    nav button {
+        font-size: 0.65em !important;
+        padding: 10px 2px !important;
+        flex: 1;
+        margin: 0 2px !important;
+        text-align: center;
+        border-radius: 4px;
+        white-space: pre-wrap; /* Permite que el texto baje de línea si es largo */
+    }
+
+    /* Ajustar Cabecera de Personaje */
+    .player-header {
+        flex-direction: column !important;
+        text-align: center !important;
+        gap: 10px !important;
+    }
+
+    /* Cuadrículas Móviles */
+    .top-items-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    
+    /* El inventario pasa a ser de 1 columna para botones más fáciles de tocar */
+    .grid-control { 
+        grid-template-columns: 1fr !important; 
+        gap: 10px !important; 
+    }
+    
+    .control-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    /* Botones más grandes en móvil */
+    .item-btns button {
+        padding: 15px !important;
+        font-size: 1.2em !important;
+    }
+}
