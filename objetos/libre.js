@@ -10,26 +10,30 @@ let draggingNode = null;
 let shakeAccumulator = 0;
 let lastDropTime = 0;
 let animationFrameId;
-
-// Tamaño del "Lienzo" virtual
-const CANVAS_W = 1000;
-const CANVAS_H = 700;
-
-// Repisas en forma de Media Luna
-const shelves = [
-    { x: 100, y: 250, w: 200, h: 20 },
-    { x: 650, y: 350, w: 250, h: 20 },
-    { x: 300, y: 550, w: 350, h: 20 }
-];
+let CANVAS_W = 0;
+let CANVAS_H = 0;
+let shelves = [];
 
 export function initLibreMode() {
     const canvas = document.getElementById('contenedor-libre');
     if (!canvas) return;
     
+    // Limpiar restos anteriores
     canvas.querySelectorAll('.physics-node').forEach(e => e.remove());
     entities = [];
 
-    // Pintar las repisas
+    // Calcular medidas reales del lienzo en pantalla
+    const rect = canvas.getBoundingClientRect();
+    CANVAS_W = rect.width;
+    CANVAS_H = rect.height;
+
+    // Crear las 3 repisas dinámicamente basadas en el tamaño
+    shelves = [
+        { x: CANVAS_W * 0.1, y: CANVAS_H * 0.35, w: CANVAS_W * 0.25, h: 20 },
+        { x: CANVAS_W * 0.65, y: CANVAS_H * 0.55, w: CANVAS_W * 0.25, h: 20 },
+        { x: CANVAS_W * 0.35, y: CANVAS_H * 0.8, w: CANVAS_W * 0.3, h: 20 }
+    ];
+
     shelves.forEach(s => {
         const div = document.createElement('div');
         div.className = 'shelf physics-node';
@@ -43,11 +47,11 @@ export function initLibreMode() {
     const radius = 45;
     let shelfIndex = 0;
     
-    // Posicionar jugadores repartidos en las repisas
+    // Crear Personajes
     Object.keys(invGlobal).forEach(jugador => {
         const s = shelves[shelfIndex % shelves.length];
-        let px = s.x + (Math.random() * (s.w - 2 * radius));
-        let py = s.y - (radius * 2) - 30; // Nacen un poco arriba de la repisa
+        let px = s.x + (Math.random() * (s.w - radius*2));
+        let py = s.y - (radius * 2) - 10;
         shelfIndex++;
 
         const div = document.createElement('div');
@@ -83,7 +87,7 @@ export function initLibreMode() {
         });
     });
 
-    // Control de ratón adaptado al Canvas
+    // Eventos de arrastre
     canvas.onmousedown = (e) => {
         if(e.target.tagName === 'BUTTON') return;
         const rect = canvas.getBoundingClientRect();
@@ -113,13 +117,12 @@ export function initLibreMode() {
         let targetX = mx - draggingNode.r;
         let targetY = my - draggingNode.r;
 
-        // Calcular velocidad para cuando lo sueltes
-        draggingNode.vx = (targetX - draggingNode.x) * 0.7;
-        draggingNode.vy = (targetY - draggingNode.y) * 0.7;
+        // Calcular velocidad para lanzar el objeto al soltar
+        draggingNode.vx = (targetX - draggingNode.x) * 0.8;
+        draggingNode.vy = (targetY - draggingNode.y) * 0.8;
 
-        // Agitación (Shake)
         let speed = Math.sqrt(draggingNode.vx**2 + draggingNode.vy**2);
-        if (speed > 20) shakeAccumulator += speed;
+        if (speed > 25) shakeAccumulator += speed;
         else shakeAccumulator = Math.max(0, shakeAccumulator - 5);
 
         if (shakeAccumulator > 300 && (Date.now() - lastDropTime > 200)) {
@@ -147,7 +150,7 @@ function dropRandomItem(playerNode) {
     const droppedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
     modificar(playerNode.name, droppedItem, -1, refrescarUI);
 
-    const r = 18; 
+    const r = 20; 
     const div = document.createElement('img');
     div.className = 'physics-node';
     div.src = `../img/imgobjetos/${normalizar(droppedItem)}.png`;
@@ -164,10 +167,10 @@ function dropRandomItem(playerNode) {
 
     entities.push({
         type: 'item', itemName: droppedItem, el: div,
-        x: playerNode.x + playerNode.r - r, 
+        x: playerNode.x + playerNode.r - r, // NACE EXACTAMENTE EN EL CENTRO
         y: playerNode.y + playerNode.r - r,
         r: r, mass: 1,
-        vx: (Math.random() - 0.5) * 30, // Sale disparado
+        vx: (Math.random() - 0.5) * 30, // Explota hacia los lados
         vy: -15 - Math.random() * 10,
         life: 0 
     });
@@ -176,22 +179,26 @@ function dropRandomItem(playerNode) {
 function physicsLoop() {
     if (!libreActivo) return;
     
-    const gravity = 0.6;
-    const bounce = 0.5;
+    const gravity = 0.7;
+    const bounce = 0.6;
 
     for (let i = entities.length - 1; i >= 0; i--) {
         let en = entities[i];
         
         if (!en.isDragging) {
             en.vy += gravity;
-            en.vy *= 0.99; 
             en.vx *= 0.98;
+            en.vy *= 0.99;
             en.x += en.vx;
             en.y += en.vy;
 
-            // Suelo y Techo
-            if (en.y + en.r*2 > CANVAS_H) { en.y = CANVAS_H - en.r*2; en.vy *= -bounce; en.vx *= 0.8; }
-            if (en.y < 0) { en.y = 0; en.vy *= -bounce; }
+            // Piso
+            if (en.y + en.r*2 > CANVAS_H) { 
+                en.y = CANVAS_H - en.r*2; 
+                en.vy *= -bounce; 
+                if(Math.abs(en.vy) < 2) en.vy = 0; 
+                en.vx *= 0.8; 
+            }
             
             // Paredes
             if (en.x < 0) { en.x = 0; en.vx *= -bounce; }
@@ -199,11 +206,11 @@ function physicsLoop() {
 
             // Repisas
             for (let s of shelves) {
-                if (en.x + en.r > s.x && en.x + en.r < s.x + s.w) { 
-                    // Cae desde arriba
-                    if (en.vy > 0 && en.y + en.r*2 >= s.y && en.y + en.r*2 - en.vy <= s.y + 15) {
+                if (en.x + en.r*1.5 > s.x && en.x + en.r*0.5 < s.x + s.w) { 
+                    if (en.vy >= 0 && en.y + en.r*2 >= s.y && en.y + en.r*2 - en.vy <= s.y + 20) {
                         en.y = s.y - en.r*2;
                         en.vy *= -bounce;
+                        if(Math.abs(en.vy) < 2) en.vy = 0; 
                         en.vx *= 0.8;
                     }
                 }
@@ -211,11 +218,10 @@ function physicsLoop() {
         }
     }
 
-    // Colisiones entre Entidades (Jugadores y Objetos)
+    // Colisiones
     for (let i=0; i<entities.length; i++) {
         for (let j=i+1; j<entities.length; j++) {
-            let a = entities[i];
-            let b = entities[j];
+            let a = entities[i]; let b = entities[j];
             let dx = (b.x + b.r) - (a.x + a.r);
             let dy = (b.y + b.r) - (a.y + a.r);
             let dist = Math.sqrt(dx*dx + dy*dy);
@@ -223,48 +229,42 @@ function physicsLoop() {
 
             if (dist < min_dist && dist > 0) {
                 // Recoger Objeto
-                if (a.type === 'player' && b.type === 'item' && b.life > 30) {
+                if (a.type === 'player' && b.type === 'item' && b.life > 35) {
                     modificar(a.name, b.itemName, 1, refrescarUI);
                     showFloatText(`+1 ${b.itemName}`, a.x, a.y, '#00ff00');
-                    b.el.remove();
-                    entities.splice(j, 1);
-                    break;
+                    b.el.remove(); entities.splice(j, 1); break;
                 }
-                if (b.type === 'player' && a.type === 'item' && a.life > 30) {
+                if (b.type === 'player' && a.type === 'item' && a.life > 35) {
                     modificar(b.name, a.itemName, 1, refrescarUI);
                     showFloatText(`+1 ${a.itemName}`, b.x, b.y, '#00ff00');
-                    a.el.remove();
-                    entities.splice(i, 1);
-                    break;
+                    a.el.remove(); entities.splice(i, 1); break;
                 }
 
                 // Choque Físico
-                let angle = Math.atan2(dy, dx);
-                let overlap = min_dist - dist;
-                let tx = Math.cos(angle) * overlap / 2;
-                let ty = Math.sin(angle) * overlap / 2;
+                if(a.type === 'player' && b.type === 'player') {
+                    let angle = Math.atan2(dy, dx);
+                    let overlap = min_dist - dist;
+                    let tx = Math.cos(angle) * overlap / 2;
+                    let ty = Math.sin(angle) * overlap / 2;
 
-                if (!a.isDragging) { a.x -= tx; a.y -= ty; }
-                if (!b.isDragging) { b.x += tx; b.y += ty; }
+                    if (!a.isDragging) { a.x -= tx; a.y -= ty; }
+                    if (!b.isDragging) { b.x += tx; b.y += ty; }
 
-                let nx = dx / dist;
-                let ny = dy / dist;
-                let kx = (a.vx - b.vx);
-                let ky = (a.vy - b.vy);
-                let p = 2 * (nx * kx + ny * ky) / (a.mass + b.mass);
-                
-                if (!a.isDragging) { a.vx -= p * b.mass * nx * 0.5; a.vy -= p * b.mass * ny * 0.5; }
-                if (!b.isDragging) { b.vx += p * a.mass * nx * 0.5; b.vy += p * a.mass * ny * 0.5; }
+                    let nx = dx / dist; let ny = dy / dist;
+                    let kx = (a.vx - b.vx); let ky = (a.vy - b.vy);
+                    let p = 2 * (nx * kx + ny * ky) / (a.mass + b.mass);
+                    
+                    if (!a.isDragging) { a.vx -= p * b.mass * nx * 0.7; a.vy -= p * b.mass * ny * 0.7; }
+                    if (!b.isDragging) { b.vx += p * a.mass * nx * 0.7; b.vy += p * a.mass * ny * 0.7; }
+                }
             }
         }
     }
 
-    // Dibujar en pantalla
     for (let en of entities) {
         if (en.type === 'item') en.life++;
         if (en.el) en.el.style.transform = `translate(${en.x}px, ${en.y}px)`;
     }
-
     animationFrameId = requestAnimationFrame(physicsLoop);
 }
 
@@ -292,7 +292,7 @@ export function toggleLibre() {
     const bg = document.getElementById('modal-libre-bg');
     if (libreActivo) {
         bg.style.display = 'flex';
-        initLibreMode();
+        setTimeout(initLibreMode, 100); // Dar tiempo a que el div renderice su tamaño real
     } else {
         bg.style.display = 'none';
         cancelAnimationFrame(animationFrameId);
