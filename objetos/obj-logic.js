@@ -4,8 +4,7 @@ export function modificar(j, o, c, callback) {
     if (!invGlobal[j]) invGlobal[j] = {};
     invGlobal[j][o] = Math.max(0, (invGlobal[j][o] || 0) + c);
     historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: o, cambio: c, total: invGlobal[j][o] });
-    guardar(); 
-    if(callback) callback(); 
+    guardar(); if(callback) callback(); 
 }
 
 export function modificarMulti(jugadores, obj, cant, callback) {
@@ -14,8 +13,7 @@ export function modificarMulti(jugadores, obj, cant, callback) {
         invGlobal[j][obj] = Math.max(0, (invGlobal[j][obj] || 0) + cant);
         historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: obj, cambio: cant, total: invGlobal[j][obj] });
     });
-    guardar();
-    if(callback) callback();
+    guardar(); if(callback) callback();
 }
 
 export function transferir(origen, destino, obj, cant, callback) {
@@ -30,8 +28,7 @@ export function transferir(origen, destino, obj, cant, callback) {
     historial.push({ fecha: new Date().toLocaleString(), jugador: origen, objeto: obj, cambio: -aMover, total: invGlobal[origen][obj] });
     historial.push({ fecha: new Date().toLocaleString(), jugador: destino, objeto: obj, cambio: aMover, total: invGlobal[destino][obj] });
     
-    guardar();
-    if(callback) callback();
+    guardar(); if(callback) callback();
 }
 
 export function agregarObjetoManual(datos, reparticion, callback) {
