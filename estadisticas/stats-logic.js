@@ -20,14 +20,14 @@ export function calcularVexMax(p) {
     return Math.round((oscTotal * 75) / 50) * 50;
 }
 
-// EMPAQUETADOR DE 5 FASES
 function formatExp(base, spells, spellEff, extra) {
     const b = parseInt(base) || 0; const s = parseInt(spells) || 0; const se = parseInt(spellEff) || 0; const e = parseInt(extra) || 0;
     return `${b + s + se + e}_${b}_${s}_${se}_${e}`;
 }
 
 export function generarCSVExportacion() {
-    let csv = "\uFEFFPersonaje,Hex,Vex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,Corazones Rojo,Corazones Rojos Max,Corazones Azules,Guarda Dorada,Daño Rojo,Daño Azul,Eliminacion Dorada,Estado,Jugador_Activo\n";
+    // NUEVO: Agregada la columna "Copia" al final de la cabecera
+    let csv = "\uFEFFPersonaje,Hex,Vex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,Corazones Rojo,Corazones Rojos Max,Corazones Azules,Guarda Dorada,Daño Rojo,Daño Azul,Eliminacion Dorada,Estado,Jugador_Activo,Copia\n";
     
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
@@ -47,8 +47,11 @@ export function generarCSVExportacion() {
 
         const arrEstados = listaEstados.map(e => { let val = st[e.id]; if (e.tipo === 'numero') return val || 0; return val ? 1 : 0; });
         const expJugAct = `${p.isPlayer ? '1' : '0'}_${p.isActive !== false ? '1' : '0'}`;
+        
+        // NUEVO: Exportación del valor de la copia
+        const strCopia = p.iconoOverride || '';
 
-        csv += `"${nombre}",${p.hex},${expVex},"${eFis}","${eEne}","${eEsp}","${eMan}","${ePsi}","${eOsc}",${p.vidaRojaActual},"${eVRMax}","${eVA}","${eGD}","${eDR}","${eDA}","${eED}","${arrEstados.join('-')}","${expJugAct}"\n`;
+        csv += `"${nombre}",${p.hex},${expVex},"${eFis}","${eEne}","${eEsp}","${eMan}","${ePsi}","${eOsc}",${p.vidaRojaActual},"${eVRMax}","${eVA}","${eGD}","${eDR}","${eDA}","${eED}","${arrEstados.join('-')}","${expJugAct}","${strCopia}"\n`;
     });
     return csv;
 }
@@ -57,3 +60,5 @@ export function descargarArchivoCSV(contenido, nombreArchivo) {
     const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([contenido], { type: 'text/csv;charset=utf-8;' }));
     link.download = nombreArchivo; link.click();
 }
+}
+
