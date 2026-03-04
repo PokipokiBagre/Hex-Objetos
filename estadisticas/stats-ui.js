@@ -52,12 +52,11 @@ export function dibujarCatalogo() {
     </div>
     <div class="catalogo-grid">`;
 
-    // SISTEMA DE ORDENAMIENTO DE 4 NIVELES
     const getSortValue = (p) => {
-        if (p.isPlayer && p.isActive) return 1; // Jugador Activo (Top)
-        if (!p.isPlayer && p.isActive) return 2; // NPC Activo
-        if (!p.isPlayer && !p.isActive) return 3; // NPC Inactivo
-        if (p.isPlayer && !p.isActive) return 4; // Jugador Inactivo (Bottom)
+        if (p.isPlayer && p.isActive) return 1; 
+        if (!p.isPlayer && p.isActive) return 2; 
+        if (!p.isPlayer && !p.isActive) return 3; 
+        if (p.isPlayer && !p.isActive) return 4; 
         return 5;
     };
 
@@ -65,7 +64,7 @@ export function dibujarCatalogo() {
         const valA = getSortValue(statsGlobal[a]);
         const valB = getSortValue(statsGlobal[b]);
         if (valA !== valB) return valA - valB;
-        return a.localeCompare(b); // Si son del mismo nivel, orden alfabético
+        return a.localeCompare(b); 
     });
 
     sortedNames.forEach(nombre => {
@@ -77,19 +76,18 @@ export function dibujarCatalogo() {
 
         const iconoMuestra = p.iconoOverride || normalizar(nombre);
         
-        // SISTEMA DE MARCOS POR IDENTIDAD
         let borderStyle = "";
-        let bgStyle = "background: #1e0535;"; // Fondo estándar
+        let bgStyle = "background: #1e0535;"; 
         if (p.isPlayer && p.isActive) {
             borderStyle = "border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);";
         } else if (!p.isPlayer && p.isActive) {
-            borderStyle = "border: 2px solid #00ffff; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);"; // Cyan para NPCs
+            borderStyle = "border: 2px solid #00ffff; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);"; 
             bgStyle = "background: #0a1128;";
         } else if (!p.isPlayer && !p.isActive) {
-            borderStyle = "border: 2px solid #555555;"; // Gris para NPCs inactivos
+            borderStyle = "border: 2px solid #555555;"; 
             bgStyle = "background: #111111;";
         } else if (p.isPlayer && !p.isActive) {
-            borderStyle = "border: 2px solid #cc0000; box-shadow: 0 0 10px rgba(204, 0, 0, 0.3);"; // Rojo para Jugadores Inactivos
+            borderStyle = "border: 2px solid #cc0000; box-shadow: 0 0 10px rgba(204, 0, 0, 0.3);"; 
             bgStyle = "background: #220000;";
         }
 
@@ -342,7 +340,6 @@ export function dibujarFormularioEditar() {
     const pVitalidadSpellEff = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Efecto)', val: p.hechizosEfecto.vidaRojaMaxExtra } ];
     const pAfinidadesSpellEff = [ { id: 'fisica', label: 'Física (Efecto)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (Efecto)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (Efecto)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (Efecto)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (Efecto)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (Efecto)', val: p.hechizosEfecto.oscura } ];
 
-    // CÁLCULO DE VIDA PARA EL MONITOR SUPERIOR OP
     let normalAzul = Math.max(0, p.vidaAzul || 0); 
     let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.hechizosEfecto.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
     let totalAzul = normalAzul + extraAzul;
@@ -386,10 +383,9 @@ export function dibujarFormularioEditar() {
             <span>Oscura: <b style="color:var(--gold)">${calcTotal(p.afinidades.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</b></span>
         </div>`;
 
-    if (p.isNPC) {
-        const pNPC = [ { id: 'hex', label: 'Base HEX', val: p.hex, esHex:true }, { id: 'vex', label: 'Base VEX', val: p.vex, esHex:true } ];
-        html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">0. Energía Base (NPC)</h3><div class="edit-grid" style="margin-bottom: 20px;">${pNPC.map(f => genCard(f, 'directo')).join('')}</div>`;
-    }
+    // AQUÍ SE ELIMINÓ EL IF (p.isNPC) PARA QUE TODOS VEAN EL HEX/VEX
+    const pEnergiaBase = [ { id: 'hex', label: 'Base HEX', val: p.hex, esHex:true }, { id: 'vex', label: 'Base VEX', val: p.vex, esHex:true } ];
+    html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">0. Energía Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pEnergiaBase.map(f => genCard(f, 'directo')).join('')}</div>`;
 
     html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top:30px;">Efectos de Estado</h3>
              <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom:20px;">`;
@@ -428,3 +424,4 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
+
