@@ -65,7 +65,7 @@ window.addHexLogEntry = (nombre, amount, isExtra = false) => {
         log.order = log.order.filter(k => k !== 'neg');
         log.order.push('neg');
     } else if (amount === 0) {
-        // Si no hay nada registrado, crea una línea base de +0 para mostrar la asistencia
+        // Asistencia puramente visual
         if (log.order.length === 0) {
             log.pos.amount = 0;
             log.pos.finalHex = p.hex;
@@ -181,7 +181,7 @@ window.abrirSelectorParty = (index) => {
     let html = '';
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        // SOLO JUGADORES Y QUE NO ESTÉN YA EN LOS SLOTS
+        // SOLO JUGADORES QUE NO ESTÉN YA SELECCIONADOS EN OTRO SLOT
         if (p.isPlayer && !estadoUI.party.includes(nombre)) {
             const iconoMuestra = normalizar(p.iconoOverride || nombre);
             html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer; width:70px;">
@@ -195,9 +195,7 @@ window.abrirSelectorParty = (index) => {
     
     grid.innerHTML = html; 
     btnQuitar.style.display = estadoUI.party[index] ? 'block' : 'none';
-    
-    // En vez de un display flex modal, mostramos el contenedor inline
-    container.style.display = 'block';
+    container.style.display = 'block'; // Panel inline debajo de los slots
 };
 
 window.seleccionarParaParty = (nombre) => {
@@ -231,6 +229,9 @@ window.autoLlenarParty = () => {
 };
 
 window.establecerPartyActiva = () => {
+    const hayParty = estadoUI.party.some(n => n !== null);
+    if (!hayParty) return alert("¡No hay nadie en los slots! Selecciona jugadores primero o usa el botón de auto-llenar.");
+    
     if(!confirm("Esto marcará a los personajes de los slots como 'Activos' y al resto de jugadores como 'Inactivos'. ¿Proceder?")) return;
     Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) statsGlobal[n].isActive = false; });
     estadoUI.party.forEach(n => {
@@ -249,6 +250,9 @@ window.modHexInd = (nombre, amount) => {
 };
 
 window.modHexGlobal = (amount) => {
+    const hayParty = estadoUI.party.some(n => n !== null);
+    if (!hayParty) return alert("¡La Party está vacía! Añade personajes a los slots primero.");
+
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
             const p = statsGlobal[nombre];
@@ -261,6 +265,9 @@ window.modHexGlobal = (amount) => {
 };
 
 window.addAsistenciaGlobal = () => {
+    const hayParty = estadoUI.party.some(n => n !== null);
+    if (!hayParty) return alert("¡La Party está vacía! Añade personajes a los slots primero.");
+
     let leveledUp = [];
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
@@ -422,14 +429,14 @@ window.modLibre = (statId, cantidad) => {
 window.modBlueExtra = (cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra || 0) + cantidad);
-    p.vidaAzul = Math.max(0, (p.vidaAzul || 0) + Math.max(-Math.abs(p.vidaAzul || 0), cantidad));
+    p.vidaAzul = Math.max(0, (p.vidaAzul || 0) + cantidad);
     guardar(); repintarConScroll('detalle');
 };
 
 window.modGoldExtra = (cantidad) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra || 0) + cantidad);
-    p.guardaDorada = Math.max(0, (p.guardaDorada || 0) + Math.max(-Math.abs(p.guardaDorada || 0), cantidad));
+    p.guardaDorada = Math.max(0, (p.guardaDorada || 0) + cantidad);
     guardar(); repintarConScroll('detalle');
 };
 
@@ -578,7 +585,7 @@ setInterval(async () => {
         await cargarTodoDesdeCSV();
         refrescarVistas();
     }
-}, 10000); // Reducido a 10 Segundos
+}, 10000); // 10 Segundos
 
 window.forzarSincronizacion = async () => {
     if(confirm("¿Seguro que deseas Actualizar Manualmente? Esto borrará los NPCs locales.")) {
@@ -621,7 +628,9 @@ async function iniciar() {
             btn.style.borderColor = estadoUI.modoSincronizado ? "#00ff00" : "#ff0000";
         }
         refrescarVistas(); 
+        // Inyecta el Log correctamente si el Máster recargó estando ya en la pantalla OP
         if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
 iniciar();
+
