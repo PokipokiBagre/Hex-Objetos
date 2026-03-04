@@ -196,7 +196,7 @@ window.abrirSelectorParty = (index) => {
     grid.innerHTML = html; 
     btnQuitar.style.display = estadoUI.party[index] ? 'block' : 'none';
     
-    // En vez de un display flex modal, mostramos el contenedor inline
+    // Panel inline debajo de los slots
     container.style.display = 'block';
 };
 
@@ -630,6 +630,7 @@ async function iniciar() {
             btn.style.borderColor = estadoUI.modoSincronizado ? "#00ff00" : "#ff0000";
         }
         refrescarVistas(); 
+        // Seguridad extra: si cargamos en OP, renderiza el texto del log
         if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
