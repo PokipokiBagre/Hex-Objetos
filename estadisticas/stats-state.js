@@ -6,9 +6,9 @@ export let estadoUI = {
     esAdmin: false,
     filtroRol: 'Todos',
     filtroAct: 'Todos',
-    party: [null, null, null, null, null, null], 
+    party: [null, null, null, null, null, null], // Slots de los 6 jugadores
     hexLog: {}, // Memoria del Log Agrupado Inteligente
-    selectorIndex: null, 
+    selectorIndex: null, // Para saber a qué slot asignamos el jugador
     modoSincronizado: true // Sincronización a 10s activada por defecto
 };
 
