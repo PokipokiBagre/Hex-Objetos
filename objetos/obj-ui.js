@@ -24,7 +24,11 @@ export function refrescarUI() {
     else if (estadoUI.vistaActual === 'transfer') dibujarTransferencia();
 }
 
-const normalizarNombre = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
+const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
+const normalizarNombre = (str) => {
+    if (!str) return "";
+    return str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,''); 
+};
 
 export function dibujarGrillaPersonajes() {
     let html = `<h2 style="margin-top:0;">Inventarios</h2><div class="catalogo-grid">`;
@@ -52,14 +56,38 @@ export function dibujarGrillaPersonajes() {
 
 export function dibujarInventarios() {
     if (!estadoUI.jugadorInv) return;
-    const j = estadoUI.jugadorInv; const term = (estadoUI.busquedaInv || "").toLowerCase();
-    let html = `<button onclick="window.volverAGrilla()" style="background:#444; margin-bottom: 20px;">⬅ Volver a Inventarios</button>
+    const j = estadoUI.jugadorInv;
+    const term = (estadoUI.busquedaInv || "").toLowerCase();
+    
+    let html = `
+    <button onclick="window.volverAGrilla()" style="background:#444; margin-bottom: 20px;">⬅ Volver a Inventarios</button>
     <div class="player-header">
         <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-        <div style="text-align:left; flex:1;"><h1 style="margin: 0; color:var(--gold);">${j.toUpperCase()}</h1></div>
+        <div style="text-align:left; flex:1;">
+            <h1 style="margin: 0; color:var(--gold);">${j.toUpperCase()}</h1>
+        </div>
         ${estadoUI.esAdmin ? `<button onclick="window.mostrarPagina('control')" style="background:#4a004a; border-color:var(--gold);">Editar Stock / OP</button>` : ''}
     </div>
     <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
+
+    const destacados = Object.keys(invGlobal[j])
+        .filter(o => invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term)))
+        .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
+        .slice(0, 5);
+
+    if (destacados.length > 0) {
+        html += `<div class="top-items-grid">`;
+        destacados.forEach(o => {
+            const imgFile = normalizarNombre(o);
+            const rarClase = objGlobal[o]?.rar === 'Raro' ? 'rarity-raro' : (objGlobal[o]?.rar === 'Legendario' ? 'rarity-legendario' : '');
+            html += `
+            <div class="top-item-card ${rarClase}">
+                <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                <span style="font-size:0.65em; display:block; height:2.4em; overflow:hidden; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</span>
+            </div>`;
+        });
+        html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
+    }
 
     html += `<div class="table-responsive"><table><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
     Object.keys(invGlobal[j]).sort().forEach(o => {
@@ -72,21 +100,31 @@ export function dibujarInventarios() {
             </tr>`;
         }
     });
-    drawnHEXPreserveFocus('contenedor-jugadores', html + "</table></div>");
+    html += "</table></div>";
+    drawnHEXPreserveFocus('contenedor-jugadores', html);
 }
 
 export function dibujarCatalogo() {
     let html = "<h2>Catálogo Completo</h2><div class='filter-group'>";
-    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => { html += `<button onclick="window.setRar('${r}')" ${estadoUI.filtroRar === r ? 'class="btn-active"' : ''}>${r}</button> `; });
+    ['Todos', 'Común', 'Raro', 'Legendario'].forEach(r => {
+        const active = estadoUI.filtroRar === r ? 'class="btn-active"' : '';
+        html += `<button onclick="window.setRar('${r}')" ${active}>${r}</button> `;
+    });
     html += "</div><div class='filter-group'>";
-    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => { html += `<button onclick="window.setMat('${m}')" ${estadoUI.filtroMat === m ? 'class="btn-active-mat"' : ''}>${m}</button> `; });
+    ['Todos', 'Orgánico', 'Cristal', 'Metal', 'Sagrado'].forEach(m => {
+        const active = estadoUI.filtroMat === m ? 'class="btn-active-mat"' : '';
+        html += `<button onclick="window.setMat('${m}')" ${active}>${m}</button> `;
+    });
     html += `</div><br><input type="text" id="busq-cat" class="search-bar" placeholder="🔍 Buscar objeto..." value="${estadoUI.busquedaCat}" oninput="window.setBusquedaCat(this.value)">
     <div class="table-responsive"><table><tr><th>Imagen</th><th>Nombre</th><th>Tipo</th><th>Efecto</th><th>Rareza</th></tr>`;
     
     const term = (estadoUI.busquedaCat || "").toLowerCase();
     Object.keys(objGlobal).sort().forEach(o => {
         const item = objGlobal[o];
-        if ((estadoUI.filtroRar === 'Todos' || item.rar === estadoUI.filtroRar) && (estadoUI.filtroMat === 'Todos' || item.mat === estadoUI.filtroMat) && (!term || o.toLowerCase().includes(term))) {
+        const matchR = estadoUI.filtroRar === 'Todos' || item.rar.trim() === estadoUI.filtroRar;
+        const matchM = estadoUI.filtroMat === 'Todos' || item.mat.trim() === estadoUI.filtroMat;
+        
+        if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
             html += `<tr>
                 <td><img src="../img/imgobjetos/${normalizarNombre(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
                 <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</td>
@@ -97,44 +135,6 @@ export function dibujarCatalogo() {
         }
     });
     drawnHEXPreserveFocus('tabla-todos-objetos', html + "</table></div>");
-}
-
-export function dibujarControl() {
-    if (!estadoUI.jugadorInv) return; const j = estadoUI.jugadorInv; 
-    let html = `<h2>Edición In-Situ: ${j}</h2><button onclick="window.mostrarPagina('inventario')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Inventario</button>`;
-    
-    html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-                <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Bitácora de sesión...'}</textarea>
-                <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
-             </div>
-             
-             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:10px;">
-                <button onclick="window.setEditModo(1)" style="background:${estadoUI.editModo === 1 ? '#004a00' : '#222'}">SUMAR (+)</button>
-                <button onclick="window.setEditModo(-1)" style="background:${estadoUI.editModo === -1 ? '#660000' : '#222'}">RESTAR (-)</button>
-             </div>
-             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-                ${[1, 5, 10, 100].map(m => `<button onclick="window.setEditMult(${m})" style="background:${estadoUI.editMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.editMult === m ? '#000' : '#fff'}">x${m}</button>`).join('')}
-             </div>
-             
-             <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
-             <div class="grid-control">`;
-    
-    Object.keys(objGlobal).sort((a, b) => (invGlobal[j][b]||0) - (invGlobal[j][a]||0) || a.localeCompare(b)).forEach(o => {
-        const term = estadoUI.busquedaOP.toLowerCase();
-        if (!term || o.toLowerCase().includes(term)) {
-            const c = invGlobal[j][o] || 0;
-            const actionColor = estadoUI.editModo === 1 ? '#00ff00' : '#ff0000';
-            html += `<div class="control-card ${c > 0 ? "item-con-stock" : ""}">
-                        <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
-                             onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
-                             style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid ${actionColor}; transition:0.2s;"
-                             onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
-                             onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Click para aplicar">
-                        <span class="item-name" style="margin-top:10px;">${o} (<b>${c}</b>)</span>
-                     </div>`;
-        }
-    });
-    drawnHEXPreserveFocus('panel-interactivo', html + "</div>");
 }
 
 export function dibujarMenuOP() {
@@ -150,7 +150,46 @@ export function dibujarMenuOP() {
         </div>`;
 }
 
-// ---------------- LOOT MASIVO Y TRANSFERENCIAS (CON IMÁGENES Y MULTIPLICADOR) ----------------
+export function dibujarControl() {
+    if (!estadoUI.jugadorInv) return; const j = estadoUI.jugadorInv; 
+    let html = `<h2>Edición In-Situ: ${j}</h2><button onclick="window.mostrarPagina('inventario')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Inventario</button>`;
+    
+    html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
+                <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Bitácora de sesión...'}</textarea>
+                <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+             </div>
+             
+             <h4 style="color:var(--gold); margin-bottom:5px;">Configura tu Clic</h4>
+             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:10px;">
+                <button onclick="window.setEditModo(1)" style="background:${estadoUI.editModo === 1 ? '#004a00' : '#222'}">SUMAR (+)</button>
+                <button onclick="window.setEditModo(-1)" style="background:${estadoUI.editModo === -1 ? '#660000' : '#222'}">RESTAR (-)</button>
+             </div>
+             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                ${[1, 5, 10, 50, 100].map(m => `<button onclick="window.setEditMult(${m})" style="background:${estadoUI.editMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.editMult === m ? '#000' : '#fff'}">x${m}</button>`).join('')}
+             </div>
+             
+             <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto y haz clic en la imagen..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
+             <div class="grid-control">`;
+    
+    // Mostramos todos los objetos, ordenados primero por los que tiene el jugador
+    Object.keys(objGlobal).sort((a, b) => (invGlobal[j][b]||0) - (invGlobal[j][a]||0) || a.localeCompare(b)).forEach(o => {
+        const term = estadoUI.busquedaOP.toLowerCase();
+        if (!term || o.toLowerCase().includes(term)) {
+            const c = invGlobal[j][o] || 0;
+            const actionColor = estadoUI.editModo === 1 ? '#00ff00' : '#ff0000';
+            html += `<div class="control-card ${c > 0 ? "item-con-stock" : ""}">
+                        <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
+                             onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
+                             style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid ${actionColor}; transition:0.2s; box-shadow:0 0 10px ${actionColor};"
+                             onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                             onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Click para aplicar">
+                        <span class="item-name" style="margin-top:10px;">${o}</span>
+                        <span style="font-size:1.2em; color:white;">Stock: <b>${c}</b></span>
+                     </div>`;
+        }
+    });
+    drawnHEXPreserveFocus('panel-interactivo', html + "</div>");
+}
 
 export function dibujarPartyLoot() {
     const term = (estadoUI.busquedaOP || "").toLowerCase();
@@ -170,7 +209,7 @@ export function dibujarPartyLoot() {
     });
 
     html += `   </div>
-                <h4 style="color:var(--blue-life); margin-top:20px;">2. Multiplicador de Entrega</h4>
+                <h4 style="color:var(--blue-life); margin-top:20px;">2. Multiplicador de Entrega (Por Clic)</h4>
                 <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">`;
     
     [1, 5, 10, 50, 100].forEach(m => {
@@ -185,7 +224,7 @@ export function dibujarPartyLoot() {
                 <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-loot')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
             </div>
             
-            <h4 style="color:var(--gold);">3. Haz clic en un objeto para entregar <span style="color:white;">x${estadoUI.partyMult}</span> a la party</h4>
+            <h4 style="color:var(--gold);">3. Haz clic en la IMAGEN de un objeto para entregar <span style="color:white;">x${estadoUI.partyMult}</span></h4>
             <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Buscar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
             <div class="grid-control">`;
 
@@ -238,12 +277,12 @@ export function dibujarTransferencia() {
                         <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-trans')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
                      </div>
                      
-                     <h4 style="color:var(--blue-life); margin-top:20px;">Multiplicador de Transferencia</h4>
+                     <h4 style="color:var(--blue-life); margin-top:20px;">1. Selecciona Cuántos Quieres Pasar</h4>
                      <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
                         ${[1, 3, 5, 10, 50, 'TODO'].map(m => `<button onclick="window.setTransMult('${m}')" style="background:${estadoUI.transMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.transMult === m ? '#000' : '#fff'}">x${m}</button>`).join('')}
                      </div>
 
-                     <h3 style="color:var(--gold);">Inventario de ${j} (Haz clic para transferir)</h3>
+                     <h3 style="color:var(--gold);">2. Haz clic en la IMAGEN del inventario de ${j} para transferir</h3>
                      <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto a transferir..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
                      <div class="grid-control">`;
             
@@ -254,10 +293,11 @@ export function dibujarTransferencia() {
                     html += `<div class="control-card item-con-stock">
                                 <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
                                      onclick="window.ejecutarTransfer('${o}', ${cantToPass})" 
-                                     style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid #00ff00; transition:0.2s;"
+                                     style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid #00ff00; transition:0.2s; box-shadow:0 0 10px #00ff00;"
                                      onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
-                                     onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Transferir ${cantToPass}">
-                                <span class="item-name" style="margin-top:10px;">${o} (<b>${c}</b>)</span>
+                                     onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Clic para Transferir ${cantToPass}">
+                                <span class="item-name" style="margin-top:10px;">${o}</span>
+                                <span style="font-size:1.1em; color:white;">Stock: <b>${c}</b></span>
                              </div>`;
                 }
             });
