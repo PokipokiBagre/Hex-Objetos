@@ -13,7 +13,6 @@ export async function cargarTodoDesdeCSV() {
         filas.slice(1).forEach(f => {
             const nombre = f[0]; if (!nombre) return;
             
-            // Mapeo de Columnas: H=Desc, I=Física, J=Energética, K=Espiritual, L=Mando, M=Psíquica, N=Oscura
             objGlobal[nombre] = { 
                 tipo: f[1] || '-', 
                 mat: f[2] || '-', 
