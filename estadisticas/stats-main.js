@@ -5,6 +5,79 @@ import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMys
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
+// --- NAVEGACIÓN Y RENDERIZADO AISLADO (EVITA BUCLE) ---
+function repintarConScroll(vista) {
+    const scrollY = window.scrollY;
+    const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
+    const container = document.getElementById(containerId);
+    
+    if (container) {
+        const h = container.getBoundingClientRect().height;
+        container.style.minHeight = h + 'px';
+        
+        if (vista === 'detalle') {
+            dibujarDetalle();
+        } else {
+            if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
+            else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
+            else container.innerHTML = dibujarFormularioEditar();
+        }
+        
+        window.scrollTo(0, scrollY);
+        requestAnimationFrame(() => container.style.minHeight = '');
+    } else {
+        refrescarVistas(); window.scrollTo(0, scrollY);
+    }
+}
+
+function refrescarVistas() {
+    document.getElementById('vista-catalogo').classList.add('oculto'); 
+    document.getElementById('vista-detalle').classList.add('oculto'); 
+    document.getElementById('vista-op').classList.add('oculto');
+    
+    if (estadoUI.vistaActual === 'catalogo') { 
+        document.getElementById('vista-catalogo').classList.remove('oculto'); 
+        dibujarCatalogo(); 
+    }
+    else if (estadoUI.vistaActual === 'detalle') { 
+        document.getElementById('vista-detalle').classList.remove('oculto'); 
+        dibujarDetalle(); 
+    }
+    else { 
+        document.getElementById('vista-op').classList.remove('oculto'); 
+        document.getElementById('vista-op').innerHTML = dibujarMenuOP();
+        const sub = document.getElementById('sub-vista-op');
+        
+        if (estadoUI.vistaActual === 'hex') sub.innerHTML = dibujarHexOP();
+        else if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
+        else sub.innerHTML = dibujarFormularioEditar();
+    }
+}
+
+window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
+window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
+
+window.abrirMenuOP = () => { 
+    const enrutarOP = () => { 
+        estadoUI.vistaActual = 'hex'; 
+        refrescarVistas(); 
+    };
+    if (estadoUI.esAdmin) { enrutarOP(); return; }
+    const pass = prompt("Acceso Restringido. Contraseña:");
+    if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } else { if(pass !== null) alert("Acceso denegado."); }
+};
+
+window.mostrarPaginaOP = (subvista) => {
+    estadoUI.vistaActual = subvista; 
+    refrescarVistas();
+};
+
+window.setFiltro = (tipo, valor) => {
+    if(tipo === 'rol') estadoUI.filtroRol = valor;
+    if(tipo === 'act') estadoUI.filtroAct = valor;
+    refrescarVistas();
+};
+
 // --- SISTEMA DE LOGS DE HEX ---
 function updateHexLogText() {
     const textarea = document.getElementById('hex-log-textarea');
@@ -23,7 +96,8 @@ window.addHexLogEntry = (nombre, amount, isExtra = false) => {
     const p = statsGlobal[nombre];
     if (!p) return;
     
-    const sign = amount > 0 ? "+" : "";
+    // El texto ahora incluye el + incluso en el 0 (ej: +0 Hex) si es necesario
+    const sign = amount >= 0 ? "+" : ""; 
     const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : "";
     
     if(isExtra) {
@@ -48,40 +122,56 @@ window.copiarHexLog = () => {
     }
 };
 
-// --- GESTIÓN DE PARTY Y HEX GLOBALES ---
+// --- GESTIÓN DE PARTY ---
 window.abrirSelectorParty = (index) => {
     estadoUI.selectorIndex = index;
-    const modal = document.getElementById('party-modal');
+    const container = document.getElementById('party-selector-container');
     const grid = document.getElementById('party-modal-grid');
+    const label = document.getElementById('party-slot-label');
+    const btnQuitar = document.getElementById('btn-quitar-slot');
+
+    label.innerText = index + 1;
+    
     let html = '';
     Object.keys(statsGlobal).sort().forEach(nombre => {
-        if (!estadoUI.party.includes(nombre)) {
-            const iconoMuestra = normalizar(statsGlobal[nombre]?.iconoOverride || nombre);
-            html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer;">
+        const p = statsGlobal[nombre];
+        // SOLO MOSTRAR JUGADORES QUE NO ESTÉN YA EN LA PARTY
+        if (p.isPlayer && !estadoUI.party.includes(nombre)) {
+            const iconoMuestra = normalizar(p.iconoOverride || nombre);
+            html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer; width:70px;">
                 <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:60px; height:60px; border-radius:8px; border:2px solid var(--gold); object-fit:cover;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div style="font-size:0.7em; margin-top:5px; color:white;">${nombre}</div>
+                <div style="font-size:0.7em; margin-top:5px; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nombre}</div>
             </div>`;
         }
     });
+    
+    if (html === '') html = `<p style="color:#aaa; font-size:0.9em; width:100%; text-align:center;">No hay más jugadores disponibles para seleccionar.</p>`;
+    
     grid.innerHTML = html; 
-    modal.style.display = 'flex';
+    btnQuitar.style.display = estadoUI.party[index] ? 'block' : 'none';
+    container.style.display = 'block';
 };
 
 window.seleccionarParaParty = (nombre) => {
     estadoUI.party[estadoUI.selectorIndex] = nombre;
-    document.getElementById('party-modal').style.display = 'none';
+    document.getElementById('party-selector-container').style.display = 'none';
     guardar();
     repintarConScroll('hex');
 };
 
 window.quitarDeParty = () => {
     estadoUI.party[estadoUI.selectorIndex] = null;
-    document.getElementById('party-modal').style.display = 'none';
+    document.getElementById('party-selector-container').style.display = 'none';
     guardar();
     repintarConScroll('hex');
 };
 
-// Busca los Jugadores Activos y los pone en los 6 slots
+window.vaciarParty = () => {
+    estadoUI.party = [null, null, null, null, null, null];
+    guardar();
+    repintarConScroll('hex');
+};
+
 window.autoLlenarParty = () => {
     const jugadoresActivos = Object.keys(statsGlobal).filter(n => statsGlobal[n].isPlayer && statsGlobal[n].isActive).sort();
     estadoUI.party = [null, null, null, null, null, null];
@@ -136,80 +226,7 @@ window.addAsistenciaGlobal = () => {
     repintarConScroll('hex');
 };
 
-// --- NAVEGACIÓN Y RENDERIZADO (SIN BUCLE INFINITO) ---
-function repintarConScroll(vista) {
-    const scrollY = window.scrollY;
-    const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
-    const container = document.getElementById(containerId);
-    
-    if (container) {
-        const h = container.getBoundingClientRect().height;
-        container.style.minHeight = h + 'px';
-        
-        if (vista === 'detalle') {
-            dibujarDetalle();
-        } else {
-            // El panel OP ya está visible, solo cambiamos el contenido interno
-            if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
-            else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
-            else container.innerHTML = dibujarFormularioEditar();
-        }
-        
-        window.scrollTo(0, scrollY);
-        requestAnimationFrame(() => container.style.minHeight = '');
-    } else {
-        refrescarVistas(); window.scrollTo(0, scrollY);
-    }
-}
-
-function refrescarVistas() {
-    document.getElementById('vista-catalogo').classList.add('oculto'); 
-    document.getElementById('vista-detalle').classList.add('oculto'); 
-    document.getElementById('vista-op').classList.add('oculto');
-    
-    if (estadoUI.vistaActual === 'catalogo') { 
-        document.getElementById('vista-catalogo').classList.remove('oculto'); 
-        dibujarCatalogo(); 
-    }
-    else if (estadoUI.vistaActual === 'detalle') { 
-        document.getElementById('vista-detalle').classList.remove('oculto'); 
-        dibujarDetalle(); 
-    }
-    else { 
-        // Vistas de Operador: Se muestra el marco OP y luego se inyecta la sub-vista
-        document.getElementById('vista-op').classList.remove('oculto'); 
-        document.getElementById('vista-op').innerHTML = dibujarMenuOP();
-        const sub = document.getElementById('sub-vista-op');
-        if (estadoUI.vistaActual === 'hex') sub.innerHTML = dibujarHexOP();
-        else if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
-        else sub.innerHTML = dibujarFormularioEditar();
-    }
-}
-
-window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
-window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
-
-window.abrirMenuOP = () => { 
-    const enrutarOP = () => { 
-        estadoUI.vistaActual = 'hex'; 
-        refrescarVistas(); 
-    };
-    if (estadoUI.esAdmin) { enrutarOP(); return; }
-    const pass = prompt("Acceso Restringido. Contraseña:");
-    if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } else { if(pass !== null) alert("Acceso denegado."); }
-};
-
-window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = subvista; 
-    refrescarVistas();
-};
-
-window.setFiltro = (tipo, valor) => {
-    if(tipo === 'rol') estadoUI.filtroRol = valor;
-    if(tipo === 'act') estadoUI.filtroAct = valor;
-    refrescarVistas();
-};
-
+// --- FUNCIONES DE FORMULARIOS Y EDICIÓN ---
 window.toggleCrearRol = () => {
     const btn = document.getElementById('btn-crear-rol');
     if (btn.dataset.val === 'npc') {
@@ -253,18 +270,14 @@ window.toggleIdentidad = (prop) => {
 function recalcularVidas(p, accion) {
     const prevRojo = calcularVidaRojaMax(p);
     const prevMystic = getMysticBonus(p);
-    
     accion();
-    
     const newRojo = calcularVidaRojaMax(p);
     const newMystic = getMysticBonus(p);
-    
     const deltaRojo = newRojo - prevRojo;
     const deltaMystic = newMystic - prevMystic;
     
     if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
     if (deltaMystic !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaMystic);
-    
     const finalMax = calcularVidaRojaMax(p);
     if (p.vidaRojaActual > finalMax) p.vidaRojaActual = finalMax;
 }
@@ -285,7 +298,6 @@ window.recalcularBases = () => {
 window.cambioManual = (statId, valorStr, tipoAccion) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     let val = parseInt(valorStr); if (isNaN(val)) val = 0; 
-
     recalcularVidas(p, () => {
         if (tipoAccion === 'buff') p.buffs[statId] = val;
         else if (tipoAccion === 'baseTop') p[statId] = Math.max(0, val);
@@ -294,7 +306,6 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
         else if (tipoAccion === 'spellEffTop' || tipoAccion === 'spellEffAfin') p.hechizosEfecto[statId] = val;
         else if (tipoAccion === 'directo') p[statId] = Math.max(0, val);
     });
-
     guardar();
     if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle'); else repintarConScroll('op');
 };
@@ -366,10 +377,7 @@ window.modGoldExtra = (cantidad) => {
 };
 
 window.checkFormOverrides = (inputId) => {
-    if (['npc-vrm', 'npc-vra', 'npc-va'].includes(inputId)) {
-        formOverrides[inputId] = true;
-    }
-
+    if (['npc-vrm', 'npc-vra', 'npc-va'].includes(inputId)) formOverrides[inputId] = true;
     const fis = parseInt(document.getElementById('npc-fis')?.value) || 0;
     const ene = parseInt(document.getElementById('npc-ene')?.value) || 0;
     const esp = parseInt(document.getElementById('npc-esp')?.value) || 0;
@@ -383,30 +391,22 @@ window.checkFormOverrides = (inputId) => {
         const elVrm = document.getElementById('npc-vrm');
         if (elVrm && elVrm.value != calcVrm) elVrm.value = calcVrm;
     }
-    
     if (!formOverrides['npc-vra']) {
         const elVra = document.getElementById('npc-vra');
         const targetVra = formOverrides['npc-vrm'] ? parseInt(document.getElementById('npc-vrm')?.value || 10) : calcVrm;
         if (elVra && elVra.value != targetVra) elVra.value = targetVra;
     }
-    
     if (!formOverrides['npc-va']) {
         const elVa = document.getElementById('npc-va');
         if (elVa && elVa.value != calcVa) elVa.value = calcVa;
     }
 };
 
-window.modFormInput = (inputId) => {
-    window.checkFormOverrides(inputId);
-};
+window.modFormInput = (inputId) => { window.checkFormOverrides(inputId); };
 
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
-    if(input) { 
-        let val = parseInt(input.value) || 0; 
-        input.value = Math.max(0, val + cantidad); 
-        window.checkFormOverrides(inputId); 
-    }
+    if(input) { let val = parseInt(input.value) || 0; input.value = Math.max(0, val + cantidad); window.checkFormOverrides(inputId); }
 };
 
 window.modEstado = (estadoId, cantidad) => {
@@ -418,6 +418,8 @@ window.toggleEstado = (estadoId) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.estados[estadoId] = !p.estados[estadoId]; guardar(); repintarConScroll('op');
 };
+
+const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 
 window.ejecutarClonacion = (tipo) => {
     const sourceSelect = document.getElementById('clon-source'); if(!sourceSelect) return;
@@ -503,7 +505,7 @@ window.ejecutarCreacionNPC = () => {
     guardar(); estadoUI.personajeSeleccionado = nombre; window.abrirDetalle(nombre); window.scrollTo(0,0);
 };
 
-// --- MODO SINCRONIZADO AUTO ---
+// --- MODO SINCRONIZADO AUTO (CADA 10 SEGUNDOS) ---
 window.toggleSync = () => {
     estadoUI.modoSincronizado = !estadoUI.modoSincronizado;
     const btn = document.getElementById('btn-sync');
@@ -521,7 +523,7 @@ setInterval(async () => {
         await cargarTodoDesdeCSV();
         refrescarVistas();
     }
-}, 30000); // 30 Segundos
+}, 10000); // 10 Segundos
 
 window.forzarSincronizacion = async () => {
     if(confirm("¿Seguro que deseas Actualizar Manualmente? Esto borrará los NPCs locales.")) {
@@ -552,12 +554,11 @@ async function iniciar() {
             const parsed = JSON.parse(cache); 
             Object.assign(statsGlobal, parsed.stats); 
             if(parsed.party) estadoUI.party = parsed.party;
-            if(parsed.modoSync) estadoUI.modoSincronizado = parsed.modoSync;
+            if(parsed.modoSync !== undefined) estadoUI.modoSincronizado = parsed.modoSync;
         } 
     } 
     catch (error) { console.error("Error crítico:", error); } 
     finally { 
-        // Forzamos el aspecto del botón de sync en el primer renderizado
         const btn = document.getElementById('btn-sync');
         if(btn) {
             btn.innerText = estadoUI.modoSincronizado ? "CONECTADO A LA DATA" : "DESCONECTADO (EDICIÓN)";
