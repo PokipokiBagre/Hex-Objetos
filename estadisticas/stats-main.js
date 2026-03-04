@@ -29,7 +29,7 @@ window.abrirMenuOP = () => {
     const enrutarOP = () => { if (estadoUI.vistaActual === 'catalogo') estadoUI.vistaActual = 'op'; refrescarVistas(); };
     if (estadoUI.esAdmin) { enrutarOP(); return; }
     const pass = prompt("Acceso Restringido. Contraseña:");
-    if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } else { if(pass !== null) alert("Acceso denegado."); }
+    if (pass === atob('Y2CanZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } else { if(pass !== null) alert("Acceso denegado."); }
 };
 
 window.mostrarPaginaOP = (subvista) => {
@@ -246,10 +246,12 @@ window.ejecutarClonacion = (tipo) => {
     else if (tipo === 'efectosExtras') msg = `¿Seguro que deseas COPIAR LOS EFECTOS DE HECHIZOS Y BUFFS EXTRAS desde ${sourceName} hacia ${targetName}?`;
     else if (tipo === 'hex') msg = `¿Seguro que deseas COPIAR EL HEX (${source.hex}) desde ${sourceName} hacia ${targetName}?\n(El HEX actual de ${targetName} se sobrescribirá).`;
     else if (tipo === 'completo') msg = `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName}?\n\n(Esto copiará estadísticas, afinidades, estados e IMÁGENES. El personaje ${targetName} se verá como ${sourceName}).`;
+    // NUEVO: Mensaje para clonación púra
+    else if (tipo === 'stats_puros') msg = `¿Seguro que deseas IMPORTAR TODA LA FICHA (HEX, VEX, Afinidades, Hechizos Base y Estados) desde ${sourceName} hacia ${targetName}?\n\n(No se copiará la imagen ni se creará la medalla visual de copia).`;
     
     if(!confirm(msg)) return;
 
-    if (tipo === 'estados' || tipo === 'completo') {
+    if (tipo === 'estados' || tipo === 'completo' || tipo === 'stats_puros') {
         target.estados = JSON.parse(JSON.stringify(source.estados));
     }
 
@@ -263,11 +265,12 @@ window.ejecutarClonacion = (tipo) => {
         }
     }
 
-    if (tipo === 'hex' || tipo === 'completo') {
+    if (tipo === 'hex' || tipo === 'completo' || tipo === 'stats_puros') {
         target.hex = source.hex;
     }
 
-    if (tipo === 'completo') {
+    if (tipo === 'completo' || tipo === 'stats_puros') {
+        // En stats_puros, copiamos también la vida actual y bases puros
         target.vidaRojaActual = source.vidaRojaActual; target.vidaRojaMax = source.vidaRojaMax;
         target.vidaAzul = source.vidaAzul; target.baseVidaAzul = source.baseVidaAzul; 
         target.guardaDorada = source.guardaDorada; target.baseGuardaDorada = source.baseGuardaDorada;
@@ -277,7 +280,14 @@ window.ejecutarClonacion = (tipo) => {
         target.hechizos = JSON.parse(JSON.stringify(source.hechizos || {}));
         
         target.vex = source.vex;
-        target.iconoOverride = source.iconoOverride || normalizar(sourceName);
+        
+        // MODIFICADO: Solo copia imagen si es completo, no si es stats_puros
+        if (tipo === 'completo') {
+            target.iconoOverride = source.iconoOverride || normalizar(sourceName);
+        } else {
+            // stats_puros asegura que no haya override (o mantiene el suyo si ya lo tenía)
+            //target.iconoOverride = target.iconoOverride || null; 
+        }
     }
     
     guardar(); sourceSelect.value = ""; repintarConScroll('detalle'); 
