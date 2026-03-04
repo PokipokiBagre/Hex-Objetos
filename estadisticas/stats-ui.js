@@ -15,20 +15,10 @@ const bTextSplit = (spells, spellEff, buff) => {
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
 function asegurarEstructuras(p) {
-    if(!p.buffs) p.buffs = {}; 
-    if(!p.hechizos) p.hechizos = {}; 
-    if(!p.hechizosEfecto) p.hechizosEfecto = {}; 
-    if(!p.estados) p.estados = {};
-    
+    if(!p.buffs) p.buffs = {}; if(!p.hechizos) p.hechizos = {}; if(!p.hechizosEfecto) p.hechizosEfecto = {}; if(!p.estados) p.estados = {};
     listaEstados.forEach(e => { if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false; });
-    
     const props = ['fisica', 'energetica', 'espiritual', 'mando', 'psiquica', 'oscura', 'danoRojo', 'danoAzul', 'elimDorada', 'vidaRojaMaxExtra', 'vidaAzulExtra', 'guardaDoradaExtra'];
-    props.forEach(pr => { 
-        p.buffs[pr] = p.buffs[pr] || 0; 
-        p.hechizos[pr] = p.hechizos[pr] || 0; 
-        p.hechizosEfecto[pr] = p.hechizosEfecto[pr] || 0; 
-        if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; 
-    });
+    props.forEach(pr => { p.buffs[pr] = p.buffs[pr] || 0; p.hechizos[pr] = p.hechizos[pr] || 0; p.hechizosEfecto[pr] = p.hechizosEfecto[pr] || 0; if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; });
     if(p.isActive === undefined) p.isActive = true;
 }
 
@@ -39,66 +29,34 @@ export function dibujarCatalogo() {
 
     let html = `
     <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px; flex-wrap:wrap; border-bottom:1px dashed #d4af37; padding-bottom:15px;">
-        <div class="filter-group" style="margin:0;">
-            <button onclick="window.setFiltro('rol', 'Todos')" class="${estadoUI.filtroRol === 'Todos' ? 'btn-active' : ''}">Todos</button>
-            <button onclick="window.setFiltro('rol', 'Jugador')" class="${estadoUI.filtroRol === 'Jugador' ? 'btn-active' : ''}">Jugadores</button>
-            <button onclick="window.setFiltro('rol', 'NPC')" class="${estadoUI.filtroRol === 'NPC' ? 'btn-active' : ''}">NPCs</button>
-        </div>
-        <div class="filter-group" style="margin:0;">
-            <button onclick="window.setFiltro('act', 'Todos')" class="${estadoUI.filtroAct === 'Todos' ? 'btn-active' : ''}">Ambos</button>
-            <button onclick="window.setFiltro('act', 'Activo')" class="${estadoUI.filtroAct === 'Activo' ? 'btn-active' : ''}">Vivos / Activos</button>
-            <button onclick="window.setFiltro('act', 'Inactivo')" class="${estadoUI.filtroAct === 'Inactivo' ? 'btn-active' : ''}">Muertos / Inactivos</button>
-        </div>
-    </div>
-    <div class="catalogo-grid">`;
+        <div class="filter-group" style="margin:0;"><button onclick="window.setFiltro('rol', 'Todos')" class="${estadoUI.filtroRol === 'Todos' ? 'btn-active' : ''}">Todos</button><button onclick="window.setFiltro('rol', 'Jugador')" class="${estadoUI.filtroRol === 'Jugador' ? 'btn-active' : ''}">Jugadores</button><button onclick="window.setFiltro('rol', 'NPC')" class="${estadoUI.filtroRol === 'NPC' ? 'btn-active' : ''}">NPCs</button></div>
+        <div class="filter-group" style="margin:0;"><button onclick="window.setFiltro('act', 'Todos')" class="${estadoUI.filtroAct === 'Todos' ? 'btn-active' : ''}">Ambos</button><button onclick="window.setFiltro('act', 'Activo')" class="${estadoUI.filtroAct === 'Activo' ? 'btn-active' : ''}">Vivos / Activos</button><button onclick="window.setFiltro('act', 'Inactivo')" class="${estadoUI.filtroAct === 'Inactivo' ? 'btn-active' : ''}">Muertos / Inactivos</button></div>
+    </div><div class="catalogo-grid">`;
 
     const getSortValue = (p) => {
-        if (p.isPlayer && p.isActive) return 1; 
-        if (!p.isPlayer && p.isActive) return 2; 
-        if (!p.isPlayer && !p.isActive) return 3; 
-        if (p.isPlayer && !p.isActive) return 4; 
-        return 5;
+        if (p.isPlayer && p.isActive) return 1; if (!p.isPlayer && p.isActive) return 2; 
+        if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
     };
 
     const sortedNames = Object.keys(statsGlobal).sort((a, b) => {
-        const valA = getSortValue(statsGlobal[a]);
-        const valB = getSortValue(statsGlobal[b]);
-        if (valA !== valB) return valA - valB;
-        return a.localeCompare(b); 
+        const valA = getSortValue(statsGlobal[a]); const valB = getSortValue(statsGlobal[b]);
+        if (valA !== valB) return valA - valB; return a.localeCompare(b); 
     });
 
     sortedNames.forEach(nombre => {
         const p = statsGlobal[nombre]; asegurarEstructuras(p);
-        if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return;
-        if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
-        if (estadoUI.filtroAct === 'Activo' && !p.isActive) return;
-        if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
+        if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return; if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
+        if (estadoUI.filtroAct === 'Activo' && !p.isActive) return; if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
 
         const iconoMuestra = normalizar(p.iconoOverride || nombre);
-        
-        let borderStyle = "";
-        let bgStyle = "background: #1e0535;"; 
-        if (p.isPlayer && p.isActive) {
-            borderStyle = "border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);";
-        } else if (!p.isPlayer && p.isActive) {
-            borderStyle = "border: 2px solid #00ffff; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);"; 
-            bgStyle = "background: #0a1128;";
-        } else if (!p.isPlayer && !p.isActive) {
-            borderStyle = "border: 2px solid #555555;"; 
-            bgStyle = "background: #111111;";
-        } else if (p.isPlayer && !p.isActive) {
-            borderStyle = "border: 2px solid #cc0000; box-shadow: 0 0 10px rgba(204, 0, 0, 0.3);"; 
-            bgStyle = "background: #220000;";
-        }
+        let borderStyle = ""; let bgStyle = "background: #1e0535;"; 
+        if (p.isPlayer && p.isActive) { borderStyle = "border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);"; } 
+        else if (!p.isPlayer && p.isActive) { borderStyle = "border: 2px solid #00ffff; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);"; bgStyle = "background: #0a1128;"; } 
+        else if (!p.isPlayer && !p.isActive) { borderStyle = "border: 2px solid #555555;"; bgStyle = "background: #111111;"; } 
+        else if (p.isPlayer && !p.isActive) { borderStyle = "border: 2px solid #cc0000; box-shadow: 0 0 10px rgba(204, 0, 0, 0.3);"; bgStyle = "background: #220000;"; }
 
         const claseInactiva = p.isActive ? '' : 'inactive-card';
-        
-        html += `
-        <div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')">
-            <img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}">
-            <h3>${nombre}</h3>
-            <p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p>
-        </div>`;
+        html += `<div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')"><img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}"><h3>${nombre}</h3><p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p></div>`;
     }); 
     contenedor.innerHTML = html + `</div>`;
 }
@@ -108,66 +66,43 @@ export function dibujarDetalle() {
     if(!p) return; asegurarEstructuras(p);
     const contenedor = document.getElementById('vista-detalle');
 
-    let vidaRojaVisual = calcularVidaRojaMax(p); 
-    let vexVisual = calcularVexMax(p);
+    let vidaRojaVisual = calcularVidaRojaMax(p); let vexVisual = calcularVexMax(p);
     let hexPercent = Math.min((p.hex / 4000) * 100, 100); let vexPercent = Math.min((vexVisual / 4000) * 100, 100);
     
-    let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual); 
-    let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual); 
-    let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
-    let corazonesRojosHTML = ''; 
-    for(let i=0; i<normalRojo; i++) corazonesRojosHTML += `<div class="heart-red"></div>`; 
-    for(let i=0; i<vaciosRojo; i++) corazonesRojosHTML += `<div class="heart-red empty"></div>`; 
-    for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
+    let extraRojo = Math.max(0, p.vidaRojaActual - vidaRojaVisual); let normalRojo = Math.min(p.vidaRojaActual, vidaRojaVisual); let vaciosRojo = Math.max(0, vidaRojaVisual - normalRojo);
+    let corazonesRojosHTML = ''; for(let i=0; i<normalRojo; i++) corazonesRojosHTML += `<div class="heart-red"></div>`; for(let i=0; i<vaciosRojo; i++) corazonesRojosHTML += `<div class="heart-red empty"></div>`; for(let i=0; i<extraRojo; i++) corazonesRojosHTML += `<div class="heart-red" style="background:#800000; border:1px solid #ff0000; transform:scale(0.9);"></div>`;
     if (extraRojo > 0) corazonesRojosHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraRojo}</div>`;
 
-    let normalAzul = Math.max(0, p.vidaAzul || 0); 
-    let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.hechizosEfecto.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
-    let corazonesAzulesHTML = ''; 
-    for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`; 
-    for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
+    let normalAzul = Math.max(0, p.vidaAzul || 0); let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.hechizosEfecto.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
+    let corazonesAzulesHTML = ''; for(let i=0; i<normalAzul; i++) corazonesAzulesHTML += `<div class="heart-blue"></div>`; for(let i=0; i<extraAzul; i++) corazonesAzulesHTML += `<div class="heart-blue" style="background:#1a4b8c; border:1px solid #4a90e2; transform:scale(0.9);"></div>`;
     if (extraAzul > 0) corazonesAzulesHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraAzul}</div>`;
 
-    let normalGuarda = Math.max(0, p.guardaDorada || 0); 
-    let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.hechizosEfecto.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
-    let guardasHTML = ''; 
-    for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`; 
-    for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
+    let normalGuarda = Math.max(0, p.guardaDorada || 0); let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.hechizosEfecto.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
+    let guardasHTML = ''; for(let i=0; i<normalGuarda; i++) guardasHTML += `<div class="guard-gold"></div>`; for(let i=0; i<extraGuarda; i++) guardasHTML += `<div class="guard-gold" style="background:#8b6508; border:1px solid #d4af37; transform: rotate(45deg) scale(0.8);"></div>`;
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
     let estadosHTML = ''; 
-
-    if (p.iconoOverride) {
-        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon completo de ${p.iconoOverride.toUpperCase()}</span></div>`;
-    }
-
+    if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon visual de ${p.iconoOverride.toUpperCase()}</span></div>`;
+    
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
-        if (e.tipo === 'numero' && val > 0) {
-            estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
-        } else if (e.tipo === 'booleano' && val) {
-            let colorTexto = e.id === 'huesos' ? '#000' : '#fff';
-            let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid';
-            estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`;
-        }
+        if (e.tipo === 'numero' && val > 0) estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
+        else if (e.tipo === 'booleano' && val) { let colorTexto = e.id === 'huesos' ? '#000' : '#fff'; let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid'; estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`; }
     });
 
     const iconoGrande = normalizar(p.iconoOverride || nombre);
+    
+    // VISOR DE ASISTENCIA (Solo si es jugador)
+    let asisUI = p.isPlayer ? `<div style="color:#aaa; font-size:0.8em; margin-top:5px; font-weight:bold;">ASISTENCIA: <span style="color:#b8860b;">${p.asistencia || 1}/7</span></div>` : '';
 
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'};">
         <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 120px; border-radius: 50%; border: 3px solid #d4af37;" onerror="${imgError}">
-        <div style="text-align:left;">
-            <h1 style="margin: 0;">${nombre.toUpperCase()} ${p.isNPC ? '<span style="font-size:0.4em; color:#aaa">[NPC]</span>' : ''} ${!p.isActive ? '<span style="font-size:0.4em; color:#ff0000">[INACTIVO]</span>' : ''}</h1>
-            <div class="status-container">${estadosHTML}</div>
-        </div>
+        <div style="text-align:left;"><h1 style="margin: 0;">${nombre.toUpperCase()} ${p.isNPC ? '<span style="font-size:0.4em; color:#aaa">[NPC]</span>' : ''} ${!p.isActive ? '<span style="font-size:0.4em; color:#ff0000">[INACTIVO]</span>' : ''}</h1>${asisUI}<div class="status-container">${estadosHTML}</div></div>
         ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="margin-left:auto; background:#1a0033; border-color:#d4af37;">Editar Ficha Base</button>` : ''}
     </div>
 
-    <div class="circle-wrap">
-        <div class="stat-circle" style="background: conic-gradient(var(--gold) ${hexPercent}%, #222 0);"><div class="inner"><strong>${p.hex}</strong><span>HEX</span></div></div>
-        <div class="stat-circle" style="background: conic-gradient(var(--blue-life) ${vexPercent}%, #222 0);"><div class="inner"><strong>${vexVisual}</strong><span>VEX</span></div></div>
-    </div>
+    <div class="circle-wrap"><div class="stat-circle" style="background: conic-gradient(var(--gold) ${hexPercent}%, #222 0);"><div class="inner"><strong>${p.hex}</strong><span>HEX</span></div></div><div class="stat-circle" style="background: conic-gradient(var(--blue-life) ${vexPercent}%, #222 0);"><div class="inner"><strong>${vexVisual}</strong><span>VEX</span></div></div></div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
         <div>
@@ -235,6 +170,12 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button type="button" class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
             </div>
             ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (BASE)', val: p.vidaRojaMax }, 'baseTop')}
+            
+            <div class="edit-card" style="grid-column: 1 / -1; background:#1a1a00; border-color:#b8860b;">
+                <h4 style="color:#b8860b;">Restauración Teórica Óptima</h4>
+                <button type="button" onclick="window.recalcularBases()" style="background:#b8860b; color:#000; font-weight:bold; width:100%; padding:15px; font-size:1.1em; border-radius:4px; transition:0.2s;">RECALCULAR CORAZONES (Salud Máxima y Fórmulas Base)</button>
+                <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física/2], la Vida Azul a [Magia/4] y curará al personaje al máximo.</p>
+            </div>
         </div>
     </div>`;
 
@@ -273,12 +214,106 @@ export function dibujarMenuOP() {
     return `
         <h3>PANEL DE OPERADOR</h3>
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
+            <button type="button" onclick="window.mostrarPaginaOP('hex')" style="background:#b8860b; color:#000;">Gestión de HEX y Party</button>
             <button type="button" onclick="window.mostrarPaginaOP('crear')" style="background:#004a4a">Crear Personaje (Manual)</button>
             <button type="button" onclick="window.descargarAumentada()">Descargar CSV</button>
             <button type="button" onclick="window.triggerSubirCSV()" class="btn-red">Subir CSV</button>
         </div>
         <div id="sub-vista-op"></div>
     `;
+}
+
+// ---------------- NUEVO: GESTOR DE HEX Y PARTY ----------------
+export function dibujarHexOP() {
+    let html = `<div style="text-align:center; max-width:1200px; margin:0 auto;">
+        <h2 style="color:var(--gold); margin-top:0;">Gestión de HEX y Party</h2>
+        
+        <div style="background:#1a0033; padding:15px; border-radius:8px; border:1px solid var(--gold); margin-bottom:20px;">
+            <h3 style="color:var(--gold); margin-top:0;">Party Activa (Selección)</h3>
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:15px;">`;
+    
+    for(let i=0; i<6; i++) {
+        const char = estadoUI.party[i];
+        if(char) {
+            const icono = normalizar(statsGlobal[char]?.iconoOverride || char);
+            html += `<div onclick="window.abrirSelectorParty(${i})" style="width:80px; height:80px; border:2px solid var(--gold); border-radius:8px; cursor:pointer; background:url('../img/imgpersonajes/${icono}icon.png'); background-size:cover; position:relative;" title="${char}">
+                <div style="position:absolute; bottom:0; background:rgba(0,0,0,0.7); width:100%; font-size:0.6em; text-align:center;">${char}</div>
+            </div>`;
+        } else {
+            html += `<div onclick="window.abrirSelectorParty(${i})" style="width:80px; height:80px; border:2px dashed #666; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:2em; color:#666; background:#111;">+</div>`;
+        }
+    }
+    
+    html += `</div>
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button type="button" onclick="window.establecerPartyActiva()" style="background:#004a00; border-color:#00ff00; color:white;">ESTABLECER COMO JUGADORES ACTIVOS</button>
+                <button type="button" onclick="window.addAsistenciaGlobal()" style="background:#4a004a; border-color:#8a008a; color:white;">SUMAR ASISTENCIA (+1) A ACTIVOS</button>
+            </div>
+        </div>
+        
+        <div style="background:#0a0014; padding:15px; border-radius:8px; border:1px solid var(--blue-life); margin-bottom:20px;">
+            <h3 style="color:var(--blue-life); margin-top:0;">Dar HEX Global (Todos los Activos)</h3>
+            <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                <button type="button" onclick="window.modHexGlobal(10)" class="btn-plus">+10</button>
+                <button type="button" onclick="window.modHexGlobal(-10)" class="btn-minus">-10</button>
+                <button type="button" onclick="window.modHexGlobal(30)" class="btn-plus">+30</button>
+                <button type="button" onclick="window.modHexGlobal(-30)" class="btn-minus">-30</button>
+                <button type="button" onclick="window.modHexGlobal(500)" class="btn-plus" style="background:#4a004a;">+500</button>
+                <button type="button" onclick="window.modHexGlobal(-500)" class="btn-minus" style="background:#4a004a;">-500</button>
+                <button type="button" onclick="window.modHexGlobal(1000)" class="btn-plus" style="background:#4a004a;">+1000</button>
+                <button type="button" onclick="window.modHexGlobal(-1000)" class="btn-minus" style="background:#4a004a;">-1000</button>
+            </div>
+        </div>
+
+        <div class="edit-grid">`;
+
+    Object.keys(statsGlobal).sort().forEach(nombre => {
+        const p = statsGlobal[nombre];
+        if (p.isPlayer && p.isActive) {
+            const asisTexto = `(${p.asistencia || 1}/7)`;
+            const iconoMuestra = normalizar(p.iconoOverride || nombre);
+            html += `
+            <div class="edit-card" style="border-color:var(--gold);">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:50px; height:50px; border-radius:50%; border:1px solid var(--gold); object-fit:cover;" onerror="${imgError}">
+                    <div style="text-align:left;">
+                        <h4 style="margin:0; font-size:1em;">${nombre}</h4>
+                        <div style="color:var(--gold); font-size:0.9em; font-weight:bold;">HEX: ${p.hex} <span style="color:#aaa; font-size:0.8em;">${asisTexto}</span></div>
+                    </div>
+                </div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 1)" class="btn-plus">+1</button><button type="button" onclick="window.modHexInd('${nombre}', -1)" class="btn-minus">-1</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 5)" class="btn-plus">+5</button><button type="button" onclick="window.modHexInd('${nombre}', -5)" class="btn-minus">-5</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 10)" class="btn-plus">+10</button><button type="button" onclick="window.modHexInd('${nombre}', -10)" class="btn-minus">-10</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 50)" style="background:#004a4a;" class="btn-plus">+50</button><button type="button" onclick="window.modHexInd('${nombre}', -50)" style="background:#4a0000;" class="btn-minus">-50</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 100)" style="background:#004a4a;" class="btn-plus">+100</button><button type="button" onclick="window.modHexInd('${nombre}', -100)" style="background:#4a0000;" class="btn-minus">-100</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 300)" style="background:#4a004a;" class="btn-plus">+300</button><button type="button" onclick="window.modHexInd('${nombre}', -300)" style="background:#4a0000;" class="btn-minus">-300</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 500)" style="background:#4a004a;" class="btn-plus">+500</button><button type="button" onclick="window.modHexInd('${nombre}', -500)" style="background:#4a0000;" class="btn-minus">-500</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 1000)" style="background:#4a004a;" class="btn-plus">+1000</button><button type="button" onclick="window.modHexInd('${nombre}', -1000)" style="background:#4a0000;" class="btn-minus">-1000</button></div>
+            </div>`;
+        }
+    });
+
+    html += `</div>
+        <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37; border-radius:8px;">
+            <h3 style="margin-top:0; color:var(--gold);">Registro de HEX Unificado</h3>
+            <textarea id="hex-log-textarea" readonly style="width:95%; height:150px; background:#000; color:#fff; border:1px solid var(--gold); padding:10px; font-family:monospace; margin-bottom:10px;"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button type="button" onclick="window.copiarHexLog()" style="flex:3; background:var(--gold); color:black; font-weight:bold;">COPIAR AL PORTAPAPELES</button>
+                <button type="button" onclick="window.limpiarHexLog()" style="flex:1; background:#4a0000; color:white;">LIMPIAR LOG</button>
+            </div>
+        </div>
+
+        <div id="party-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+            <div style="background:#1a0033; border:2px solid var(--gold); border-radius:8px; padding:20px; max-width:80%; max-height:80%; overflow-y:auto;">
+                <h3 style="color:var(--gold); margin-top:0;">Selecciona un Personaje</h3>
+                <div id="party-modal-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:10px;">
+                </div>
+                <button type="button" onclick="document.getElementById('party-modal').style.display='none'" style="margin-top:20px; width:100%; background:#444;">CANCELAR</button>
+                <button type="button" onclick="window.quitarDeParty()" style="margin-top:10px; width:100%; background:#4a0000;">QUITAR DEL SLOT</button>
+            </div>
+        </div>
+    </div>`;
+    return html;
 }
 
 function genCard(f, tipoAccion) {
@@ -294,9 +329,8 @@ function genCard(f, tipoAccion) {
     else if (tipoAccion === 'form') clickMod = 'window.modForm';
 
     const visualVal = f.val !== undefined ? f.val : 0;
-    
     const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
-    const attrInput = tipoAccion === 'form' ? '' : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
+    const attrInput = tipoAccion === 'form' ? `oninput="window.updateCreationAfinitySum()"` : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
     const paramId = tipoAccion === 'form' ? inputId : f.id;
     
     let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
@@ -311,7 +345,7 @@ function genCard(f, tipoAccion) {
 
 export function dibujarFormularioCrear() {
     const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
-    const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
+    const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:1 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
     const pAfinidades = [ { id:'npc-fis', label:'Física' }, { id:'npc-ene', label:'Energética' }, { id:'npc-esp', label:'Espiritual' }, { id:'npc-man', label:'Mando' }, { id:'npc-psi', label:'Psíquica' }, { id:'npc-osc', label:'Oscura' } ];
     
     let afinGridHtml = '';
@@ -320,14 +354,8 @@ export function dibujarFormularioCrear() {
         <div class="edit-card">
             <h4>Afin. ${f.label}</h4>
             <input type="number" id="${f.id}" value="0" oninput="window.updateCreationAfinitySum()" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">
-            <div class="btn-row">
-                <button type="button" class="btn-plus" onclick="window.modForm('${f.id}', 1); window.updateCreationAfinitySum();">+1</button>
-                <button type="button" class="btn-minus" onclick="window.modForm('${f.id}', -1); window.updateCreationAfinitySum();">-1</button>
-            </div>
-            <div class="btn-row">
-                <button type="button" class="btn-plus5" onclick="window.modForm('${f.id}', 5); window.updateCreationAfinitySum();">+5</button>
-                <button type="button" class="btn-minus5" onclick="window.modForm('${f.id}', -5); window.updateCreationAfinitySum();">-5</button>
-            </div>
+            <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modForm('${f.id}', 1); window.updateCreationAfinitySum();">+1</button><button type="button" class="btn-minus" onclick="window.modForm('${f.id}', -1); window.updateCreationAfinitySum();">-1</button></div>
+            <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modForm('${f.id}', 5); window.updateCreationAfinitySum();">+5</button><button type="button" class="btn-minus5" onclick="window.modForm('${f.id}', -5); window.updateCreationAfinitySum();">-5</button></div>
         </div>`;
     });
 
