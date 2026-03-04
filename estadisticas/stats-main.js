@@ -5,6 +5,138 @@ import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMys
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
+// --- SISTEMA DE LOGS DE HEX ---
+function updateHexLogText() {
+    const textarea = document.getElementById('hex-log-textarea');
+    if (!textarea) return;
+    let finalOutput = "";
+    Object.keys(estadoUI.hexLog).sort().forEach(char => {
+        estadoUI.hexLog[char].forEach(line => {
+            finalOutput += line + "\n";
+        });
+    });
+    textarea.value = finalOutput;
+}
+
+window.addHexLogEntry = (nombre, amount, isExtra = false) => {
+    if (!estadoUI.hexLog[nombre]) estadoUI.hexLog[nombre] = [];
+    const p = statsGlobal[nombre];
+    if (!p) return;
+    
+    const sign = amount > 0 ? "+" : "";
+    const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : "";
+    
+    if(isExtra) {
+        estadoUI.hexLog[nombre].push(`${nombre} +1000 Hex ¡EXTRA! (${p.hex})${asisStr}`);
+    } else {
+        estadoUI.hexLog[nombre].push(`${nombre} ${sign}${amount} Hex (${p.hex})${asisStr}`);
+    }
+    updateHexLogText();
+};
+
+window.limpiarHexLog = () => { 
+    estadoUI.hexLog = {}; 
+    updateHexLogText(); 
+};
+
+window.copiarHexLog = () => {
+    const textarea = document.getElementById('hex-log-textarea');
+    if (textarea) { 
+        textarea.select(); 
+        document.execCommand('copy'); 
+        alert("Log copiado al portapapeles exitosamente."); 
+    }
+};
+
+// --- GESTIÓN DE PARTY Y HEX GLOBALES ---
+window.abrirSelectorParty = (index) => {
+    estadoUI.selectorIndex = index;
+    const modal = document.getElementById('party-modal');
+    const grid = document.getElementById('party-modal-grid');
+    let html = '';
+    Object.keys(statsGlobal).sort().forEach(nombre => {
+        if (!estadoUI.party.includes(nombre)) {
+            const iconoMuestra = normalizar(statsGlobal[nombre]?.iconoOverride || nombre);
+            html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer;">
+                <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:60px; height:60px; border-radius:8px; border:2px solid var(--gold); object-fit:cover;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                <div style="font-size:0.7em; margin-top:5px; color:white;">${nombre}</div>
+            </div>`;
+        }
+    });
+    grid.innerHTML = html; 
+    modal.style.display = 'flex';
+};
+
+window.seleccionarParaParty = (nombre) => {
+    estadoUI.party[estadoUI.selectorIndex] = nombre;
+    document.getElementById('party-modal').style.display = 'none';
+    guardar();
+    repintarConScroll('hex');
+};
+
+window.quitarDeParty = () => {
+    estadoUI.party[estadoUI.selectorIndex] = null;
+    document.getElementById('party-modal').style.display = 'none';
+    guardar();
+    repintarConScroll('hex');
+};
+
+// Busca los Jugadores Activos y los pone en los 6 slots
+window.autoLlenarParty = () => {
+    const jugadoresActivos = Object.keys(statsGlobal).filter(n => statsGlobal[n].isPlayer && statsGlobal[n].isActive).sort();
+    estadoUI.party = [null, null, null, null, null, null];
+    for(let i = 0; i < Math.min(6, jugadoresActivos.length); i++){
+        estadoUI.party[i] = jugadoresActivos[i];
+    }
+    guardar(); 
+    repintarConScroll('hex');
+};
+
+window.modHexInd = (nombre, amount) => {
+    const p = statsGlobal[nombre];
+    if(!p) return;
+    p.hex = Math.max(0, p.hex + amount);
+    window.addHexLogEntry(nombre, amount, false);
+    guardar(); 
+    repintarConScroll('hex');
+};
+
+window.modHexGlobal = (amount) => {
+    estadoUI.party.forEach(nombre => {
+        if (nombre && statsGlobal[nombre]) {
+            const p = statsGlobal[nombre];
+            p.hex = Math.max(0, p.hex + amount);
+            window.addHexLogEntry(nombre, amount, false);
+        }
+    });
+    guardar(); 
+    repintarConScroll('hex');
+};
+
+window.addAsistenciaGlobal = () => {
+    let leveledUp = [];
+    estadoUI.party.forEach(nombre => {
+        if (nombre && statsGlobal[nombre]) {
+            const p = statsGlobal[nombre];
+            p.asistencia = (p.asistencia || 1) + 1;
+            if (p.asistencia >= 8) {
+                p.asistencia = 1;
+                p.hex += 1000;
+                window.addHexLogEntry(nombre, 1000, true);
+                leveledUp.push(nombre);
+            } else {
+                window.addHexLogEntry(nombre, 0, false);
+            }
+        }
+    });
+    guardar(); 
+    if (leveledUp.length > 0) {
+        alert(`¡ASISTENCIA MÁXIMA ALCANZADA!\n\nLos siguientes personajes han regresado a Asistencia 1 y ganado +1000 HEX EXTRA:\n\n${leveledUp.join(', ')}`);
+    }
+    repintarConScroll('hex');
+};
+
+// --- NAVEGACIÓN Y RENDERIZADO (SIN BUCLE INFINITO) ---
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -14,10 +146,14 @@ function repintarConScroll(vista) {
         const h = container.getBoundingClientRect().height;
         container.style.minHeight = h + 'px';
         
-        if (vista === 'detalle') dibujarDetalle(); 
-        else if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
-        else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
-        else container.innerHTML = dibujarFormularioEditar();
+        if (vista === 'detalle') {
+            dibujarDetalle();
+        } else {
+            // El panel OP ya está visible, solo cambiamos el contenido interno
+            if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
+            else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
+            else container.innerHTML = dibujarFormularioEditar();
+        }
         
         window.scrollTo(0, scrollY);
         requestAnimationFrame(() => container.style.minHeight = '');
@@ -26,12 +162,36 @@ function repintarConScroll(vista) {
     }
 }
 
+function refrescarVistas() {
+    document.getElementById('vista-catalogo').classList.add('oculto'); 
+    document.getElementById('vista-detalle').classList.add('oculto'); 
+    document.getElementById('vista-op').classList.add('oculto');
+    
+    if (estadoUI.vistaActual === 'catalogo') { 
+        document.getElementById('vista-catalogo').classList.remove('oculto'); 
+        dibujarCatalogo(); 
+    }
+    else if (estadoUI.vistaActual === 'detalle') { 
+        document.getElementById('vista-detalle').classList.remove('oculto'); 
+        dibujarDetalle(); 
+    }
+    else { 
+        // Vistas de Operador: Se muestra el marco OP y luego se inyecta la sub-vista
+        document.getElementById('vista-op').classList.remove('oculto'); 
+        document.getElementById('vista-op').innerHTML = dibujarMenuOP();
+        const sub = document.getElementById('sub-vista-op');
+        if (estadoUI.vistaActual === 'hex') sub.innerHTML = dibujarHexOP();
+        else if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
+        else sub.innerHTML = dibujarFormularioEditar();
+    }
+}
+
 window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
 window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
 
 window.abrirMenuOP = () => { 
     const enrutarOP = () => { 
-        estadoUI.vistaActual = 'hex'; // Abre el panel de Party por defecto al dar click al OP superior
+        estadoUI.vistaActual = 'hex'; 
         refrescarVistas(); 
     };
     if (estadoUI.esAdmin) { enrutarOP(); return; }
@@ -39,9 +199,8 @@ window.abrirMenuOP = () => {
     if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } else { if(pass !== null) alert("Acceso denegado."); }
 };
 
-// CORRECCIÓN DEL BUCLE INFINITO
 window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = subvista; // 'crear', 'editar' o 'hex'
+    estadoUI.vistaActual = subvista; 
     refrescarVistas();
 };
 
@@ -260,124 +419,6 @@ window.toggleEstado = (estadoId) => {
     p.estados[estadoId] = !p.estados[estadoId]; guardar(); repintarConScroll('op');
 };
 
-const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-
-function updateHexLogText() {
-    const textarea = document.getElementById('hex-log-textarea');
-    if (!textarea) return;
-    let text = "";
-    Object.keys(estadoUI.hexLog).sort().forEach(char => {
-        estadoUI.hexLog[char].forEach(entry => {
-            const sign = entry.amount >= 0 ? "+" : "";
-            const asisStr = entry.isPlayer ? ` (${entry.asis}/7)` : "";
-            text += `${char} ${sign}${entry.amount} Hex (${entry.total})${asisStr}\n`;
-        });
-    });
-    textarea.value = text;
-}
-
-window.addHexLogEntry = (nombre, amount) => {
-    if (!estadoUI.hexLog[nombre]) estadoUI.hexLog[nombre] = [];
-    const p = statsGlobal[nombre];
-    estadoUI.hexLog[nombre].push({
-        amount: amount,
-        total: p.hex,
-        asis: p.isPlayer ? (p.asistencia || 1) : 0,
-        isPlayer: p.isPlayer
-    });
-    updateHexLogText();
-}
-
-window.modHexInd = (nombre, amount) => {
-    const p = statsGlobal[nombre];
-    if (!p) return;
-    p.hex = Math.max(0, p.hex + amount);
-    window.addHexLogEntry(nombre, amount);
-    guardar();
-    repintarConScroll('hex');
-};
-
-window.modHexGlobal = (amount) => {
-    Object.keys(statsGlobal).forEach(nombre => {
-        const p = statsGlobal[nombre];
-        if (p.isPlayer && p.isActive) {
-            p.hex = Math.max(0, p.hex + amount);
-            window.addHexLogEntry(nombre, amount);
-        }
-    });
-    guardar();
-    repintarConScroll('hex');
-};
-
-window.addAsistenciaGlobal = () => {
-    let leveledUp = [];
-    Object.keys(statsGlobal).forEach(nombre => {
-        const p = statsGlobal[nombre];
-        if (p.isPlayer && p.isActive) {
-            if (p.asistencia === undefined) p.asistencia = 1;
-            p.asistencia++;
-            if (p.asistencia >= 8) {
-                p.asistencia = 1;
-                p.hex += 1000;
-                window.addHexLogEntry(nombre, 1000); 
-                leveledUp.push(nombre);
-            } else {
-                window.addHexLogEntry(nombre, 0);
-            }
-        }
-    });
-    guardar();
-    if (leveledUp.length > 0) {
-        alert(`¡ASISTENCIA MÁXIMA ALCANZADA!\n\nLos siguientes personajes han regresado a Asistencia 1 y ganado +1000 HEX:\n\n${leveledUp.join(', ')}`);
-    }
-    repintarConScroll('hex');
-};
-
-window.limpiarHexLog = () => { estadoUI.hexLog = {}; updateHexLogText(); };
-
-window.copiarHexLog = () => {
-    const textarea = document.getElementById('hex-log-textarea');
-    if (textarea) { textarea.select(); document.execCommand('copy'); alert("Log copiado al portapapeles."); }
-};
-
-window.abrirSelectorParty = (index) => {
-    estadoUI.selectorIndex = index;
-    const modal = document.getElementById('party-modal');
-    const grid = document.getElementById('party-modal-grid');
-    let html = '';
-    Object.keys(statsGlobal).sort().forEach(nombre => {
-        if (!estadoUI.party.includes(nombre)) {
-            const iconoMuestra = normalizar(statsGlobal[nombre]?.iconoOverride || nombre);
-            html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer;">
-                <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:60px; height:60px; border-radius:8px; border:2px solid var(--gold); object-fit:cover;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div style="font-size:0.7em; margin-top:5px; color:white;">${nombre}</div>
-            </div>`;
-        }
-    });
-    grid.innerHTML = html; modal.style.display = 'flex';
-};
-
-window.seleccionarParaParty = (nombre) => {
-    estadoUI.party[estadoUI.selectorIndex] = nombre;
-    document.getElementById('party-modal').style.display = 'none';
-    repintarConScroll('hex');
-};
-
-window.quitarDeParty = () => {
-    estadoUI.party[estadoUI.selectorIndex] = null;
-    document.getElementById('party-modal').style.display = 'none';
-    repintarConScroll('hex');
-};
-
-window.establecerPartyActiva = () => {
-    if(!confirm("Esto marcará a los personajes de los slots como 'Activos' y al resto de jugadores como 'Inactivos'. ¿Proceder?")) return;
-    Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) statsGlobal[n].isActive = false; });
-    estadoUI.party.forEach(n => {
-        if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; }
-    });
-    guardar(); repintarConScroll('hex'); alert("Party actualizada correctamente.");
-};
-
 window.ejecutarClonacion = (tipo) => {
     const sourceSelect = document.getElementById('clon-source'); if(!sourceSelect) return;
     const sourceName = sourceSelect.value; if(!sourceName) { alert("Por favor, selecciona un personaje de origen."); return; }
@@ -462,8 +503,28 @@ window.ejecutarCreacionNPC = () => {
     guardar(); estadoUI.personajeSeleccionado = nombre; window.abrirDetalle(nombre); window.scrollTo(0,0);
 };
 
+// --- MODO SINCRONIZADO AUTO ---
+window.toggleSync = () => {
+    estadoUI.modoSincronizado = !estadoUI.modoSincronizado;
+    const btn = document.getElementById('btn-sync');
+    if (btn) {
+        btn.innerText = estadoUI.modoSincronizado ? "CONECTADO A LA DATA" : "DESCONECTADO (EDICIÓN)";
+        btn.style.background = estadoUI.modoSincronizado ? "#004a00" : "#4a0000";
+        btn.style.borderColor = estadoUI.modoSincronizado ? "#00ff00" : "#ff0000";
+    }
+    guardar();
+};
+
+setInterval(async () => {
+    if (estadoUI.modoSincronizado) {
+        console.log("Sincronizando automáticamente con la base de datos...");
+        await cargarTodoDesdeCSV();
+        refrescarVistas();
+    }
+}, 30000); // 30 Segundos
+
 window.forzarSincronizacion = async () => {
-    if(confirm("¿Seguro que deseas Actualizar? Esto descargará la última versión maestra, borrando NPCs locales y efectos de esta sesión.")) {
+    if(confirm("¿Seguro que deseas Actualizar Manualmente? Esto borrará los NPCs locales.")) {
         const prevScroll = window.scrollY; await cargarTodoDesdeCSV(); 
         if (estadoUI.personajeSeleccionado && !statsGlobal[estadoUI.personajeSeleccionado]) { window.mostrarCatalogo(); } 
         else { refrescarVistas(); window.scrollTo(0, prevScroll); }
@@ -481,37 +542,29 @@ window.triggerSubirCSV = () => {
     }; input.click();
 };
 
-// CORRECCIÓN DEL BUCLE INFINITO
-function refrescarVistas() {
-    document.getElementById('vista-catalogo').classList.add('oculto'); 
-    document.getElementById('vista-detalle').classList.add('oculto'); 
-    document.getElementById('vista-op').classList.add('oculto');
-    
-    if (estadoUI.vistaActual === 'catalogo') { 
-        document.getElementById('vista-catalogo').classList.remove('oculto'); 
-        dibujarCatalogo(); 
-    }
-    else if (estadoUI.vistaActual === 'detalle') { 
-        document.getElementById('vista-detalle').classList.remove('oculto'); 
-        dibujarDetalle(); 
-    }
-    else { 
-        // Si es CUALQUIER vista de OP ('hex', 'crear', 'editar')
-        document.getElementById('vista-op').classList.remove('oculto'); 
-        document.getElementById('vista-op').innerHTML = dibujarMenuOP();
-        
-        const sub = document.getElementById('sub-vista-op');
-        if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
-        else if (estadoUI.vistaActual === 'hex') sub.innerHTML = dibujarHexOP();
-        else sub.innerHTML = dibujarFormularioEditar(); // Por defecto editar
-    }
-}
-
 async function iniciar() {
     try { 
-        await cargarDiccionarioEstados(); const cache = localStorage.getItem('hex_stats_v2'); 
-        if (!cache) { await cargarTodoDesdeCSV(); } else { const parsed = JSON.parse(cache); Object.assign(statsGlobal, parsed.stats); if(parsed.party) estadoUI.party = parsed.party; } 
+        await cargarDiccionarioEstados(); 
+        const cache = localStorage.getItem('hex_stats_v2'); 
+        if (!cache) { 
+            await cargarTodoDesdeCSV(); 
+        } else { 
+            const parsed = JSON.parse(cache); 
+            Object.assign(statsGlobal, parsed.stats); 
+            if(parsed.party) estadoUI.party = parsed.party;
+            if(parsed.modoSync) estadoUI.modoSincronizado = parsed.modoSync;
+        } 
     } 
-    catch (error) { console.error("Error crítico:", error); } finally { refrescarVistas(); }
+    catch (error) { console.error("Error crítico:", error); } 
+    finally { 
+        // Forzamos el aspecto del botón de sync en el primer renderizado
+        const btn = document.getElementById('btn-sync');
+        if(btn) {
+            btn.innerText = estadoUI.modoSincronizado ? "CONECTADO A LA DATA" : "DESCONECTADO (EDICIÓN)";
+            btn.style.background = estadoUI.modoSincronizado ? "#004a00" : "#4a0000";
+            btn.style.borderColor = estadoUI.modoSincronizado ? "#00ff00" : "#ff0000";
+        }
+        refrescarVistas(); 
+    }
 }
 iniciar();
