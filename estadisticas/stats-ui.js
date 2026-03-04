@@ -210,11 +210,12 @@ export function dibujarDetalle() {
     let opcionesPersonajes = Object.keys(statsGlobal).filter(n => n !== nombre).map(n => `<option value="${n}">${n}</option>`).join('');
     html += `
     <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
-        <h3 style="margin-top:0; color:var(--gold);">Importación de Estados</h3>
-        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa los estados alterados o clona toda la ficha <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
+        <h3 style="margin-top:0; color:var(--gold);">Importación desde Personaje</h3>
+        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa estados alterados, clona toda la ficha o copia el HEX <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
         <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
             <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;"><option value="" disabled selected>-- Selecciona Origen --</option>${opcionesPersonajes}</select>
-            <button type="button" onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados Alterados</button>
+            <button type="button" onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados</button>
+            <button type="button" onclick="window.ejecutarClonacion('hex')" style="background:#b8860b; border:1px solid #ffd700; padding:10px 15px; color:#000; font-weight:bold; transition:0.2s;">Copiar HEX</button>
             <button type="button" onclick="window.ejecutarClonacion('completo')" style="background:#4a004a; border:1px solid #8a008a; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar Todo (Inc. Imagen)</button>
         </div>
     </div>`;
@@ -234,7 +235,6 @@ export function dibujarMenuOP() {
     `;
 }
 
-// CORRECCIÓN MAESTRA: Se corrigió el mapeo del ID y se evitan los refrescos accidentales en creación
 function genCard(f, tipoAccion) {
     let btns = ''; let clickMod = '';
     if (tipoAccion === 'buff') clickMod = 'window.modificarBuff'; 
@@ -249,7 +249,6 @@ function genCard(f, tipoAccion) {
 
     const visualVal = f.val !== undefined ? f.val : 0;
     
-    // Si estamos en creación ('form'), NO aplicamos el onchange dinámico que rompía la pantalla
     const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
     const attrInput = tipoAccion === 'form' ? '' : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
     
@@ -263,7 +262,6 @@ function genCard(f, tipoAccion) {
     return `<div class="edit-card"><h4>${f.label}</h4>${inputHtml}${btns}</div>`;
 }
 
-// CORRECCIÓN: Pantalla de Creación con Toggles Visuales
 export function dibujarFormularioCrear() {
     const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
     const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
@@ -368,5 +366,3 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
-
-
