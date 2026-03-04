@@ -1,27 +1,31 @@
-import { statsGlobal, estadoUI, listaEstados, guardar } from './stats-state.js';
+    import { statsGlobal, estadoUI, listaEstados, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV, cargarDiccionarioEstados } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarHexOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMysticBonus } from './stats-logic.js';
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
-// --- SISTEMA DE LOGS DE HEX AGRUPADO (FUSIÓN CRONOLÓGICA) ---
+// --- SISTEMA DE LOGS DE HEX AGRUPADO (SUMAS Y RESTAS PERFECTAS) ---
 function updateHexLogText() {
     const textarea = document.getElementById('hex-log-textarea');
     if (!textarea) return; 
     
     let finalOutput = "";
     Object.keys(estadoUI.hexLog).sort().forEach(char => {
-        estadoUI.hexLog[char].forEach(entry => {
-            const asisStr = entry.isPlayer ? ` (${entry.asis}/7)` : "";
-            if (entry.type === 'extra') {
-                finalOutput += `${char} +${entry.amount} Hex ¡EXTRA! (${entry.hex})${asisStr}\n`;
-            } else if (entry.type === 'pos') {
-                finalOutput += `${char} +${entry.amount} Hex (${entry.hex})${asisStr}\n`;
-            } else if (entry.type === 'neg') {
-                finalOutput += `${char} ${entry.amount} Hex (${entry.hex})${asisStr}\n`;
-            } else {
-                finalOutput += `${char} +0 Hex (${entry.hex})${asisStr}\n`;
+        const log = estadoUI.hexLog[char];
+        const p = statsGlobal[char];
+        if (!p) return;
+
+        const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : "";
+
+        // Imprime en el orden en que ocurrieron los tipos de acción
+        log.order.forEach(actionType => {
+            if (actionType === 'pos' && log.pos.amount >= 0) {
+                finalOutput += `${char} +${log.pos.amount} Hex (${log.pos.finalHex})${asisStr}\n`;
+            } else if (actionType === 'neg' && log.neg.amount > 0) {
+                finalOutput += `${char} -${log.neg.amount} Hex (${log.neg.finalHex})${asisStr}\n`;
+            } else if (actionType === 'extra' && log.extra.amount > 0) {
+                finalOutput += `${char} +${log.extra.amount} Hex ¡EXTRA! (${log.extra.finalHex})${asisStr}\n`;
             }
         });
     });
@@ -31,35 +35,42 @@ function updateHexLogText() {
 }
 
 window.addHexLogEntry = (nombre, amount, isExtra = false) => {
-    if (!estadoUI.hexLog[nombre]) estadoUI.hexLog[nombre] = [];
     const p = statsGlobal[nombre];
     if (!p) return;
-    
-    const logArr = estadoUI.hexLog[nombre];
-    
+
+    if (!estadoUI.hexLog[nombre]) {
+        estadoUI.hexLog[nombre] = {
+            pos: { amount: 0, finalHex: 0 },
+            neg: { amount: 0, finalHex: 0 },
+            extra: { amount: 0, finalHex: 0 },
+            order: []
+        };
+    }
+
+    const log = estadoUI.hexLog[nombre];
+
     if (isExtra) {
-        logArr.push({ type: 'extra', amount: amount, hex: p.hex, asis: p.isPlayer ? (p.asistencia||1) : 0, isPlayer: p.isPlayer });
+        log.extra.amount += amount;
+        log.extra.finalHex = p.hex;
+        log.order = log.order.filter(k => k !== 'extra');
+        log.order.push('extra');
     } else if (amount > 0) {
-        const last = logArr[logArr.length - 1];
-        if (last && last.type === 'pos') {
-            last.amount += amount; // Agrupa sumas
-            last.hex = p.hex; 
-            last.asis = p.isPlayer ? (p.asistencia||1) : 0;
-        } else {
-            logArr.push({ type: 'pos', amount: amount, hex: p.hex, asis: p.isPlayer ? (p.asistencia||1) : 0, isPlayer: p.isPlayer });
-        }
+        log.pos.amount += amount;
+        log.pos.finalHex = p.hex;
+        log.order = log.order.filter(k => k !== 'pos');
+        log.order.push('pos');
     } else if (amount < 0) {
-        const last = logArr[logArr.length - 1];
-        if (last && last.type === 'neg') {
-            last.amount += amount; // Agrupa restas (al ser negativo se suma al negativo)
-            last.hex = p.hex;
-            last.asis = p.isPlayer ? (p.asistencia||1) : 0;
-        } else {
-            logArr.push({ type: 'neg', amount: amount, hex: p.hex, asis: p.isPlayer ? (p.asistencia||1) : 0, isPlayer: p.isPlayer });
+        log.neg.amount += Math.abs(amount);
+        log.neg.finalHex = p.hex;
+        log.order = log.order.filter(k => k !== 'neg');
+        log.order.push('neg');
+    } else if (amount === 0) {
+        // Si no hay nada registrado, crea una línea base de +0 para mostrar la asistencia
+        if (log.order.length === 0) {
+            log.pos.amount = 0;
+            log.pos.finalHex = p.hex;
+            log.order.push('pos');
         }
-    } else {
-        // Amount = 0 (Asistencia global sin HEX)
-        logArr.push({ type: 'zero', amount: 0, hex: p.hex, asis: p.isPlayer ? (p.asistencia||1) : 0, isPlayer: p.isPlayer });
     }
 };
 
@@ -157,23 +168,23 @@ window.setFiltro = (tipo, valor) => {
     refrescarVistas();
 };
 
-// --- GESTIÓN DE PARTY (SELECTOR MODAL POP-UP RESTAURADO Y MEJORADO) ---
+// --- GESTIÓN DE PARTY (SELECTOR NO BLOQUEANTE) ---
 window.abrirSelectorParty = (index) => {
     estadoUI.selectorIndex = index;
-    const modal = document.getElementById('party-modal');
+    const container = document.getElementById('party-selector-container');
     const grid = document.getElementById('party-modal-grid');
     const label = document.getElementById('party-slot-label');
     const btnQuitar = document.getElementById('btn-quitar-slot');
 
-    if(label) label.innerText = index + 1;
+    label.innerText = index + 1;
     
     let html = '';
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        // Solo jugadores que no estén ya en otro slot
+        // SOLO JUGADORES Y QUE NO ESTÉN YA EN LOS SLOTS
         if (p.isPlayer && !estadoUI.party.includes(nombre)) {
             const iconoMuestra = normalizar(p.iconoOverride || nombre);
-            html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer; width:70px; padding:5px; border-radius:4px; transition:0.2s;" onmouseover="this.style.background='rgba(212,175,55,0.2)'" onmouseout="this.style.background='transparent'">
+            html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer; width:70px;">
                 <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:60px; height:60px; border-radius:8px; border:2px solid var(--gold); object-fit:cover;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                 <div style="font-size:0.7em; margin-top:5px; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nombre}</div>
             </div>`;
@@ -182,23 +193,23 @@ window.abrirSelectorParty = (index) => {
     
     if (html === '') html = `<p style="color:#aaa; font-size:0.9em; width:100%; text-align:center;">No hay más jugadores disponibles para seleccionar.</p>`;
     
-    if(grid) grid.innerHTML = html; 
-    if(btnQuitar) btnQuitar.style.display = estadoUI.party[index] ? 'block' : 'none';
-    if(modal) modal.style.display = 'flex'; // Abre el Modal
+    grid.innerHTML = html; 
+    btnQuitar.style.display = estadoUI.party[index] ? 'block' : 'none';
+    
+    // En vez de un display flex modal, mostramos el contenedor inline
+    container.style.display = 'block';
 };
 
 window.seleccionarParaParty = (nombre) => {
     estadoUI.party[estadoUI.selectorIndex] = nombre;
-    const modal = document.getElementById('party-modal');
-    if(modal) modal.style.display = 'none';
+    document.getElementById('party-selector-container').style.display = 'none';
     guardar();
     repintarConScroll('hex');
 };
 
 window.quitarDeParty = () => {
     estadoUI.party[estadoUI.selectorIndex] = null;
-    const modal = document.getElementById('party-modal');
-    if(modal) modal.style.display = 'none';
+    document.getElementById('party-selector-container').style.display = 'none';
     guardar();
     repintarConScroll('hex');
 };
@@ -209,7 +220,6 @@ window.vaciarParty = () => {
     repintarConScroll('hex');
 };
 
-// Autollenado inteligente de slots de party vacíos
 window.autoLlenarParty = () => {
     const jugadoresActivos = Object.keys(statsGlobal).filter(n => statsGlobal[n].isPlayer && statsGlobal[n].isActive).sort();
     estadoUI.party = [null, null, null, null, null, null];
@@ -222,7 +232,7 @@ window.autoLlenarParty = () => {
 
 window.establecerPartyActiva = () => {
     const hayParty = estadoUI.party.some(n => n !== null);
-    if (!hayParty) return alert("¡No hay nadie en los slots! Selecciona jugadores primero o usa el botón de seleccionar activos.");
+    if (!hayParty) return alert("¡No hay nadie en los slots! Selecciona jugadores primero o usa el botón de auto-llenar.");
     
     if(!confirm("Esto marcará a los personajes de los slots como 'Activos' y al resto de jugadores como 'Inactivos'. ¿Proceder?")) return;
     Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) statsGlobal[n].isActive = false; });
@@ -559,7 +569,7 @@ window.ejecutarCreacionNPC = () => {
     guardar(); estadoUI.personajeSeleccionado = nombre; window.abrirDetalle(nombre); window.scrollTo(0,0);
 };
 
-// --- MODO SINCRONIZADO AUTO ---
+// --- MODO SINCRONIZADO AUTO (CADA 10 SEGUNDOS) ---
 window.toggleSync = () => {
     estadoUI.modoSincronizado = !estadoUI.modoSincronizado;
     const btn = document.getElementById('btn-sync');
