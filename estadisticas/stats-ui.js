@@ -138,7 +138,7 @@ export function dibujarDetalle() {
     let estadosHTML = ''; 
 
     if (p.iconoOverride) {
-        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon visual de ${p.iconoOverride.toUpperCase()}</span></div>`;
+        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon completo de ${p.iconoOverride.toUpperCase()}</span></div>`;
     }
 
     listaEstados.forEach(e => {
@@ -192,6 +192,7 @@ export function dibujarDetalle() {
                 <div class="affinity-box"><label>Mando</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</span>${bTextSplit(p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</div>
                 <div class="affinity-box"><label>Psíquica</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</span>${bTextSplit(p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</div>
                 <div class="affinity-box"><label>Oscura</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</span>${bTextSplit(p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</div>
+                <div style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333;">Suma Total Afinidades: ${calcTotal(p.afinidades.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica) + calcTotal(p.afinidades.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica) + calcTotal(p.afinidades.espiritual, p.hechizos.espiritual, p.hechizosEfecto.espiritual, p.buffs.espiritual) + calcTotal(p.afinidades.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando) + calcTotal(p.afinidades.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica) + calcTotal(p.afinidades.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</div>
             </div>
         </div>
     </div>
@@ -233,13 +234,7 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modGoldExtra(1)">+1</button><button type="button" class="btn-minus" onclick="window.modGoldExtra(-1)">-1</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button type="button" class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
             </div>
-
-            <div class="edit-card" style="grid-column: 1 / -1; background:#1a1a00; border-color:#b8860b;">
-                <h4 style="color:#b8860b;">Restauración Teórica Óptima</h4>
-                <button type="button" onclick="window.recalcularBases()" style="background:#b8860b; color:#000; font-weight:bold; width:100%; padding:15px; font-size:1.1em; border-radius:4px; transition:0.2s;">RECALCULAR CORAZONES (Salud Máxima y Fórmulas Base)</button>
-                <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física/2], la Vida Azul a [Magia/4] y curará al personaje al máximo.</p>
-            </div>
-
+            ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (BASE)', val: p.vidaRojaMax }, 'baseTop')}
         </div>
     </div>`;
 
@@ -316,10 +311,26 @@ function genCard(f, tipoAccion) {
 
 export function dibujarFormularioCrear() {
     const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
-    // DAÑO EN 1 POR DEFECTO PARA CREACIÓN
-    const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:1 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
-    const pAfinidades = [ { id:'npc-fis', label:'Afin. Física', val:0 }, { id:'npc-ene', label:'Afin. Energética', val:0 }, { id:'npc-esp', label:'Afin. Espiritual', val:0 }, { id:'npc-man', label:'Afin. Mando', val:0 }, { id:'npc-psi', label:'Afin. Psíquica', val:0 }, { id:'npc-osc', label:'Afin. Oscura', val:0 } ];
+    const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
+    const pAfinidades = [ { id:'npc-fis', label:'Física' }, { id:'npc-ene', label:'Energética' }, { id:'npc-esp', label:'Espiritual' }, { id:'npc-man', label:'Mando' }, { id:'npc-psi', label:'Psíquica' }, { id:'npc-osc', label:'Oscura' } ];
     
+    let afinGridHtml = '';
+    pAfinidades.forEach(f => {
+        afinGridHtml += `
+        <div class="edit-card">
+            <h4>Afin. ${f.label}</h4>
+            <input type="number" id="${f.id}" value="0" oninput="window.updateCreationAfinitySum()" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">
+            <div class="btn-row">
+                <button type="button" class="btn-plus" onclick="window.modForm('${f.id}', 1); window.updateCreationAfinitySum();">+1</button>
+                <button type="button" class="btn-minus" onclick="window.modForm('${f.id}', -1); window.updateCreationAfinitySum();">-1</button>
+            </div>
+            <div class="btn-row">
+                <button type="button" class="btn-plus5" onclick="window.modForm('${f.id}', 5); window.updateCreationAfinitySum();">+5</button>
+                <button type="button" class="btn-minus5" onclick="window.modForm('${f.id}', -5); window.updateCreationAfinitySum();">-5</button>
+            </div>
+        </div>`;
+    });
+
     return `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
         <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje</h3>
@@ -335,7 +346,10 @@ export function dibujarFormularioCrear() {
 
         <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Energía Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pEnergia.map(f => genCard(f, 'form')).join('')}</div>
         <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Vitalidad y Ofensiva Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pVidaDano.map(f => genCard(f, 'form')).join('')}</div>
-        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, 'form')).join('')}</div>
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Base</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${afinGridHtml}</div>
+        <div id="creation-affinity-sum-display" style="text-align:center; color:var(--gold); font-weight:bold; font-size:1.1em; margin-top:-10px; margin-bottom:20px;">Total Afinidades: 0</div>
+        
         <button type="button" onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">CREAR PERSONAJE</button>
     </div>`;
 }
