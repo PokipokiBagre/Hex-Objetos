@@ -1,4 +1,4 @@
-import { invGlobal, objGlobal } from './obj-state.js';
+import { invGlobal } from './obj-state.js';
 import { modificar } from './obj-logic.js';
 import { refrescarUI } from './obj-ui.js';
 
@@ -7,26 +7,29 @@ const normalizar = (str) => str.toString().trim().toLowerCase().replace(/[áàä
 let libreActivo = false;
 let entities = []; 
 let draggingNode = null;
-let lastMouse = { x: 0, y: 0 };
 let shakeAccumulator = 0;
 let lastDropTime = 0;
 let animationFrameId;
 
-// Creación de las 3 Repisas de Media Luna
+// Tamaño del "Lienzo" virtual
+const CANVAS_W = 1000;
+const CANVAS_H = 700;
+
+// Repisas en forma de Media Luna
 const shelves = [
-    { x: window.innerWidth * 0.1, y: window.innerHeight * 0.4, w: window.innerWidth * 0.25, h: 40 },
-    { x: window.innerWidth * 0.65, y: window.innerHeight * 0.6, w: window.innerWidth * 0.25, h: 40 },
-    { x: window.innerWidth * 0.35, y: window.innerHeight * 0.8, w: window.innerWidth * 0.3, h: 40 }
+    { x: 100, y: 250, w: 200, h: 20 },
+    { x: 650, y: 350, w: 250, h: 20 },
+    { x: 300, y: 550, w: 350, h: 20 }
 ];
 
 export function initLibreMode() {
-    const container = document.getElementById('contenedor-libre');
-    if (!container) return;
+    const canvas = document.getElementById('contenedor-libre');
+    if (!canvas) return;
     
-    container.querySelectorAll('.physics-node').forEach(e => e.remove());
+    canvas.querySelectorAll('.physics-node').forEach(e => e.remove());
     entities = [];
 
-    // Dibujar las repisas en el DOM
+    // Pintar las repisas
     shelves.forEach(s => {
         const div = document.createElement('div');
         div.className = 'shelf physics-node';
@@ -34,15 +37,19 @@ export function initLibreMode() {
         div.style.top = s.y + 'px';
         div.style.width = s.w + 'px';
         div.style.height = s.h + 'px';
-        container.appendChild(div);
+        canvas.appendChild(div);
     });
 
-    // Crear a los jugadores con física
-    const radius = 50;
-    let startX = window.innerWidth / 2 - radius;
-    let startY = 100;
+    const radius = 45;
+    let shelfIndex = 0;
     
+    // Posicionar jugadores repartidos en las repisas
     Object.keys(invGlobal).forEach(jugador => {
+        const s = shelves[shelfIndex % shelves.length];
+        let px = s.x + (Math.random() * (s.w - 2 * radius));
+        let py = s.y - (radius * 2) - 30; // Nacen un poco arriba de la repisa
+        shelfIndex++;
+
         const div = document.createElement('div');
         div.className = 'physics-node';
         div.style.position = 'absolute';
@@ -67,62 +74,66 @@ export function initLibreMode() {
         nameTag.style.pointerEvents = 'none';
         div.appendChild(nameTag);
 
-        container.appendChild(div);
+        canvas.appendChild(div);
 
         entities.push({
             type: 'player', name: jugador, el: div,
-            x: startX + (Math.random()*100 - 50), y: startY, r: radius,
-            vx: (Math.random()-0.5)*10, vy: 0, isDragging: false
+            x: px, y: py, r: radius, mass: 5,
+            vx: 0, vy: 0, isDragging: false
         });
     });
 
-    // Control del ratón
-    container.onmousedown = (e) => {
+    // Control de ratón adaptado al Canvas
+    canvas.onmousedown = (e) => {
         if(e.target.tagName === 'BUTTON') return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
         for(let en of entities) {
             if(en.type !== 'player') continue;
-            const dx = e.clientX - (en.x + en.r);
-            const dy = e.clientY - (en.y + en.r);
+            const dx = mx - (en.x + en.r);
+            const dy = my - (en.y + en.r);
             if(Math.sqrt(dx*dx + dy*dy) <= en.r) {
                 draggingNode = en;
                 draggingNode.isDragging = true;
                 draggingNode.el.style.cursor = 'grabbing';
-                lastMouse = { x: e.clientX, y: e.clientY };
                 shakeAccumulator = 0;
                 break;
             }
         }
     };
 
-    container.onmousemove = (e) => {
+    canvas.onmousemove = (e) => {
         if (!draggingNode) return;
-        
-        let dx = e.clientX - lastMouse.x;
-        let dy = e.clientY - lastMouse.y;
-        
-        // Impartir momento a la burbuja
-        draggingNode.vx = dx * 0.4;
-        draggingNode.vy = dy * 0.4;
-        
-        // Sistema de agitación (Shake to drop)
-        let speed = Math.sqrt(dx*dx + dy*dy);
-        if (speed > 25) shakeAccumulator += speed;
-        else shakeAccumulator = Math.max(0, shakeAccumulator - 10);
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
 
-        let now = Date.now();
-        if (shakeAccumulator > 300 && now - lastDropTime > 250) {
+        let targetX = mx - draggingNode.r;
+        let targetY = my - draggingNode.r;
+
+        // Calcular velocidad para cuando lo sueltes
+        draggingNode.vx = (targetX - draggingNode.x) * 0.7;
+        draggingNode.vy = (targetY - draggingNode.y) * 0.7;
+
+        // Agitación (Shake)
+        let speed = Math.sqrt(draggingNode.vx**2 + draggingNode.vy**2);
+        if (speed > 20) shakeAccumulator += speed;
+        else shakeAccumulator = Math.max(0, shakeAccumulator - 5);
+
+        if (shakeAccumulator > 300 && (Date.now() - lastDropTime > 200)) {
             dropRandomItem(draggingNode);
             shakeAccumulator = 0;
-            lastDropTime = now;
+            lastDropTime = Date.now();
         }
 
-        draggingNode.x = e.clientX - draggingNode.r;
-        draggingNode.y = e.clientY - draggingNode.r;
-        lastMouse = { x: e.clientX, y: e.clientY };
+        draggingNode.x = targetX;
+        draggingNode.y = targetY;
     };
 
-    container.onmouseup = () => { if(draggingNode) { draggingNode.isDragging = false; draggingNode.el.style.cursor = 'grab'; draggingNode = null; } };
-    container.onmouseleave = () => { if(draggingNode) { draggingNode.isDragging = false; draggingNode.el.style.cursor = 'grab'; draggingNode = null; } };
+    canvas.onmouseup = () => { if(draggingNode) { draggingNode.isDragging = false; draggingNode.el.style.cursor = 'grab'; draggingNode = null; } };
+    canvas.onmouseleave = () => { if(draggingNode) { draggingNode.isDragging = false; draggingNode.el.style.cursor = 'grab'; draggingNode = null; } };
 
     physicsLoop();
 }
@@ -136,7 +147,7 @@ function dropRandomItem(playerNode) {
     const droppedItem = availableItems[Math.floor(Math.random() * availableItems.length)];
     modificar(playerNode.name, droppedItem, -1, refrescarUI);
 
-    const r = 25; 
+    const r = 18; 
     const div = document.createElement('img');
     div.className = 'physics-node';
     div.src = `../img/imgobjetos/${normalizar(droppedItem)}.png`;
@@ -144,7 +155,7 @@ function dropRandomItem(playerNode) {
     div.style.position = 'absolute';
     div.style.width = (r*2) + 'px';
     div.style.height = (r*2) + 'px';
-    div.style.borderRadius = '6px';
+    div.style.borderRadius = '4px';
     div.style.border = '2px solid #00ffff';
     div.style.boxShadow = '0 0 15px #00ffff';
     div.style.pointerEvents = 'none';
@@ -153,11 +164,11 @@ function dropRandomItem(playerNode) {
 
     entities.push({
         type: 'item', itemName: droppedItem, el: div,
-        x: playerNode.x + playerNode.r - r, // Nace EXACTAMENTE en el centro
+        x: playerNode.x + playerNode.r - r, 
         y: playerNode.y + playerNode.r - r,
-        r: r,
-        vx: (Math.random() - 0.5) * 30, // Explosión a los lados
-        vy: -15 - Math.random() * 15, // Salto hacia arriba
+        r: r, mass: 1,
+        vx: (Math.random() - 0.5) * 30, // Sale disparado
+        vy: -15 - Math.random() * 10,
         life: 0 
     });
 }
@@ -165,72 +176,95 @@ function dropRandomItem(playerNode) {
 function physicsLoop() {
     if (!libreActivo) return;
     
-    const gravity = 0.5;
-    const frictionX = 0.96;
+    const gravity = 0.6;
     const bounce = 0.5;
-    const h = window.innerHeight;
-    const w = window.innerWidth;
 
     for (let i = entities.length - 1; i >= 0; i--) {
-        const en = entities[i];
+        let en = entities[i];
         
         if (!en.isDragging) {
             en.vy += gravity;
-            en.vx *= frictionX;
+            en.vy *= 0.99; 
+            en.vx *= 0.98;
             en.x += en.vx;
             en.y += en.vy;
 
-            // Piso (para evitar que se queden temblando se pone vy en 0 si es poca)
-            if (en.y + en.r*2 >= h) {
-                en.y = h - en.r*2;
-                en.vy *= -bounce;
-                if (Math.abs(en.vy) < 1.5) en.vy = 0;
-                en.vx *= 0.8;
-            }
+            // Suelo y Techo
+            if (en.y + en.r*2 > CANVAS_H) { en.y = CANVAS_H - en.r*2; en.vy *= -bounce; en.vx *= 0.8; }
+            if (en.y < 0) { en.y = 0; en.vy *= -bounce; }
             
             // Paredes
-            if (en.x <= 0) { en.x = 0; en.vx *= -bounce; }
-            if (en.x + en.r*2 >= w) { en.x = w - en.r*2; en.vx *= -bounce; }
+            if (en.x < 0) { en.x = 0; en.vx *= -bounce; }
+            if (en.x + en.r*2 > CANVAS_W) { en.x = CANVAS_W - en.r*2; en.vx *= -bounce; }
 
-            // Repisas (Media lunas)
+            // Repisas
             for (let s of shelves) {
-                if (en.x + en.r > s.x && en.x + en.r < s.x + s.w) { // Si el centro X del objeto está sobre la repisa
-                    if (en.vy >= 0 && en.y + en.r*2 >= s.y && en.y + en.r*2 - en.vy <= s.y + 15) { // Si estaba arriba y cayó encima
+                if (en.x + en.r > s.x && en.x + en.r < s.x + s.w) { 
+                    // Cae desde arriba
+                    if (en.vy > 0 && en.y + en.r*2 >= s.y && en.y + en.r*2 - en.vy <= s.y + 15) {
                         en.y = s.y - en.r*2;
                         en.vy *= -bounce;
-                        if (Math.abs(en.vy) < 1.5) en.vy = 0;
                         en.vx *= 0.8;
                     }
                 }
             }
         }
+    }
 
-        // Recolección
-        if (en.type === 'item') {
-            en.life++;
-            if (en.life > 40) { // Solo se puede recoger tras ~0.6 segundos de salir volando
-                for (const p of entities) {
-                    if (p.type === 'player') {
-                        const dx = (p.x + p.r) - (en.x + en.r);
-                        const dy = (p.y + p.r) - (en.y + en.r);
-                        const dist = Math.sqrt(dx*dx + dy*dy);
-                        
-                        if (dist < p.r + en.r + 15) { // Si están cerca
-                            modificar(p.name, en.itemName, 1, refrescarUI);
-                            showFloatText(`+1 ${en.itemName}`, p.x, p.y, '#00ff00');
-                            en.el.remove();
-                            entities.splice(i, 1);
-                            break; 
-                        }
-                    }
+    // Colisiones entre Entidades (Jugadores y Objetos)
+    for (let i=0; i<entities.length; i++) {
+        for (let j=i+1; j<entities.length; j++) {
+            let a = entities[i];
+            let b = entities[j];
+            let dx = (b.x + b.r) - (a.x + a.r);
+            let dy = (b.y + b.r) - (a.y + a.r);
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            let min_dist = a.r + b.r;
+
+            if (dist < min_dist && dist > 0) {
+                // Recoger Objeto
+                if (a.type === 'player' && b.type === 'item' && b.life > 30) {
+                    modificar(a.name, b.itemName, 1, refrescarUI);
+                    showFloatText(`+1 ${b.itemName}`, a.x, a.y, '#00ff00');
+                    b.el.remove();
+                    entities.splice(j, 1);
+                    break;
                 }
+                if (b.type === 'player' && a.type === 'item' && a.life > 30) {
+                    modificar(b.name, a.itemName, 1, refrescarUI);
+                    showFloatText(`+1 ${a.itemName}`, b.x, b.y, '#00ff00');
+                    a.el.remove();
+                    entities.splice(i, 1);
+                    break;
+                }
+
+                // Choque Físico
+                let angle = Math.atan2(dy, dx);
+                let overlap = min_dist - dist;
+                let tx = Math.cos(angle) * overlap / 2;
+                let ty = Math.sin(angle) * overlap / 2;
+
+                if (!a.isDragging) { a.x -= tx; a.y -= ty; }
+                if (!b.isDragging) { b.x += tx; b.y += ty; }
+
+                let nx = dx / dist;
+                let ny = dy / dist;
+                let kx = (a.vx - b.vx);
+                let ky = (a.vy - b.vy);
+                let p = 2 * (nx * kx + ny * ky) / (a.mass + b.mass);
+                
+                if (!a.isDragging) { a.vx -= p * b.mass * nx * 0.5; a.vy -= p * b.mass * ny * 0.5; }
+                if (!b.isDragging) { b.vx += p * a.mass * nx * 0.5; b.vy += p * a.mass * ny * 0.5; }
             }
         }
-
-        if(en.el && entities.includes(en)) {
-            en.el.style.transform = `translate(${en.x}px, ${en.y}px)`;
-        }
     }
+
+    // Dibujar en pantalla
+    for (let en of entities) {
+        if (en.type === 'item') en.life++;
+        if (en.el) en.el.style.transform = `translate(${en.x}px, ${en.y}px)`;
+    }
+
     animationFrameId = requestAnimationFrame(physicsLoop);
 }
 
@@ -255,12 +289,12 @@ function showFloatText(text, x, y, color) {
 
 export function toggleLibre() {
     libreActivo = !libreActivo;
-    const container = document.getElementById('contenedor-libre');
+    const bg = document.getElementById('modal-libre-bg');
     if (libreActivo) {
-        container.style.display = 'block';
+        bg.style.display = 'flex';
         initLibreMode();
     } else {
-        container.style.display = 'none';
+        bg.style.display = 'none';
         cancelAnimationFrame(animationFrameId);
     }
 }
