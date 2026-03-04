@@ -15,7 +15,7 @@ export let estadoUI = {
     cambiosSesion: {},
     modoSincronizado: true,
     
-    // MULTIPLICADORES Y ESTADOS OP
+    // MEMORIA DE MULTIPLICADORES OP
     partyLoot: [], 
     partyMult: 1, 
     transOrigen: null, 
