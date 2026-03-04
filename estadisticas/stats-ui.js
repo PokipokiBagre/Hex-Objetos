@@ -138,7 +138,7 @@ export function dibujarDetalle() {
     let estadosHTML = ''; 
 
     if (p.iconoOverride) {
-        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon visual de ${p.iconoOverride.toUpperCase()}</span></div>`;
+        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon completo de ${p.iconoOverride.toUpperCase()}</span></div>`;
     }
 
     listaEstados.forEach(e => {
@@ -260,6 +260,7 @@ export function dibujarDetalle() {
             <button type="button" onclick="window.ejecutarClonacion('efectosExtras')" style="background:#4a90e2; border:1px solid #00ffff; padding:10px 15px; color:#111; font-weight:bold; transition:0.2s;">Copiar Efectos y Extras</button>
             <button type="button" onclick="window.ejecutarClonacion('hex')" style="background:#b8860b; border:1px solid #ffd700; padding:10px 15px; color:#000; font-weight:bold; transition:0.2s;">Copiar HEX</button>
             <button type="button" onclick="window.ejecutarClonacion('completo')" style="background:#4a004a; border:1px solid #8a008a; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar Todo (Inc. Imagen)</button>
+            <button type="button" onclick="window.ejecutarClonacion('stats_puros')" style="background:#4a90e2; border:1px solid #00ffff; padding:10px 15px; color:#111; font-weight:bold; transition:0.2s;">Importar Todo (Sin Imagen/Medalla)</button>
         </div>
     </div>`;
 
@@ -293,9 +294,7 @@ function genCard(f, tipoAccion) {
     const visualVal = f.val !== undefined ? f.val : 0;
     
     const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
-    
-    // MODIFICADO: Ahora el oninput en el formulario lanza los auto-cálculos reactivos
-    const attrInput = tipoAccion === 'form' ? `oninput="window.modFormInput('${inputId}')"` : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
+    const attrInput = tipoAccion === 'form' ? '' : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
     const paramId = tipoAccion === 'form' ? inputId : f.id;
     
     let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
@@ -310,9 +309,7 @@ function genCard(f, tipoAccion) {
 
 export function dibujarFormularioCrear() {
     const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
-    
-    // MODIFICADO: Daño Rojo arranca en 1 por defecto
-    const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:1 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
+    const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
     const pAfinidades = [ { id:'npc-fis', label:'Afin. Física', val:0 }, { id:'npc-ene', label:'Afin. Energética', val:0 }, { id:'npc-esp', label:'Afin. Espiritual', val:0 }, { id:'npc-man', label:'Afin. Mando', val:0 }, { id:'npc-psi', label:'Afin. Psíquica', val:0 }, { id:'npc-osc', label:'Afin. Oscura', val:0 } ];
     
     return `
