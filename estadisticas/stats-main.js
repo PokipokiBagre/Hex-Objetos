@@ -202,15 +202,16 @@ window.ejecutarClonacion = (tipo) => {
     
     if(!confirm(msg)) return;
 
+    // Solo copia estados (veneno, radiación, etc)
     if (tipo === 'estados' || tipo === 'completo') {
         target.estados = JSON.parse(JSON.stringify(source.estados));
     }
 
+    // Copia los modificadores mágicos y extras de vida
     if (tipo === 'efectosExtras' || tipo === 'completo') {
         target.buffs = JSON.parse(JSON.stringify(source.buffs));
         target.hechizosEfecto = JSON.parse(JSON.stringify(source.hechizosEfecto || {}));
         
-        // Al copiar magia o vida extra la vida máxima puede achicarse; nos aseguramos de no desbordarla.
         if (tipo !== 'completo') {
             const newMaxRojo = calcularVidaRojaMax(target);
             if (target.vidaRojaActual > newMaxRojo) target.vidaRojaActual = newMaxRojo;
@@ -321,4 +322,3 @@ async function iniciar() {
     finally { refrescarVistas(); }
 }
 iniciar();
-
