@@ -1,71 +1,90 @@
-import { invGlobal, objGlobal, historial, guardar } from './obj-state.js';
+import { statsGlobal, listaEstados } from './stats-state.js';
 
-export function modificar(j, o, c, callback) {
-    if (!invGlobal[j]) invGlobal[j] = {};
-    invGlobal[j][o] = Math.max(0, (invGlobal[j][o] || 0) + c);
-    historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: o, cambio: c, total: invGlobal[j][o] });
-    guardar(); if(callback) callback(); 
-}
-
-export function modificarMulti(jugadores, obj, cant, callback) {
-    jugadores.forEach(j => {
-        if (!invGlobal[j]) invGlobal[j] = {};
-        invGlobal[j][obj] = Math.max(0, (invGlobal[j][obj] || 0) + cant);
-        historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: obj, cambio: cant, total: invGlobal[j][obj] });
-    });
-    guardar(); if(callback) callback();
-}
-
-export function transferir(origen, destino, obj, cant, callback) {
-    if (!invGlobal[origen] || !invGlobal[destino]) return;
-    const disp = invGlobal[origen][obj] || 0;
-    const aMover = Math.min(disp, cant);
-    if (aMover <= 0) return;
-
-    invGlobal[origen][obj] -= aMover;
-    invGlobal[destino][obj] = (invGlobal[destino][obj] || 0) + aMover;
+// Calcula la suma de la Vida Roja Base + los Extras Temporales o de Hechizos
+export function calcularVidaRojaMax(p) {
+    if (!p) return 0;
+    const base = p.vidaRojaMax || 10;
+    const hechizos = p.hechizos?.vidaRojaMaxExtra || 0;
+    const efectos = p.hechizosEfecto?.vidaRojaMaxExtra || 0;
+    const buffs = p.buffs?.vidaRojaMaxExtra || 0;
     
-    historial.push({ fecha: new Date().toLocaleString(), jugador: origen, objeto: obj, cambio: -aMover, total: invGlobal[origen][obj] });
-    historial.push({ fecha: new Date().toLocaleString(), jugador: destino, objeto: obj, cambio: aMover, total: invGlobal[destino][obj] });
+    return base + hechizos + efectos + buffs;
+}
+
+// Devuelve el VEX Máximo actual
+export function calcularVexMax(p) {
+    if (!p) return 0;
+    return p.vex || 0;
+}
+
+// Formula de los Corazones Azules Místicos: (Ene + Esp + Man + Psi) / 4
+export function getMysticBonus(p) {
+    if (!p) return 0;
+    const ene = p.afinidades?.energetica || 0;
+    const esp = p.afinidades?.espiritual || 0;
+    const man = p.afinidades?.mando || 0;
+    const psi = p.afinidades?.psiquica || 0;
     
-    guardar(); if(callback) callback();
+    return Math.floor((ene + esp + man + psi) / 4);
 }
 
-export function agregarObjetoManual(datos, reparticion, callback) {
-    const { nombre, tipo, mat, eff, rar } = datos;
-    if (!nombre) return alert("Falta nombre.");
-    objGlobal[nombre] = { tipo, mat, eff, rar };
-    Object.keys(reparticion).forEach(j => {
-        const cant = parseInt(reparticion[j]) || 0;
-        if (cant > 0) {
-            if (!invGlobal[j]) invGlobal[j] = {};
-            invGlobal[j][nombre] = (invGlobal[j][nombre] || 0) + cant;
-            historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: nombre, cambio: cant, total: invGlobal[j][nombre] });
-        }
+// Empaqueta toda la información de la base de datos local a un texto CSV
+export function generarCSVExportacion() {
+    let csv = "\uFEFFNombre,EsJugador,Activo,HEX,Asistencia,VEX,VidaRojaActual,VidaRojaMax,VidaAzul,GuardaDorada,DanoRojo,DanoAzul,ElimDorada,AfinFisica,AfinEnergetica,AfinEspiritual,AfinMando,AfinPsiquica,AfinOscura";
+    
+    // Añadimos las cabeceras dinámicas de los estados alterados
+    listaEstados.forEach(e => {
+        csv += `,Est_${e.id}`;
     });
-    guardar(); callback();
-}
+    csv += "\n";
 
-export function descargarEstadoCSV() {
-    let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; 
-    Object.keys(objGlobal).sort().forEach(o => {
-        const info = objGlobal[o]; let d = [], c = [];
-        Object.keys(invGlobal).forEach(jug => { if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); } });
-        if(d.length > 0) {
-            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
-        } else {
-            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","Nadie","0"\n`;
-        }
+    Object.keys(statsGlobal).sort().forEach(nombre => {
+        const p = statsGlobal[nombre];
+        
+        let row = [
+            nombre,
+            p.isPlayer ? "SI" : "NO",
+            p.isActive ? "SI" : "NO",
+            p.hex || 0,
+            p.asistencia || 1,
+            p.vex || 0,
+            p.vidaRojaActual || 0,
+            p.vidaRojaMax || 0,
+            p.baseVidaAzul !== undefined ? p.baseVidaAzul : (p.vidaAzul || 0),
+            p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : (p.guardaDorada || 0),
+            p.danoRojo || 0,
+            p.danoAzul || 0,
+            p.elimDorada || 0,
+            p.afinidades?.fisica || 0,
+            p.afinidades?.energetica || 0,
+            p.afinidades?.espiritual || 0,
+            p.afinidades?.mando || 0,
+            p.afinidades?.psiquica || 0,
+            p.afinidades?.oscura || 0
+        ];
+
+        let rowStr = row.map(v => `"${v}"`).join(",");
+
+        // Añadimos los valores de los estados de cada personaje
+        listaEstados.forEach(e => {
+            let val = p.estados && p.estados[e.id] !== undefined ? p.estados[e.id] : "";
+            if (e.tipo === 'booleano') {
+                val = val ? "SI" : "NO";
+            }
+            rowStr += `,"${val}"`;
+        });
+
+        csv += rowStr + "\n";
     });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    link.download = `HEX_OBJ_ESTADO.csv`; link.click();
+
+    return csv;
 }
 
-export function descargarLog() {
-    let csv = "Fecha,Jugador,Objeto,Cambio,Total\n";
-    historial.forEach(h => csv += `"${h.fecha}","${h.jugador}","${h.objeto}",${h.cambio},${h.total}\n`);
+// Transforma el texto CSV en un archivo descargable para el navegador
+export function descargarArchivoCSV(contenido, nombreArchivo) {
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    link.download = 'log_objetos.csv'; link.click();
+    const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+    link.href = URL.createObjectURL(blob);
+    link.download = nombreArchivo;
+    link.click();
 }
