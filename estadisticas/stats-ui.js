@@ -14,11 +14,10 @@ const bTextSplit = (spells, spellEff, buff) => {
 
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
-// ESTE ES EL BLINDAJE QUE PREVIENE LA ROTURA BLANCA
 function asegurarEstructuras(p) {
     if(!p.buffs) p.buffs = {}; 
     if(!p.hechizos) p.hechizos = {}; 
-    if(!p.hechizosEfecto) p.hechizosEfecto = {}; // CREACIÓN DE LA CAPA EFECTO EN CACHÉS VIEJOS
+    if(!p.hechizosEfecto) p.hechizosEfecto = {}; 
     if(!p.estados) p.estados = {};
     
     listaEstados.forEach(e => { if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false; });
@@ -27,7 +26,7 @@ function asegurarEstructuras(p) {
     props.forEach(pr => { 
         p.buffs[pr] = p.buffs[pr] || 0; 
         p.hechizos[pr] = p.hechizos[pr] || 0; 
-        p.hechizosEfecto[pr] = p.hechizosEfecto[pr] || 0; // RELLENO DE 0 PARA PREVENIR NaN
+        p.hechizosEfecto[pr] = p.hechizosEfecto[pr] || 0; 
         if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; 
     });
     if(p.isActive === undefined) p.isActive = true;
@@ -160,37 +159,37 @@ export function dibujarDetalle() {
         <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
             <div class="edit-card">
                 <h4>Ganancia HEX</h4>
-                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('hex', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('hex', -1)">-1</button></div>
-                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('hex', 10)">+10</button><button class="btn-minus" onclick="window.modLibre('hex', -10)">-10</button></div>
-                <div class="btn-row"><button class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 50)">+50</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -50)">-50</button></div>
-                <div class="btn-row"><button class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 100)">+100</button><button class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -100)">-100</button></div>
-                <div class="btn-row"><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button class="btn-minus" style="background:#4a004a;" onclick="window.modLibre('hex', -500)">-500</button></div>
-                <div class="btn-row"><button class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button><button class="btn-minus" style="background:#4a004a;" onclick="window.modLibre('hex', -1000)">-1000</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modLibre('hex', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modLibre('hex', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modLibre('hex', 10)">+10</button><button type="button" class="btn-minus" onclick="window.modLibre('hex', -10)">-10</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 50)">+50</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -50)">-50</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -100)">-100</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a004a;" onclick="window.modLibre('hex', -500)">-500</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a004a;" onclick="window.modLibre('hex', -1000)">-1000</button></div>
             </div>
             <div class="edit-card">
                 <h4>Vida Roja (Actual)</h4>
-                <div class="btn-row"><button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button><button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button></div>
-                <div class="btn-row"><button class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button><button class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button></div>
             </div>
             <div class="edit-card">
                 <h4>Corazones Azules Base</h4>
-                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('vidaAzul', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('vidaAzul', -1)">-1</button></div>
-                <div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('vidaAzul', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('vidaAzul', -5)">-5</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modLibre('vidaAzul', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaAzul', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modLibre('vidaAzul', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modLibre('vidaAzul', -5)">-5</button></div>
             </div>
             <div class="edit-card">
                 <h4>C. Azules <span style="color:#00ff00">(EXTRA)</span></h4>
-                <div class="btn-row"><button class="btn-plus" style="background:#330066;" onclick="window.modBlueExtra(1)">+1</button><button class="btn-minus" onclick="window.modBlueExtra(-1)">-1</button></div>
-                <div class="btn-row"><button class="btn-plus5" style="background:#004a4a;" onclick="window.modBlueExtra(5)">+5</button><button class="btn-minus5" onclick="window.modBlueExtra(-5)">-5</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modBlueExtra(1)">+1</button><button type="button" class="btn-minus" onclick="window.modBlueExtra(-1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modBlueExtra(5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBlueExtra(-5)">-5</button></div>
             </div>
             <div class="edit-card">
                 <h4>Guarda Dorada Base</h4>
-                <div class="btn-row"><button class="btn-plus" onclick="window.modLibre('guardaDorada', 1)">+1</button><button class="btn-minus" onclick="window.modLibre('guardaDorada', -1)">-1</button></div>
-                <div class="btn-row"><button class="btn-plus5" onclick="window.modLibre('guardaDorada', 5)">+5</button><button class="btn-minus5" onclick="window.modLibre('guardaDorada', -5)">-5</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modLibre('guardaDorada', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modLibre('guardaDorada', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modLibre('guardaDorada', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modLibre('guardaDorada', -5)">-5</button></div>
             </div>
             <div class="edit-card">
                 <h4>Guarda Dorada <span style="color:#00ff00">(EXTRA)</span></h4>
-                <div class="btn-row"><button class="btn-plus" style="background:#330066;" onclick="window.modGoldExtra(1)">+1</button><button class="btn-minus" onclick="window.modGoldExtra(-1)">-1</button></div>
-                <div class="btn-row"><button class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modGoldExtra(1)">+1</button><button type="button" class="btn-minus" onclick="window.modGoldExtra(-1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button type="button" class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
             </div>
         </div>
     </div>`;
@@ -215,8 +214,8 @@ export function dibujarDetalle() {
         <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa los estados alterados o clona toda la ficha <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
         <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
             <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;"><option value="" disabled selected>-- Selecciona Origen --</option>${opcionesPersonajes}</select>
-            <button onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados Alterados</button>
-            <button onclick="window.ejecutarClonacion('completo')" style="background:#4a004a; border:1px solid #8a008a; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar Todo (Inc. Imagen)</button>
+            <button type="button" onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados Alterados</button>
+            <button type="button" onclick="window.ejecutarClonacion('completo')" style="background:#4a004a; border:1px solid #8a008a; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar Todo (Inc. Imagen)</button>
         </div>
     </div>`;
 
@@ -227,14 +226,15 @@ export function dibujarMenuOP() {
     return `
         <h3>PANEL DE OPERADOR</h3>
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
-            <button onclick="window.mostrarPaginaOP('crear')" style="background:#004a4a">Crear NPC (Manual)</button>
-            <button onclick="window.descargarAumentada()">Descargar CSV</button>
-            <button onclick="window.triggerSubirCSV()" class="btn-red">Subir CSV</button>
+            <button type="button" onclick="window.mostrarPaginaOP('crear')" style="background:#004a4a">Crear Personaje (Manual)</button>
+            <button type="button" onclick="window.descargarAumentada()">Descargar CSV</button>
+            <button type="button" onclick="window.triggerSubirCSV()" class="btn-red">Subir CSV</button>
         </div>
         <div id="sub-vista-op"></div>
     `;
 }
 
+// CORRECCIÓN MAESTRA: Se corrigió el mapeo del ID y se evitan los refrescos accidentales en creación
 function genCard(f, tipoAccion) {
     let btns = ''; let clickMod = '';
     if (tipoAccion === 'buff') clickMod = 'window.modificarBuff'; 
@@ -248,17 +248,22 @@ function genCard(f, tipoAccion) {
     else if (tipoAccion === 'form') clickMod = 'window.modForm';
 
     const visualVal = f.val !== undefined ? f.val : 0;
-    const attrInput = `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
-    let inputHtml = `<input type="number" id="inp-${tipoAccion}-${f.id}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
+    
+    // Si estamos en creación ('form'), NO aplicamos el onchange dinámico que rompía la pantalla
+    const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
+    const attrInput = tipoAccion === 'form' ? '' : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
+    
+    let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
 
     if (f.esHex) {
-        btns = `<div class="btn-row"><button class="btn-plus" onclick="${clickMod}('${f.id}', 10)">+10</button><button class="btn-minus" onclick="${clickMod}('${f.id}', -10)">-10</button></div><div class="btn-row"><button class="btn-plus" onclick="${clickMod}('${f.id}', 50)">+50</button><button class="btn-minus" onclick="${clickMod}('${f.id}', -50)">-50</button></div><div class="btn-row"><button class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${f.id}', 100)">+100</button><button class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${f.id}', -100)">-100</button></div>`;
+        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${inputId}', 10)">+10</button><button type="button" class="btn-minus" onclick="${clickMod}('${inputId}', -10)">-10</button></div><div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${inputId}', 50)">+50</button><button type="button" class="btn-minus" onclick="${clickMod}('${inputId}', -50)">-50</button></div><div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${inputId}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${inputId}', -100)">-100</button></div>`;
     } else {
-        btns = `<div class="btn-row"><button class="btn-plus" onclick="${clickMod}('${f.id}', 1)">+1</button><button class="btn-minus" onclick="${clickMod}('${f.id}', -1)">-1</button></div><div class="btn-row"><button class="btn-plus5" onclick="${clickMod}('${f.id}', 5)">+5</button><button class="btn-minus5" onclick="${clickMod}('${f.id}', -5)">-5</button></div><div class="btn-row"><button class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${f.id}', 10)">+10</button><button class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${f.id}', -10)">-10</button></div>`;
+        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${inputId}', 1)">+1</button><button type="button" class="btn-minus" onclick="${clickMod}('${inputId}', -1)">-1</button></div><div class="btn-row"><button type="button" class="btn-plus5" onclick="${clickMod}('${inputId}', 5)">+5</button><button type="button" class="btn-minus5" onclick="${clickMod}('${inputId}', -5)">-5</button></div><div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${inputId}', 10)">+10</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${inputId}', -10)">-10</button></div>`;
     }
     return `<div class="edit-card"><h4>${f.label}</h4>${inputHtml}${btns}</div>`;
 }
 
+// CORRECCIÓN: Pantalla de Creación con Toggles Visuales
 export function dibujarFormularioCrear() {
     const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
     const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:0 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
@@ -266,12 +271,21 @@ export function dibujarFormularioCrear() {
     
     return `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
-        <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje / NPC</h3>
-        <input type="text" id="npc-nombre" placeholder="Nombre del NPC..." style="width:100%; max-width:400px; margin-bottom:20px; padding:10px; background:#000; color:var(--gold); border:1px solid var(--gold); font-size:1.2em; text-align:center;">
+        <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje</h3>
+        <input type="text" id="npc-nombre" placeholder="Nombre del Personaje..." style="width:100%; max-width:400px; margin-bottom:20px; padding:10px; background:#000; color:var(--gold); border:1px solid var(--gold); font-size:1.2em; text-align:center;">
+        
+        <div style="background:#1a0033; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--gold); max-width:600px; margin-left:auto; margin-right:auto;">
+            <h3 style="color:var(--gold); margin-top:0;">Identidad Inicial</h3>
+            <div style="display:flex; justify-content:center; gap:20px;">
+                <button type="button" id="btn-crear-rol" onclick="window.toggleCrearRol()" data-val="npc" style="width:150px; background:#4a0000; border-color:#ff0000; color:white;">ROL: NPC</button>
+                <button type="button" id="btn-crear-act" onclick="window.toggleCrearAct()" data-val="activo" style="width:150px; background:#004a00; border-color:#00ff00; color:white;">ESTADO: ACTIVO</button>
+            </div>
+        </div>
+
         <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Energía Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pEnergia.map(f => genCard(f, 'form')).join('')}</div>
         <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Vitalidad y Ofensiva Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pVidaDano.map(f => genCard(f, 'form')).join('')}</div>
         <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pAfinidades.map(f => genCard(f, 'form')).join('')}</div>
-        <button onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">GUARDAR PERSONAJE</button>
+        <button type="button" onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">CREAR PERSONAJE</button>
     </div>`;
 }
 
@@ -292,13 +306,13 @@ export function dibujarFormularioEditar() {
     let html = `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
         <h3 style="margin-top:0; color:var(--gold)">Edición de Ficha Base y Hechizos: ${estadoUI.personajeSeleccionado}</h3>
-        <button onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 15px;">⬅ Volver al Perfil</button>
+        <button type="button" onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 15px;">⬅ Volver al Perfil</button>
         
         <div style="background:#1a0033; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--gold);">
             <h3 style="color:var(--gold); margin-top:0;">Identidad y Estado del Personaje</h3>
             <div style="display:flex; justify-content:center; gap:20px;">
-                <button onclick="window.toggleIdentidad('isPlayer')" style="width:150px; background:${p.isPlayer ? '#004a00' : '#4a0000'}; border-color:${p.isPlayer ? '#00ff00' : '#ff0000'}; color:white;">${p.isPlayer ? 'ROL: JUGADOR' : 'ROL: NPC'}</button>
-                <button onclick="window.toggleIdentidad('isActive')" style="width:150px; background:${p.isActive ? '#004a00' : '#4a0000'}; border-color:${p.isActive ? '#00ff00' : '#ff0000'}; color:white;">${p.isActive ? 'ESTADO: ACTIVO' : 'ESTADO: INACTIVO'}</button>
+                <button type="button" onclick="window.toggleIdentidad('isPlayer')" style="width:150px; background:${p.isPlayer ? '#004a00' : '#4a0000'}; border-color:${p.isPlayer ? '#00ff00' : '#ff0000'}; color:white;">${p.isPlayer ? 'ROL: JUGADOR' : 'ROL: NPC'}</button>
+                <button type="button" onclick="window.toggleIdentidad('isActive')" style="width:150px; background:${p.isActive ? '#004a00' : '#4a0000'}; border-color:${p.isActive ? '#00ff00' : '#ff0000'}; color:white;">${p.isActive ? 'ESTADO: ACTIVO' : 'ESTADO: INACTIVO'}</button>
             </div>
         </div>
 
@@ -322,8 +336,8 @@ export function dibujarFormularioEditar() {
     
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
-        if (e.tipo === 'numero') { html += `<div class="edit-card"><h4>${e.nombre}</h4><span style="color:${e.border}; font-size:1.5em; font-weight:bold;">${val}</span><div class="btn-row"><button class="btn-plus" onclick="window.modEstado('${e.id}', 1)">+1</button><button class="btn-minus" onclick="window.modEstado('${e.id}', -1)">-1</button></div></div>`; } 
-        else { let extraStyle = val ? `background:${e.bg}; color:${e.id==='huesos'?'#000':'#fff'}; border-color:${e.border};` : ''; html += `<button class="status-toggle ${val ? 'active' : ''}" style="${extraStyle}" onclick="window.toggleEstado('${e.id}')">${e.nombre}</button>`; }
+        if (e.tipo === 'numero') { html += `<div class="edit-card"><h4>${e.nombre}</h4><span style="color:${e.border}; font-size:1.5em; font-weight:bold;">${val}</span><div class="btn-row"><button type="button" class="btn-plus" onclick="window.modEstado('${e.id}', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modEstado('${e.id}', -1)">-1</button></div></div>`; } 
+        else { let extraStyle = val ? `background:${e.bg}; color:${e.id==='huesos'?'#000':'#fff'}; border-color:${e.border};` : ''; html += `<button type="button" class="status-toggle ${val ? 'active' : ''}" style="${extraStyle}" onclick="window.toggleEstado('${e.id}')">${e.nombre}</button>`; }
     });
     html += `</div>`;
 
@@ -354,4 +368,5 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
+
 
