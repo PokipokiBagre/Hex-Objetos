@@ -1,16 +1,44 @@
-import { invGlobal, objGlobal, historial, estadoUI } from './obj-state.js';
+import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
 import { cargarTodoDesdeCSV } from './obj-data.js';
-import { modificar, descargarLog, descargarEstadoCSV, descargarInventariosJPG, agregarObjetoManual } from './obj-logic.js';
-import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes } from './obj-ui.js';
+import { modificar, modificarMulti, transferir, descargarLog, descargarEstadoCSV, descargarInventariosJPG, agregarObjetoManual } from './obj-logic.js';
+import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
+
+// MODO SINCRONIZADO A 10 SEGUNDOS
+setInterval(async () => {
+    if (estadoUI.modoSincronizado) {
+        console.log("Sincronizando inventarios con la nube...");
+        await cargarTodoDesdeCSV();
+        refrescarUI();
+    }
+}, 10000);
+
+window.toggleSync = () => {
+    estadoUI.modoSincronizado = !estadoUI.modoSincronizado;
+    const btn = document.getElementById('btn-sync');
+    if (btn) {
+        btn.innerText = estadoUI.modoSincronizado ? "CONECTADO (AUTO)" : "MODO EDICIÓN LOCAL";
+        btn.style.background = estadoUI.modoSincronizado ? "#004a00" : "#4a0000";
+        btn.style.borderColor = estadoUI.modoSincronizado ? "#0f0" : "#f00";
+    }
+    guardar();
+};
 
 async function iniciar() {
     if (performance.getEntriesByType("navigation")[0]?.type === "reload") { localStorage.removeItem('hex_obj_v4'); }
     const cache = localStorage.getItem('hex_obj_v4');
     if (!cache) await cargarTodoDesdeCSV();
-    else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); }
+    else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); if(p.modoSync !== undefined) estadoUI.modoSincronizado = p.modoSync; }
     
     estadoUI.cambiosSesion = {};
-    estadoUI.vistaActual = 'grilla'; // Nueva página de inicio (las caritas)
+    estadoUI.vistaActual = 'grilla';
+
+    // Setear el botón de Sync visualmente
+    const btn = document.getElementById('btn-sync');
+    if(btn) {
+        btn.innerText = estadoUI.modoSincronizado ? "CONECTADO (AUTO)" : "MODO EDICIÓN LOCAL";
+        btn.style.background = estadoUI.modoSincronizado ? "#004a00" : "#4a0000";
+        btn.style.borderColor = estadoUI.modoSincronizado ? "#0f0" : "#f00";
+    }
 
     const modal = document.createElement('div');
     modal.id = 'hex-modal-view'; modal.className = 'hex-modal';
@@ -51,14 +79,7 @@ async function iniciar() {
     };
 
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
-    window.updateCreationLog = () => {
-        const n = document.getElementById('new-obj-name').value || "Objeto"; const e = document.getElementById('new-obj-eff').value || "Efecto";
-        let l = []; document.querySelectorAll('.cant-input').forEach(i => {
-            const c = parseInt(i.value) || 0; if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}>`);
-        });
-        const out = document.getElementById('copy-log-crea'); if (out) out.value = l.join('\n');
-    };
-
+    
     window.hexMod = (j, o, c) => {
         if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
         estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
@@ -66,21 +87,52 @@ async function iniciar() {
         modificar(j, o, c, refrescarUI);
     };
 
+    // FUNCIONES DE PARTY LOOT
+    window.togglePartyLoot = (player, isChecked) => {
+        if (isChecked && !estadoUI.partyLoot.includes(player)) estadoUI.partyLoot.push(player);
+        if (!isChecked) estadoUI.partyLoot = estadoUI.partyLoot.filter(p => p !== player);
+        refrescarUI();
+    };
+    window.setLootMult = (val) => { estadoUI.lootMult = val; refrescarUI(); };
+    window.giveLootToParty = (item) => {
+        if (estadoUI.partyLoot.length === 0) return alert("Selecciona al menos un jugador arriba.");
+        const cant = estadoUI.lootMult || 1;
+        estadoUI.partyLoot.forEach(j => {
+            if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
+            estadoUI.cambiosSesion[j][item] = (estadoUI.cambiosSesion[j][item] || 0) + cant;
+        });
+        actualizarLogSesion();
+        modificarMulti(estadoUI.partyLoot, item, cant, refrescarUI);
+    };
+
+    // FUNCIONES DE TRANSFERENCIA
+    window.setTransOrigen = (val) => { estadoUI.transOrigen = val; refrescarUI(); };
+    window.setTransDestino = (val) => { estadoUI.transDestino = val; refrescarUI(); };
+    window.ejecutarTransfer = (item, cant) => {
+        const origen = estadoUI.transOrigen; const dest = estadoUI.transDestino;
+        if (!origen || !dest || origen === dest) return;
+        
+        // Log para origen
+        if (!estadoUI.cambiosSesion[origen]) estadoUI.cambiosSesion[origen] = {};
+        estadoUI.cambiosSesion[origen][item] = (estadoUI.cambiosSesion[origen][item] || 0) - cant;
+        
+        // Log para destino
+        if (!estadoUI.cambiosSesion[dest]) estadoUI.cambiosSesion[dest] = {};
+        estadoUI.cambiosSesion[dest][item] = (estadoUI.cambiosSesion[dest][item] || 0) + cant;
+        
+        actualizarLogSesion();
+        transferir(origen, dest, item, cant, refrescarUI);
+    };
+
     const _session = 'Y2FuZXk=';
-    window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
-    window.actualizarTodo = async () => { if(confirm("¿Descargar la base de datos maestra y borrar cambios locales?")) { await cargarTodoDesdeCSV(); refrescarUI(); } };
+    window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Log copiado al portapapeles."); };
     
-    // NAVEGACIÓN OP INTELIGENTE
     window.ejecutarSyncLog = () => { 
         const enrutarOP = () => {
-            if (estadoUI.vistaActual === 'inventario') {
-                estadoUI.vistaActual = 'control'; // Abre el editor in-situ del pj
-            } else if (estadoUI.vistaActual === 'grilla' || estadoUI.vistaActual === 'catalogo') {
-                estadoUI.vistaActual = 'op-menu'; // Abre el menú creador
-            }
+            if (estadoUI.vistaActual === 'inventario') estadoUI.vistaActual = 'control'; 
+            else if (estadoUI.vistaActual === 'grilla' || estadoUI.vistaActual === 'catalogo') estadoUI.vistaActual = 'op-menu'; 
             window.mostrarPagina(estadoUI.vistaActual);
         };
-
         if (estadoUI.esAdmin) { enrutarOP(); return; } 
         const i = prompt("Acceso Restringido:"); 
         if (i === atob(_session)) { estadoUI.esAdmin = true; enrutarOP(); } 
@@ -102,7 +154,6 @@ async function iniciar() {
         refrescarUI(); 
     };
 
-    // Al hacer clic en un PJ en la grilla principal
     window.abrirInventario = (j) => { estadoUI.jugadorInv = j; window.mostrarPagina('inventario'); };
     window.volverAGrilla = () => { estadoUI.jugadorInv = null; window.mostrarPagina('grilla'); };
 
@@ -110,11 +161,10 @@ async function iniciar() {
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; dibujarCatalogo(); };
-    window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; dibujarControl(); };
+    window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); }; // Actualiza Party Loot o Transfer
     
     window.descargarEstadoCSV = descargarEstadoCSV; window.descargarInventariosJPG = descargarInventariosJPG; window.descargarLog = descargarLog;
     
-    window.mostrarPagina('grilla'); // Estado inicial
+    window.mostrarPagina('grilla'); 
 }
 iniciar();
-                 
