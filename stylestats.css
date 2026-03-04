@@ -74,7 +74,7 @@ button:active { transform: translateY(1px); box-shadow: inset 0 3px 5px rgba(0,0
 }
 
 /* =========================================
-   ESTILOS PROFESIONALES PARA CÍRCULOS (RUNE STYLE)
+   CÍRCULOS DE HEX Y VEX REPARADOS Y MEJORADOS
    ========================================= */
 .circle-wrap {
     display: flex;
@@ -89,30 +89,32 @@ button:active { transform: translateY(1px); box-shadow: inset 0 3px 5px rgba(0,0
 }
 .stat-circle {
     position: relative;
-    width: 160px; 
-    height: 160px;
+    width: 150px; 
+    height: 150px;
     border-radius: 50%;
-    background: #111; 
+    /* La sombra exterior da volumen. Quitamos el inset que apagaba el color */
+    box-shadow: 0 10px 20px rgba(0,0,0,0.6);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.9), 0 10px 20px rgba(0,0,0,0.5);
     transition: transform 0.3s ease, filter 0.3s ease;
     user-select: none;
+    background: #111; /* Fallback si falla el JS */
 }
 .stat-circle:hover { transform: scale(1.05); filter: brightness(1.2); }
+
 .stat-circle .inner {
-    position: relative;
-    width: 125px; 
-    height: 125px;
+    position: absolute;
+    width: 120px; /* Deja un anillo brillante de 15px */
+    height: 120px;
     border-radius: 50%;
     background: radial-gradient(circle, #1a1a1a 0%, #050505 100%);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255,255,255,0.05);
+    /* La sombra exterior de esta tapa oscurece los bordes interiores del anillo, dando efecto 3D */
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.9), inset 0 0 10px rgba(255,255,255,0.05);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.1); 
     z-index: 2; 
 }
 .stat-circle .inner strong {
@@ -123,6 +125,7 @@ button:active { transform: translateY(1px); box-shadow: inset 0 3px 5px rgba(0,0
     display: block; font-size: 0.9em; color: #aaa; text-transform: uppercase;
     letter-spacing: 2px; margin-top: 5px; font-weight: 400; text-shadow: 1px 1px 2px #000;
 }
+/* Efectos de brillo de texto para el nuevo JS (si usas la versión degradada) */
 .stat-circle.hex-circle .inner strong { color: var(--gold-light); text-shadow: 0 0 15px rgba(212, 175, 55, 0.6); }
 .stat-circle.vex-circle .inner strong { color: var(--blue-life-light); text-shadow: 0 0 15px rgba(74, 144, 226, 0.6); }
 
@@ -273,3 +276,4 @@ button:active { transform: translateY(1px); box-shadow: inset 0 3px 5px rgba(0,0
     div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] > select,
     div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] > button { width: 100% !important; }
 }
+
