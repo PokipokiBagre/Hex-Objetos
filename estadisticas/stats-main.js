@@ -5,7 +5,53 @@ import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMys
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
-// --- NAVEGACIÓN Y RENDERIZADO AISLADO (EVITA BUCLE) ---
+// --- SISTEMA DE LOGS DE HEX (REPARADO PARA EVITAR BORRADO POR REDIBUJO) ---
+function updateHexLogText() {
+    const textarea = document.getElementById('hex-log-textarea');
+    if (!textarea) return; // Si no existe en la pantalla actual, no hace nada
+    
+    let finalOutput = "";
+    Object.keys(estadoUI.hexLog).sort().forEach(char => {
+        estadoUI.hexLog[char].forEach(line => {
+            finalOutput += line + "\n";
+        });
+    });
+    
+    textarea.value = finalOutput;
+    textarea.scrollTop = textarea.scrollHeight; // Auto-scroll hacia abajo
+}
+
+window.addHexLogEntry = (nombre, amount, isExtra = false) => {
+    if (!estadoUI.hexLog[nombre]) estadoUI.hexLog[nombre] = [];
+    const p = statsGlobal[nombre];
+    if (!p) return;
+    
+    const sign = amount >= 0 ? "+" : ""; 
+    const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : "";
+    
+    if(isExtra) {
+        estadoUI.hexLog[nombre].push(`${nombre} +1000 Hex ¡EXTRA! (${p.hex})${asisStr}`);
+    } else {
+        estadoUI.hexLog[nombre].push(`${nombre} ${sign}${amount} Hex (${p.hex})${asisStr}`);
+    }
+    // No llamamos updateHexLogText() aquí porque el redibujado de la UI lo hará
+};
+
+window.limpiarHexLog = () => { 
+    estadoUI.hexLog = {}; 
+    updateHexLogText(); 
+};
+
+window.copiarHexLog = () => {
+    const textarea = document.getElementById('hex-log-textarea');
+    if (textarea) { 
+        textarea.select(); 
+        document.execCommand('copy'); 
+        alert("Log copiado al portapapeles exitosamente."); 
+    }
+};
+
+// --- NAVEGACIÓN Y RENDERIZADO (INYECCIÓN SEGURA DEL LOG) ---
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -21,6 +67,11 @@ function repintarConScroll(vista) {
             if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
             else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
             else container.innerHTML = dibujarFormularioEditar();
+        }
+        
+        // ¡LA MAGIA! Solo después de redibujar la pantalla de HEX, rellenamos la caja negra.
+        if (estadoUI.vistaActual === 'hex') {
+            updateHexLogText();
         }
         
         window.scrollTo(0, scrollY);
@@ -48,7 +99,10 @@ function refrescarVistas() {
         document.getElementById('vista-op').innerHTML = dibujarMenuOP();
         const sub = document.getElementById('sub-vista-op');
         
-        if (estadoUI.vistaActual === 'hex') sub.innerHTML = dibujarHexOP();
+        if (estadoUI.vistaActual === 'hex') {
+            sub.innerHTML = dibujarHexOP();
+            updateHexLogText(); // Rellena el log al entrar
+        }
         else if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
         else sub.innerHTML = dibujarFormularioEditar();
     }
@@ -78,50 +132,6 @@ window.setFiltro = (tipo, valor) => {
     refrescarVistas();
 };
 
-// --- SISTEMA DE LOGS DE HEX ---
-function updateHexLogText() {
-    const textarea = document.getElementById('hex-log-textarea');
-    if (!textarea) return;
-    let finalOutput = "";
-    Object.keys(estadoUI.hexLog).sort().forEach(char => {
-        estadoUI.hexLog[char].forEach(line => {
-            finalOutput += line + "\n";
-        });
-    });
-    textarea.value = finalOutput;
-}
-
-window.addHexLogEntry = (nombre, amount, isExtra = false) => {
-    if (!estadoUI.hexLog[nombre]) estadoUI.hexLog[nombre] = [];
-    const p = statsGlobal[nombre];
-    if (!p) return;
-    
-    // El texto ahora incluye el + incluso en el 0 (ej: +0 Hex) si es necesario
-    const sign = amount >= 0 ? "+" : ""; 
-    const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : "";
-    
-    if(isExtra) {
-        estadoUI.hexLog[nombre].push(`${nombre} +1000 Hex ¡EXTRA! (${p.hex})${asisStr}`);
-    } else {
-        estadoUI.hexLog[nombre].push(`${nombre} ${sign}${amount} Hex (${p.hex})${asisStr}`);
-    }
-    updateHexLogText();
-};
-
-window.limpiarHexLog = () => { 
-    estadoUI.hexLog = {}; 
-    updateHexLogText(); 
-};
-
-window.copiarHexLog = () => {
-    const textarea = document.getElementById('hex-log-textarea');
-    if (textarea) { 
-        textarea.select(); 
-        document.execCommand('copy'); 
-        alert("Log copiado al portapapeles exitosamente."); 
-    }
-};
-
 // --- GESTIÓN DE PARTY ---
 window.abrirSelectorParty = (index) => {
     estadoUI.selectorIndex = index;
@@ -135,7 +145,6 @@ window.abrirSelectorParty = (index) => {
     let html = '';
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        // SOLO MOSTRAR JUGADORES QUE NO ESTÉN YA EN LA PARTY
         if (p.isPlayer && !estadoUI.party.includes(nombre)) {
             const iconoMuestra = normalizar(p.iconoOverride || nombre);
             html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer; width:70px;">
@@ -566,6 +575,8 @@ async function iniciar() {
             btn.style.borderColor = estadoUI.modoSincronizado ? "#00ff00" : "#ff0000";
         }
         refrescarVistas(); 
+        // Seguro extra para cargar el log si se recarga la página estando en OP
+        if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
 iniciar();
