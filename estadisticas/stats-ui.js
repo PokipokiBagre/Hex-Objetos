@@ -74,7 +74,7 @@ export function dibujarCatalogo() {
         if (estadoUI.filtroAct === 'Activo' && !p.isActive) return;
         if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
 
-        const iconoMuestra = p.iconoOverride || normalizar(nombre);
+        const iconoMuestra = normalizar(p.iconoOverride || nombre);
         
         let borderStyle = "";
         let bgStyle = "background: #1e0535;"; 
@@ -93,6 +93,7 @@ export function dibujarCatalogo() {
 
         const claseInactiva = p.isActive ? '' : 'inactive-card';
         
+        // El nombre vuelve a ser solo la variable limpia
         html += `
         <div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')">
             <img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}">
@@ -136,6 +137,12 @@ export function dibujarDetalle() {
     if (extraGuarda > 0) guardasHTML += `<div style="width:100%; font-size:0.8em; color:gray; margin-top:5px; font-weight:bold;">Extra: +${extraGuarda}</div>`;
 
     let estadosHTML = ''; 
+
+    // NUEVO: Etiqueta (Badge) de Copia en la zona de efectos
+    if (p.iconoOverride) {
+        estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}<span class="tooltiptext">Este personaje es un clon completo de ${p.iconoOverride.toUpperCase()}</span></div>`;
+    }
+
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
         if (e.tipo === 'numero' && val > 0) {
@@ -147,7 +154,7 @@ export function dibujarDetalle() {
         }
     });
 
-    const iconoGrande = p.iconoOverride || normalizar(nombre);
+    const iconoGrande = normalizar(p.iconoOverride || nombre);
 
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'};">
@@ -346,7 +353,14 @@ export function dibujarFormularioEditar() {
     let normalGuarda = Math.max(0, p.guardaDorada || 0); 
     let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.hechizosEfecto.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
     let totalGuarda = normalGuarda + extraGuarda;
-    const iconoGrande = p.iconoOverride || normalizar(estadoUI.personajeSeleccionado);
+    
+    const iconoGrande = normalizar(p.iconoOverride || estadoUI.personajeSeleccionado);
+    
+    // NUEVO: Etiqueta discreta en el OP si es clon
+    let copiaBadge = '';
+    if (p.iconoOverride) {
+        copiaBadge = `<span style="font-size:0.5em; color:#d4af37; border: 1px dashed #d4af37; padding: 2px 6px; border-radius:4px; vertical-align:middle; margin-left:10px;">COPIA DE: ${p.iconoOverride.toUpperCase()}</span>`;
+    }
 
     let html = `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
@@ -356,7 +370,7 @@ export function dibujarFormularioEditar() {
         <div style="display: flex; align-items: center; justify-content: center; gap: 20px; background: rgba(30, 0, 60, 0.6); padding: 15px; border: 1px dashed var(--gold); border-radius: 8px; margin-bottom: 20px;">
             <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover;" onerror="${imgError}">
             <div style="text-align: left;">
-                <h2 style="margin: 0; color: var(--gold); font-size: 1.5em;">${estadoUI.personajeSeleccionado.toUpperCase()}</h2>
+                <h2 style="margin: 0; color: var(--gold); font-size: 1.5em;">${estadoUI.personajeSeleccionado.toUpperCase()}${copiaBadge}</h2>
                 <div style="font-size: 1.1em; margin-top: 5px; background: #000; padding: 5px 10px; border-radius: 4px; border: 1px solid #333;">
                     <span style="color:var(--red-life); font-weight:bold;">❤️ ${p.vidaRojaActual} / ${calcularVidaRojaMax(p)}</span> &nbsp;|&nbsp; 
                     <span style="color:var(--blue-life); font-weight:bold;">🔷 ${totalAzul}</span> &nbsp;|&nbsp; 
@@ -383,7 +397,6 @@ export function dibujarFormularioEditar() {
             <span>Oscura: <b style="color:var(--gold)">${calcTotal(p.afinidades.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</b></span>
         </div>`;
 
-    // AQUÍ SE ELIMINÓ EL IF (p.isNPC) PARA QUE TODOS VEAN EL HEX/VEX
     const pEnergiaBase = [ { id: 'hex', label: 'Base HEX', val: p.hex, esHex:true }, { id: 'vex', label: 'Base VEX', val: p.vex, esHex:true } ];
     html += `<h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">0. Energía Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pEnergiaBase.map(f => genCard(f, 'directo')).join('')}</div>`;
 
@@ -424,4 +437,3 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
-
