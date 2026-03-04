@@ -28,9 +28,8 @@ window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; est
 
 window.abrirMenuOP = () => { 
     const enrutarOP = () => { 
-        estadoUI.vistaActual = 'op'; 
+        estadoUI.vistaActual = 'hex'; // Abre el panel de Party por defecto al dar click al OP superior
         refrescarVistas(); 
-        window.mostrarPaginaOP('crear');
     };
     if (estadoUI.esAdmin) { enrutarOP(); return; }
     const pass = prompt("Acceso Restringido. Contraseña:");
@@ -389,6 +388,7 @@ window.ejecutarClonacion = (tipo) => {
     guardar(); sourceSelect.value = ""; repintarConScroll('detalle'); 
 };
 
+// CORREGIDO: Guarda exactamente lo que escribes sin restar matemáticas
 window.ejecutarCreacionNPC = () => {
     const nombre = document.getElementById('npc-nombre').value.trim();
     if(!nombre) return alert("Falta dar un nombre.");
