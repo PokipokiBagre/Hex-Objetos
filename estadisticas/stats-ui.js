@@ -15,20 +15,10 @@ const bTextSplit = (spells, spellEff, buff) => {
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
 function asegurarEstructuras(p) {
-    if(!p.buffs) p.buffs = {}; 
-    if(!p.hechizos) p.hechizos = {}; 
-    if(!p.hechizosEfecto) p.hechizosEfecto = {}; 
-    if(!p.estados) p.estados = {};
-    
+    if(!p.buffs) p.buffs = {}; if(!p.hechizos) p.hechizos = {}; if(!p.hechizosEfecto) p.hechizosEfecto = {}; if(!p.estados) p.estados = {};
     listaEstados.forEach(e => { if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false; });
-    
     const props = ['fisica', 'energetica', 'espiritual', 'mando', 'psiquica', 'oscura', 'danoRojo', 'danoAzul', 'elimDorada', 'vidaRojaMaxExtra', 'vidaAzulExtra', 'guardaDoradaExtra'];
-    props.forEach(pr => { 
-        p.buffs[pr] = p.buffs[pr] || 0; 
-        p.hechizos[pr] = p.hechizos[pr] || 0; 
-        p.hechizosEfecto[pr] = p.hechizosEfecto[pr] || 0; 
-        if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; 
-    });
+    props.forEach(pr => { p.buffs[pr] = p.buffs[pr] || 0; p.hechizos[pr] = p.hechizos[pr] || 0; p.hechizosEfecto[pr] = p.hechizosEfecto[pr] || 0; if (p.afinidades && p.afinidades[pr] === undefined) p.afinidades[pr] = 0; });
     if(p.isActive === undefined) p.isActive = true;
 }
 
@@ -61,10 +51,8 @@ export function dibujarCatalogo() {
     };
 
     const sortedNames = Object.keys(statsGlobal).sort((a, b) => {
-        const valA = getSortValue(statsGlobal[a]);
-        const valB = getSortValue(statsGlobal[b]);
-        if (valA !== valB) return valA - valB;
-        return a.localeCompare(b); 
+        const valA = getSortValue(statsGlobal[a]); const valB = getSortValue(statsGlobal[b]);
+        if (valA !== valB) return valA - valB; return a.localeCompare(b); 
     });
 
     sortedNames.forEach(nombre => {
@@ -157,7 +145,7 @@ export function dibujarDetalle() {
 
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'};">
-        <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 120px; border-radius: 50%; border: 3px solid #d4af37;" onerror="${imgError}">
+        <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #d4af37; object-fit: cover;" onerror="${imgError}">
         <div style="text-align:left;">
             <h1 style="margin: 0;">${nombre.toUpperCase()} ${p.isNPC ? '<span style="font-size:0.4em; color:#aaa">[NPC]</span>' : ''} ${!p.isActive ? '<span style="font-size:0.4em; color:#ff0000">[INACTIVO]</span>' : ''}</h1>
             ${asisUI}
@@ -291,6 +279,7 @@ export function dibujarMenuOP() {
     `;
 }
 
+// ---------------- GESTOR DE HEX Y PARTY (MODIFICADO SIN MODAL) ----------------
 export function dibujarHexOP() {
     let html = `<div style="text-align:center; max-width:1200px; margin:0 auto;">
         <h2 style="color:var(--gold); margin-top:0;">Gestión de HEX y Party</h2>
@@ -303,7 +292,7 @@ export function dibujarHexOP() {
         const char = estadoUI.party[i];
         if(char && statsGlobal[char]) {
             const icono = normalizar(statsGlobal[char]?.iconoOverride || char);
-            html += `<div onclick="window.abrirSelectorParty(${i})" style="width:80px; height:80px; border:2px solid var(--gold); border-radius:8px; cursor:pointer; background:url('../img/imgpersonajes/${icono}icon.png'); background-size:cover; position:relative;" title="${char}">
+            html += `<div onclick="window.abrirSelectorParty(${i})" style="width:80px; height:80px; border:2px solid var(--gold); border-radius:8px; cursor:pointer; background:url('../img/imgpersonajes/${icono}icon.png') center/cover; position:relative;" title="${char}">
                 <div style="position:absolute; bottom:0; background:rgba(0,0,0,0.7); width:100%; font-size:0.6em; text-align:center;">${char}</div>
             </div>`;
         } else {
@@ -312,8 +301,19 @@ export function dibujarHexOP() {
     }
     
     html += `</div>
+            
+            <div id="party-selector-container" style="display:none; background:#0a0014; border:1px dashed #00ffff; border-radius:8px; padding:15px; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0; color:#00ffff;">Selecciona un Jugador para el Slot <span id="party-slot-label"></span></h4>
+                    <button type="button" onclick="document.getElementById('party-selector-container').style.display='none'" style="background:transparent; border:none; color:#ff0000; font-size:1.2em; cursor:pointer;">✖</button>
+                </div>
+                <div id="party-modal-grid" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+                <button type="button" id="btn-quitar-slot" onclick="window.quitarDeParty()" style="margin-top:15px; width:100%; background:#4a0000; display:none;">VACIAR ESTE SLOT</button>
+            </div>
+
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
                 <button type="button" onclick="window.autoLlenarParty()" style="background:#004a4a; border-color:#00ffff; color:white;">SELECCIONAR A JUGADORES ACTIVOS</button>
+                <button type="button" onclick="window.vaciarParty()" style="background:#4a0000; border-color:#ff0000; color:white;">VACIAR SLOTS</button>
                 <button type="button" onclick="window.addAsistenciaGlobal()" style="background:#4a004a; border-color:#8a008a; color:white;">SUMAR ASISTENCIA (+1) A PARTY</button>
             </div>
         </div>
@@ -334,7 +334,7 @@ export function dibujarHexOP() {
 
         <div class="edit-grid">`;
 
-    // Renderiza tarjetas individuales SOLAMENTE para los que están visualmente en los 6 slots de la Party
+    // Renderiza tarjetas individuales SOLAMENTE para los que están en los 6 slots
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
             const p = statsGlobal[nombre];
@@ -368,16 +368,6 @@ export function dibujarHexOP() {
             <div style="display:flex; gap:10px;">
                 <button type="button" onclick="window.copiarHexLog()" style="flex:3; background:var(--gold); color:black; font-weight:bold;">COPIAR AL PORTAPAPELES</button>
                 <button type="button" onclick="window.limpiarHexLog()" style="flex:1; background:#4a0000; color:white;">LIMPIAR LOG</button>
-            </div>
-        </div>
-
-        <div id="party-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
-            <div style="background:#1a0033; border:2px solid var(--gold); border-radius:8px; padding:20px; max-width:80%; max-height:80%; overflow-y:auto;">
-                <h3 style="color:var(--gold); margin-top:0;">Selecciona un Personaje</h3>
-                <div id="party-modal-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(80px, 1fr)); gap:10px;">
-                </div>
-                <button type="button" onclick="document.getElementById('party-modal').style.display='none'" style="margin-top:20px; width:100%; background:#444;">CANCELAR</button>
-                <button type="button" onclick="window.quitarDeParty()" style="margin-top:10px; width:100%; background:#4a0000;">QUITAR DEL SLOT</button>
             </div>
         </div>
     </div>`;
