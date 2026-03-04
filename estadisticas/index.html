@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="stylestats.css?v=1.1">
 </head>
 <body>
-<div class="nav-bar" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gold-dim); padding-bottom: 15px; margin-bottom: 20px;">
+    <div class="nav-bar" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gold-dim); padding-bottom: 15px; margin-bottom: 20px;">
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button onclick="window.location.href='../index.html'" style="background: #111; border-color: #555;">⬅ Volver al Inicio</button>
             <button onclick="window.mostrarCatalogo()">Volver al Catálogo</button>
@@ -22,21 +22,8 @@
     <div id="vista-detalle" class="detalle-container oculto"></div>
     
     <div id="vista-op" class="detalle-container oculto" style="text-align: center;">
-        <h3>PANEL DE OPERADOR</h3>
-        <p>Gestiona la sincronización local y maestra.</p>
-        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
-            <button onclick="window.forzarSincronizacion()" class="btn-green">Sincronizar (Borrar Local y Descargar Sheet)</button>
-            <button onclick="window.descargarAumentada()">Descargar CSV (Unión Sheet + Local)</button>
-            
-            <input type="file" id="subir-csv" accept=".csv" style="display: none;" onchange="window.subirAumentada(event)">
-            <button onclick="document.getElementById('subir-csv').click()" class="btn-red">Subir CSV Aumentado (Sobrescribe Todo)</button>
         </div>
-    </div>
 
     <script type="module" src="stats-main.js"></script>
 </body>
 </html>
-
-
-
-
