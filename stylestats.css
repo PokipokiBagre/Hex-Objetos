@@ -6,12 +6,17 @@
     --gold-dim: rgba(212, 175, 55, 0.3);
     --red-life: #cc0000;
     --blue-life: #4a90e2;
+    /* Colores Mágicos para Círculos */
+    --gold-dark: #b8860b; 
+    --gold-light: #ffd700; 
+    --blue-life-dark: #1a4b8c; 
+    --blue-life-light: #4a90e2;
 }
 
 body {
     font-family: 'Cinzel', serif;
     background-color: var(--bg-dark);
-    background-image: radial-gradient(circle, #1a0033 0%, #000 100%);
+    background-image: radial-gradient(circle at top, #1a0033 0%, #05000a 100%);
     color: #ffffff;
     margin: 0;
     padding: 20px;
@@ -19,17 +24,24 @@ body {
     text-align: center;
 }
 
-h1, h2, h3 { color: var(--gold); text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+h1, h2, h3 { color: var(--gold); text-shadow: 0 0 15px rgba(212, 175, 55, 0.6); }
 
 /* Botones OP */
 button {
-    background: #1a0033; border: 1px solid var(--gold); color: var(--gold);
+    background: linear-gradient(145deg, #1a0033, #0d001a); 
+    border: 1px solid var(--gold); color: var(--gold);
     padding: 10px 20px; cursor: pointer; border-radius: 4px; font-weight: bold;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
 }
-button:hover { background: var(--gold); color: var(--bg-dark); }
-.btn-red { background: #4a0000; color: #ffcccc; border-color: #ffcccc; }
-.btn-green { background: #004a00; color: #ccffcc; border-color: #ccffcc; }
+button:hover { 
+    background: var(--gold); color: var(--bg-dark); 
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+    transform: translateY(-2px);
+}
+button:active { transform: translateY(1px); box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); }
+.btn-red { background: linear-gradient(145deg, #4a0000, #220000); color: #ffcccc; border-color: #ffcccc; }
+.btn-green { background: linear-gradient(145deg, #004a00, #002200); color: #ccffcc; border-color: #ccffcc; }
 
 /* Catálogo 4x4 */
 .catalogo-grid {
@@ -41,13 +53,17 @@ button:hover { background: var(--gold); color: var(--bg-dark); }
 }
 
 .char-card {
-    background: #150029; border: 1px solid var(--gold-dim);
+    background: rgba(21, 0, 41, 0.8); border: 1px solid var(--gold-dim);
     border-radius: 8px; padding: 15px; cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    backdrop-filter: blur(5px);
 }
-.char-card:hover { transform: scale(1.05); border-color: var(--gold); }
-.char-card img { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; }
-.char-card h3 { margin: 10px 0 5px 0; font-size: 1.2em; }
+.char-card:hover { 
+    transform: scale(1.05); border-color: var(--gold); 
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 15px rgba(212, 175, 55, 0.1);
+}
+.char-card img { width: 100px; height: 100px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+.char-card h3 { margin: 10px 0 5px 0; font-size: 1.2em; text-shadow: 2px 2px 4px #000; }
 .char-card p { margin: 0; font-size: 0.9em; color: #aaa; }
 
 /* Vista Detalle */
@@ -57,36 +73,73 @@ button:hover { background: var(--gold); color: var(--bg-dark); }
     text-align: left;
 }
 
-/* Círculos de HEX / VEX */
+/* =========================================
+   ESTILOS PROFESIONALES PARA CÍRCULOS (RUNE STYLE)
+   ========================================= */
 .circle-wrap {
-    display: flex; justify-content: space-around; margin: 20px 0; text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 50px; 
+    margin: 30px 0;
+    padding: 25px;
+    background: rgba(0, 0, 0, 0.4); 
+    border-radius: 15px;
+    border: 1px solid rgba(212, 175, 55, 0.1);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
 }
 .stat-circle {
-    width: 120px; height: 120px; border-radius: 50%;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: #222; position: relative;
-    /* El conic-gradient se inyecta por JS */
+    position: relative;
+    width: 160px; 
+    height: 160px;
+    border-radius: 50%;
+    background: #111; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.9), 0 10px 20px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease, filter 0.3s ease;
+    user-select: none;
 }
+.stat-circle:hover { transform: scale(1.05); filter: brightness(1.2); }
 .stat-circle .inner {
-    width: 100px; height: 100px; background: var(--bg-dark);
-    border-radius: 50%; display: flex; flex-direction: column; justify-content: center; z-index: 2;
+    position: relative;
+    width: 125px; 
+    height: 125px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #1a1a1a 0%, #050505 100%);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    z-index: 2; 
 }
-.stat-circle strong { font-size: 1.5em; color: var(--gold); }
-.stat-circle span { font-size: 0.8em; color: #aaa; }
+.stat-circle .inner strong {
+    display: block; font-size: 2.8em; font-weight: 700; line-height: 1; color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+.stat-circle .inner span {
+    display: block; font-size: 0.9em; color: #aaa; text-transform: uppercase;
+    letter-spacing: 2px; margin-top: 5px; font-weight: 400; text-shadow: 1px 1px 2px #000;
+}
+.stat-circle.hex-circle .inner strong { color: var(--gold-light); text-shadow: 0 0 15px rgba(212, 175, 55, 0.6); }
+.stat-circle.vex-circle .inner strong { color: var(--blue-life-light); text-shadow: 0 0 15px rgba(74, 144, 226, 0.6); }
 
 /* Cuadritos de Vida */
-.health-box { border: 1px solid var(--gold-dim); padding: 10px; margin-bottom: 10px; border-radius: 4px; }
-.health-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-.heart-red { width: 15px; height: 15px; background: var(--red-life); border-radius: 50%; }
-.heart-red.empty { background: transparent; border: 1px solid var(--red-life); }
-.heart-blue { width: 15px; height: 15px; background: var(--blue-life); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
-.guard-gold { width: 15px; height: 15px; background: var(--gold); transform: rotate(45deg); margin: 3px; }
+.health-box { background: rgba(0,0,0,0.3); border: 1px solid var(--gold-dim); padding: 12px; margin-bottom: 10px; border-radius: 6px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+.health-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.heart-red { width: 16px; height: 16px; background: radial-gradient(circle at 30% 30%, #ff4d4d, var(--red-life)); border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.heart-red.empty { background: transparent; border: 1px solid var(--red-life); box-shadow: none; }
+.heart-blue { width: 16px; height: 16px; background: radial-gradient(circle at 30% 30%, #8ac4ff, var(--blue-life)); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.guard-gold { width: 16px; height: 16px; background: radial-gradient(circle at 30% 30%, #fff0b3, var(--gold)); transform: rotate(45deg); margin: 3px; box-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
 
 /* Afinidades */
-.affinities-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.affinity-box { background: #0a0014; border: 1px dashed var(--gold-dim); padding: 10px; text-align: center; border-radius: 4px; }
-.affinity-box span { display: block; font-size: 1.2em; font-weight: bold; color: white; }
-.affinity-box label { font-size: 0.7em; color: var(--gold); text-transform: uppercase; }
+.affinities-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.affinity-box { background: linear-gradient(180deg, #0f001f, #05000a); border: 1px dashed var(--gold-dim); padding: 12px; text-align: center; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; }
+.affinity-box:hover { border-color: var(--gold); background: #150029; transform: translateY(-2px); }
+.affinity-box span { display: block; font-size: 1.3em; font-weight: bold; color: white; text-shadow: 0 0 5px rgba(255,255,255,0.3); }
+.affinity-box label { font-size: 0.75em; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; }
 
 /* Utilidades */
 .oculto { display: none !important; }
@@ -100,35 +153,34 @@ button:hover { background: var(--gold); color: var(--bg-dark); }
     margin-top: 20px; 
 }
 .edit-card { 
-    background: #150029; border: 1px solid var(--gold); 
-    padding: 15px 10px; border-radius: 4px; text-align: center; 
+    background: linear-gradient(145deg, #150029, #0a0014); border: 1px solid rgba(212, 175, 55, 0.5); 
+    padding: 15px 10px; border-radius: 6px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
 }
-.edit-card h4 { margin: 0 0 10px 0; color: #fff; font-size: 0.9em; text-transform: uppercase; }
-.edit-card span { display: block; margin-bottom: 10px; color: var(--gold); font-weight: bold; font-size: 1.5em; }
+.edit-card h4 { margin: 0 0 10px 0; color: #fff; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; }
+.edit-card span { display: block; margin-bottom: 10px; color: var(--gold); font-weight: bold; font-size: 1.5em; text-shadow: 0 0 5px rgba(212,175,55,0.4); }
 .btn-row { display: flex; gap: 5px; margin-bottom: 5px; }
-.btn-row button { flex: 1; padding: 8px; font-size: 1.1em; margin: 0; border-radius: 2px; }
+.btn-row button { flex: 1; padding: 8px; font-size: 1.1em; margin: 0; border-radius: 4px; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
-/* Colores de los botones idénticos a los tuyos */
-.btn-plus { background: #330066; color: white; border-color: #5500aa; }
-.btn-minus { background: #660000; color: white; border-color: #aa0000; }
-.btn-plus5 { background: #004a4a; color: white; border-color: #008888; }
-.btn-minus5 { background: #4a0000; color: white; border-color: #880000; }
+.btn-plus { background: linear-gradient(145deg, #4a0088, #330066); border: 1px solid #7700ff; color: white; }
+.btn-minus { background: linear-gradient(145deg, #880000, #660000); border: 1px solid #ff3333; color: white; }
+.btn-plus5 { background: linear-gradient(145deg, #006666, #004a4a); border: 1px solid #00bbbb; color: white; }
+.btn-minus5 { background: linear-gradient(145deg, #660000, #4a0000); border: 1px solid #cc0000; color: white; }
 
-.btn-plus:hover { background: #5500aa; }
-.btn-minus:hover { background: #aa0000; }
-.btn-plus5:hover { background: #008888; }
-.btn-minus5:hover { background: #880000; }
+.btn-plus:hover { background: #5500aa; filter: brightness(1.2); }
+.btn-minus:hover { background: #aa0000; filter: brightness(1.2); }
+.btn-plus5:hover { background: #008888; filter: brightness(1.2); }
+.btn-minus5:hover { background: #880000; filter: brightness(1.2); }
 
 /* BORDE ESPECIAL PARA JUGADORES EN EL CATÁLOGO */
 .player-card {
     border: 2px solid var(--gold);
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4), inset 0 0 20px rgba(212,175,55,0.1);
     background: #1e0535;
 }
 
 /* EFECTO DE CARTAS INACTIVAS */
-.inactive-card { opacity: 0.4; filter: grayscale(1); transition: 0.3s; }
-.inactive-card:hover { opacity: 0.8; filter: grayscale(0.5); }
+.inactive-card { opacity: 0.5; filter: grayscale(0.8); transition: 0.3s; }
+.inactive-card:hover { opacity: 0.9; filter: grayscale(0.3); }
 
 /* BADGES DINÁMICOS Y TOOLTIPS */
 .status-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -136,142 +188,88 @@ button:hover { background: var(--gold); color: var(--bg-dark); }
     padding: 4px 10px; border-radius: 4px; font-size: 0.75em; font-weight: bold;
     text-transform: uppercase; border: 1px solid #fff; box-shadow: 2px 2px 0px #000;
     position: relative; cursor: help; overflow: visible !important; 
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
 }
 
 /* El cuadro flotante del Tooltip */
 .status-badge .tooltiptext {
-    visibility: hidden; width: 250px; background-color: #000; color: #fff; 
-    text-align: center; border-radius: 6px; padding: 10px; border: 1px solid var(--gold);
+    visibility: hidden; width: 250px; background: linear-gradient(180deg, #111, #000); color: #fff; 
+    text-align: center; border-radius: 6px; padding: 12px; border: 1px solid var(--gold);
     position: absolute; z-index: 100; bottom: 135%; left: 50%; transform: translateX(-50%);
     opacity: 0; transition: opacity 0.3s; font-size: 0.9em; text-transform: none; 
-    font-weight: normal; box-shadow: 0 5px 15px rgba(0,0,0,0.8); pointer-events: none; 
-    white-space: normal; line-height: 1.4;
+    font-weight: normal; box-shadow: 0 10px 25px rgba(0,0,0,0.9); pointer-events: none; 
+    white-space: normal; line-height: 1.4; text-shadow: none;
 }
-
-/* La flechita dorada del Tooltip */
 .status-badge::after {
     content: ""; position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
     border-width: 6px; border-style: solid; border-color: var(--gold) transparent transparent transparent;
     visibility: hidden; opacity: 0; transition: opacity 0.3s;
 }
-
-/* Animación Hover */
 .status-badge:hover .tooltiptext, .status-badge:hover::after { visibility: visible; opacity: 1; }
 
 .status-toggle {
-    background: #111; color: gray; border: 1px solid #333; padding: 10px;
+    background: linear-gradient(145deg, #222, #111); color: gray; border: 1px solid #444; padding: 10px;
     cursor: pointer; border-radius: 4px; transition: 0.2s; font-size: 0.8em; font-weight: bold; text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
+.status-toggle:hover { filter: brightness(1.3); }
 
 /* =======================================================
    📱 ADAPTACIÓN PARA TELÉFONOS (RESPONSIVE MOBILE VIEW)
    ======================================================= */
 @media (max-width: 768px) {
-    
-    /* 1. Dar espacio al final para la nueva barra inferior */
-    body {
-        padding-bottom: 90px !important;
-        padding-left: 10px !important;
-        padding-right: 10px !important;
-    }
+    body { padding-bottom: 90px !important; padding-left: 10px !important; padding-right: 10px !important; }
 
-    /* 2. Convertir la Nav Bar en una Barra de Aplicación Inferior */
     .nav-bar {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        background: rgba(18, 0, 36, 0.98) !important;
-        border-top: 2px solid var(--gold) !important;
-        border-bottom: none !important;
-        padding: 10px 5px !important;
-        margin: 0 !important;
-        justify-content: space-around !important;
-        z-index: 9999 !important;
-        box-shadow: 0 -5px 15px rgba(0,0,0,0.8);
-        display: flex !important;
+        position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100% !important;
+        background: rgba(18, 0, 36, 0.98) !important; border-top: 2px solid var(--gold) !important;
+        border-bottom: none !important; padding: 10px 5px !important; margin: 0 !important;
+        justify-content: space-around !important; z-index: 9999 !important;
+        box-shadow: 0 -5px 15px rgba(0,0,0,0.8); display: flex !important;
     }
     
-    /* Ocultar el título H2 en móvil para ganar espacio para los botones */
     .nav-bar h2 { display: none !important; }
 
-    /* Adaptar los botones de la barra para que quepan todos */
     .nav-bar > div {
-        display: flex !important;
-        width: 75% !important;
-        justify-content: space-around !important;
-        gap: 5px !important;
+        display: flex !important; width: 75% !important; justify-content: space-around !important; gap: 5px !important;
     }
     
-    .nav-bar button {
-        font-size: 0.7em !important;
-        padding: 10px 2px !important;
-        flex: 1;
-        text-align: center;
-        border-radius: 4px;
-    }
+    .nav-bar button { font-size: 0.7em !important; padding: 10px 2px !important; flex: 1; text-align: center; border-radius: 4px; }
 
-    /* 3. Catálogo: 2 Personajes por fila */
     .catalogo-grid {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 10px !important;
+        display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important;
     }
     .char-card { padding: 10px !important; }
     .char-card img { width: 65px !important; height: 65px !important; }
     .char-card h3 { font-size: 1.1em !important; margin: 5px 0 !important; }
     .char-card p { font-size: 0.75em !important; }
 
-    /* Filtros superiores compactos para que no rompan la pantalla */
     .filter-group {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr 1fr !important;
-        gap: 5px !important;
-        width: 100%;
+        display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 5px !important; width: 100%;
     }
     .filter-group button { padding: 10px 2px !important; font-size: 0.75em !important; }
 
-    /* 4. Vista de Detalle y Edición en 1 Columna (Vertical) */
-    div[style*="grid-template-columns: 1fr 1fr"] {
-        grid-template-columns: 1fr !important;
-    }
+    div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
     
-    /* Reorganizar el Avatar y Título del personaje */
     div[style*="display: flex; align-items: center; gap: 20px; border-bottom"] {
-        flex-direction: column !important;
-        text-align: center !important;
+        flex-direction: column !important; text-align: center !important;
     }
-    div[style*="display: flex; align-items: center; gap: 20px; border-bottom"] > div {
-        text-align: center !important;
-    }
+    div[style*="display: flex; align-items: center; gap: 20px; border-bottom"] > div { text-align: center !important; }
     div[style*="display: flex; align-items: center; gap: 20px; border-bottom"] button {
-        margin-left: 0 !important;
-        width: 100%;
-        margin-top: 15px;
-        padding: 15px !important;
+        margin-left: 0 !important; width: 100%; margin-top: 15px; padding: 15px !important;
     }
 
-    /* Ajustar círculos de HEX/VEX */
-    .stat-circle { width: 90px !important; height: 90px !important; margin: 5px !important; }
-    .stat-circle .inner { width: 74px !important; height: 74px !important; font-size: 0.9em !important; }
+    /* Ajustar círculos de HEX/VEX en móvil para no desbordar */
+    .circle-wrap { gap: 15px !important; padding: 15px 5px !important; }
+    .stat-circle { width: 110px !important; height: 110px !important; margin: 5px !important; }
+    .stat-circle .inner { width: 85px !important; height: 85px !important; }
+    .stat-circle .inner strong { font-size: 1.8em !important; }
+    .stat-circle .inner span { font-size: 0.7em !important; }
 
-    /* 5. Botones de +1 y -1 "Engordados" para facilitar uso táctil */
-    .btn-row button {
-        padding: 18px 5px !important;
-        font-size: 1.3em !important;
-    }
-    .edit-card input[type="number"] {
-        font-size: 1.6em !important;
-        padding: 12px !important;
-        width: 90% !important;
-    }
+    .btn-row button { padding: 18px 5px !important; font-size: 1.3em !important; }
+    .edit-card input[type="number"] { font-size: 1.6em !important; padding: 12px !important; width: 90% !important; }
     
-    /* Herramienta de clonación apilada */
-    div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] {
-        flex-direction: column;
-    }
+    div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] { flex-direction: column; }
     div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] > select,
-    div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] > button {
-        width: 100% !important;
-    }
+    div[style*="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;"] > button { width: 100% !important; }
 }
