@@ -52,7 +52,23 @@ export function dibujarCatalogo() {
     </div>
     <div class="catalogo-grid">`;
 
-    Object.keys(statsGlobal).sort().forEach(nombre => {
+    // SISTEMA DE ORDENAMIENTO DE 4 NIVELES
+    const getSortValue = (p) => {
+        if (p.isPlayer && p.isActive) return 1; // Jugador Activo (Top)
+        if (!p.isPlayer && p.isActive) return 2; // NPC Activo
+        if (!p.isPlayer && !p.isActive) return 3; // NPC Inactivo
+        if (p.isPlayer && !p.isActive) return 4; // Jugador Inactivo (Bottom)
+        return 5;
+    };
+
+    const sortedNames = Object.keys(statsGlobal).sort((a, b) => {
+        const valA = getSortValue(statsGlobal[a]);
+        const valB = getSortValue(statsGlobal[b]);
+        if (valA !== valB) return valA - valB;
+        return a.localeCompare(b); // Si son del mismo nivel, orden alfabético
+    });
+
+    sortedNames.forEach(nombre => {
         const p = statsGlobal[nombre]; asegurarEstructuras(p);
         if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return;
         if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
@@ -60,8 +76,31 @@ export function dibujarCatalogo() {
         if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
 
         const iconoMuestra = p.iconoOverride || normalizar(nombre);
-        const claseCarta = p.isPlayer ? 'player-card' : ''; const claseInactiva = p.isActive ? '' : 'inactive-card';
-        html += `<div class="char-card ${claseCarta} ${claseInactiva}" onclick="window.abrirDetalle('${nombre}')"><img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}"><h3>${nombre}</h3><p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p></div>`;
+        
+        // SISTEMA DE MARCOS POR IDENTIDAD
+        let borderStyle = "";
+        let bgStyle = "background: #1e0535;"; // Fondo estándar
+        if (p.isPlayer && p.isActive) {
+            borderStyle = "border: 2px solid var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);";
+        } else if (!p.isPlayer && p.isActive) {
+            borderStyle = "border: 2px solid #00ffff; box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);"; // Cyan para NPCs
+            bgStyle = "background: #0a1128;";
+        } else if (!p.isPlayer && !p.isActive) {
+            borderStyle = "border: 2px solid #555555;"; // Gris para NPCs inactivos
+            bgStyle = "background: #111111;";
+        } else if (p.isPlayer && !p.isActive) {
+            borderStyle = "border: 2px solid #cc0000; box-shadow: 0 0 10px rgba(204, 0, 0, 0.3);"; // Rojo para Jugadores Inactivos
+            bgStyle = "background: #220000;";
+        }
+
+        const claseInactiva = p.isActive ? '' : 'inactive-card';
+        
+        html += `
+        <div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle}" onclick="window.abrirDetalle('${nombre}')">
+            <img src="../img/imgpersonajes/${iconoMuestra}icon.png" onerror="${imgError}">
+            <h3>${nombre}</h3>
+            <p>HEX: <strong>${p.hex}</strong> | VEX: <strong>${calcularVexMax(p)}</strong></p>
+        </div>`;
     }); 
     contenedor.innerHTML = html + `</div>`;
 }
@@ -211,10 +250,11 @@ export function dibujarDetalle() {
     html += `
     <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
         <h3 style="margin-top:0; color:var(--gold);">Importación desde Personaje</h3>
-        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa estados alterados, clona toda la ficha o copia el HEX <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
+        <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa estados alterados, clona toda la ficha o copia atributos específicos <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
         <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
             <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;"><option value="" disabled selected>-- Selecciona Origen --</option>${opcionesPersonajes}</select>
             <button type="button" onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados</button>
+            <button type="button" onclick="window.ejecutarClonacion('efectosExtras')" style="background:#4a90e2; border:1px solid #00ffff; padding:10px 15px; color:#111; font-weight:bold; transition:0.2s;">Copiar Efectos y Extras</button>
             <button type="button" onclick="window.ejecutarClonacion('hex')" style="background:#b8860b; border:1px solid #ffd700; padding:10px 15px; color:#000; font-weight:bold; transition:0.2s;">Copiar HEX</button>
             <button type="button" onclick="window.ejecutarClonacion('completo')" style="background:#4a004a; border:1px solid #8a008a; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar Todo (Inc. Imagen)</button>
         </div>
@@ -235,7 +275,6 @@ export function dibujarMenuOP() {
     `;
 }
 
-// CORRECCIÓN VITAL: El targetId soluciona el bug de los botones en la Edición OP
 function genCard(f, tipoAccion) {
     let btns = ''; let clickMod = '';
     if (tipoAccion === 'buff') clickMod = 'window.modificarBuff'; 
@@ -250,13 +289,8 @@ function genCard(f, tipoAccion) {
 
     const visualVal = f.val !== undefined ? f.val : 0;
     
-    // ID HTML
     const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
-    // Actualización manual vía teclado
     const attrInput = tipoAccion === 'form' ? '' : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
-    
-    // SOLUCIÓN: Si estamos en Creación manda el ID del HTML para que la función modForm lo encuentre,
-    // Si estamos editando un personaje manda el nombre de la variable (f.id) directo a la memoria.
     const paramId = tipoAccion === 'form' ? inputId : f.id;
     
     let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
@@ -308,11 +342,32 @@ export function dibujarFormularioEditar() {
     const pVitalidadSpellEff = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo (Efecto)', val: p.hechizosEfecto.vidaRojaMaxExtra } ];
     const pAfinidadesSpellEff = [ { id: 'fisica', label: 'Física (Efecto)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (Efecto)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (Efecto)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (Efecto)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (Efecto)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (Efecto)', val: p.hechizosEfecto.oscura } ];
 
+    // CÁLCULO DE VIDA PARA EL MONITOR SUPERIOR OP
+    let normalAzul = Math.max(0, p.vidaAzul || 0); 
+    let extraAzul = Math.max(0, (p.hechizos.vidaAzulExtra||0) + (p.hechizosEfecto.vidaAzulExtra||0) + (p.buffs.vidaAzulExtra||0));
+    let totalAzul = normalAzul + extraAzul;
+    let normalGuarda = Math.max(0, p.guardaDorada || 0); 
+    let extraGuarda = Math.max(0, (p.hechizos.guardaDoradaExtra||0) + (p.hechizosEfecto.guardaDoradaExtra||0) + (p.buffs.guardaDoradaExtra||0));
+    let totalGuarda = normalGuarda + extraGuarda;
+    const iconoGrande = p.iconoOverride || normalizar(estadoUI.personajeSeleccionado);
+
     let html = `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
-        <h3 style="margin-top:0; color:var(--gold)">Edición de Ficha Base y Hechizos: ${estadoUI.personajeSeleccionado}</h3>
+        <h3 style="margin-top:0; color:var(--gold)">Edición de Ficha Base y Hechizos</h3>
         <button type="button" onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 15px;">⬅ Volver al Perfil</button>
         
+        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; background: rgba(30, 0, 60, 0.6); padding: 15px; border: 1px dashed var(--gold); border-radius: 8px; margin-bottom: 20px;">
+            <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover;" onerror="${imgError}">
+            <div style="text-align: left;">
+                <h2 style="margin: 0; color: var(--gold); font-size: 1.5em;">${estadoUI.personajeSeleccionado.toUpperCase()}</h2>
+                <div style="font-size: 1.1em; margin-top: 5px; background: #000; padding: 5px 10px; border-radius: 4px; border: 1px solid #333;">
+                    <span style="color:var(--red-life); font-weight:bold;">❤️ ${p.vidaRojaActual} / ${calcularVidaRojaMax(p)}</span> &nbsp;|&nbsp; 
+                    <span style="color:var(--blue-life); font-weight:bold;">🔷 ${totalAzul}</span> &nbsp;|&nbsp; 
+                    <span style="color:var(--gold); font-weight:bold;">🛡️ ${totalGuarda}</span>
+                </div>
+            </div>
+        </div>
+
         <div style="background:#1a0033; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--gold);">
             <h3 style="color:var(--gold); margin-top:0;">Identidad y Estado del Personaje</h3>
             <div style="display:flex; justify-content:center; gap:20px;">
