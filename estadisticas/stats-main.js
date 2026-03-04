@@ -161,28 +161,46 @@ window.toggleEstado = (estadoId) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
     p.estados[estadoId] = !p.estados[estadoId]; guardar(); repintarConScroll('op');
 };
+const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 
 window.ejecutarClonacion = (tipo) => {
     const sourceSelect = document.getElementById('clon-source'); if(!sourceSelect) return;
     const sourceName = sourceSelect.value; if(!sourceName) { alert("Por favor, selecciona un personaje de origen."); return; }
     const targetName = estadoUI.personajeSeleccionado; 
-    const msg = tipo === 'estados' ? `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?` : `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName}?`;
+    
+    // Texto del mensaje actualizado para reflejar el cambio de imagen
+    const msg = tipo === 'estados' ? 
+        `¿Seguro que deseas IMPORTAR solo los BUFFS y ESTADOS ALTERADOS desde ${sourceName} hacia ${targetName}?` : 
+        `¿Seguro que deseas CLONAR POR COMPLETO a ${sourceName} sobre ${targetName}?\n\n(Esto copiará estadísticas, afinidades, estados e IMÁGENES. El personaje ${targetName} se verá como ${sourceName}).`;
+    
     if(!confirm(msg)) return;
 
     const source = statsGlobal[sourceName]; const target = statsGlobal[targetName];
+    
+    // Clonación de Buffs y Estados (Común a ambos tipos)
     target.buffs = JSON.parse(JSON.stringify(source.buffs));
     target.estados = JSON.parse(JSON.stringify(source.estados));
 
     if (tipo === 'completo') {
+        // Clonación de Vitalidad y Ofensiva Base
         target.vidaRojaActual = source.vidaRojaActual; target.vidaRojaMax = source.vidaRojaMax;
         target.vidaAzul = source.vidaAzul; target.baseVidaAzul = source.baseVidaAzul; 
         target.guardaDorada = source.guardaDorada; target.baseGuardaDorada = source.baseGuardaDorada;
+        target.danoRojo = source.danoRojo; target.danoAzul = source.danoAzul; target.elimDorada = source.elimDorada;
+        
+        // Clonación de Afinidades y Hechizos
         target.afinidades = JSON.parse(JSON.stringify(source.afinidades));
         target.hechizos = JSON.parse(JSON.stringify(source.hechizos || {}));
         target.hechizosEfecto = JSON.parse(JSON.stringify(source.hechizosEfecto || {}));
-        target.danoRojo = source.danoRojo; target.danoAzul = source.danoAzul; target.elimDorada = source.elimDorada;
+        
+        // Clonación de Energía (NPC)
         target.hex = source.hex; target.vex = source.vex;
+        
+        // NUEVO: Clonación de Imagen (Override de Icono)
+        // Guardamos el nombre normalizado del origen para usarlo como su imagen.
+        target.iconoOverride = source.iconoOverride || normalizar(sourceName);
     }
+    
     guardar(); sourceSelect.value = ""; repintarConScroll('detalle'); 
 };
 
@@ -249,3 +267,4 @@ async function iniciar() {
     finally { refrescarVistas(); }
 }
 iniciar();
+
