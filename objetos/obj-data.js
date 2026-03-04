@@ -12,23 +12,11 @@ export async function cargarTodoDesdeCSV() {
 
         filas.slice(1).forEach(f => {
             const nombre = f[0]; if (!nombre) return;
-            
             objGlobal[nombre] = { 
-                tipo: f[1] || '-', 
-                mat: f[2] || '-', 
-                eff: f[3] || 'Sin descripción', 
-                rar: f[4] || 'Común',
+                tipo: f[1] || '-', mat: f[2] || '-', eff: f[3] || 'Sin descripción', rar: f[4] || 'Común',
                 desc: f[7] || '', 
-                afinidades: {
-                    "Física": parseInt(f[8]) || 0,
-                    "Energética": parseInt(f[9]) || 0,
-                    "Espiritual": parseInt(f[10]) || 0,
-                    "Mando": parseInt(f[11]) || 0,
-                    "Psíquica": parseInt(f[12]) || 0,
-                    "Oscura": parseInt(f[13]) || 0
-                }
+                afinidades: { "Física": parseInt(f[8]) || 0, "Energética": parseInt(f[9]) || 0, "Espiritual": parseInt(f[10]) || 0, "Mando": parseInt(f[11]) || 0, "Psíquica": parseInt(f[12]) || 0, "Oscura": parseInt(f[13]) || 0 }
             };
-
             const jugs = f[5] ? f[5].split(',').map(j => j.trim()) : [];
             const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
             jugs.forEach((j, i) => {
