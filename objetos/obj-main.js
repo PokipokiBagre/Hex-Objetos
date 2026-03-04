@@ -1,9 +1,10 @@
 import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
 import { cargarTodoDesdeCSV } from './obj-data.js';
-import { modificar, modificarMulti, transferir, descargarLog, descargarEstadoCSV, descargarInventariosJPG, agregarObjetoManual } from './obj-logic.js';
+import { modificar, modificarMulti, transferir, descargarLog, descargarEstadoCSV, agregarObjetoManual } from './obj-logic.js';
 import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
 import { toggleLibre } from './libre.js';
 
+// MODO SINCRONIZADO AUTO (10 SEGUNDOS)
 setInterval(async () => {
     if (estadoUI.modoSincronizado) {
         console.log("Sincronizando inventarios con la nube...");
@@ -20,6 +21,19 @@ window.toggleSync = () => {
         btn.style.background = estadoUI.modoSincronizado ? "#006400" : "#8b0000";
     }
     guardar();
+};
+
+// Generador de imágenes ahora vive aquí para no causar conflictos de módulos
+window.descargarInventariosJPG = async () => {
+    const jugadores = Object.keys(invGlobal);
+    for (const j of jugadores) {
+        estadoUI.jugadorInv = j;
+        window.mostrarPagina('inventario');
+        await new Promise(r => setTimeout(r, 1500)); // Esperar a que renderice
+        const canvas = await html2canvas(document.getElementById('contenedor-jugadores'), { backgroundColor: '#120024', scale: 2, useCORS: true });
+        const link = document.createElement('a'); link.download = `Inv_${j}.jpg`; link.href = canvas.toDataURL("image/jpeg", 0.9); link.click();
+    }
+    window.mostrarPagina('op-menu');
 };
 
 async function iniciar() {
@@ -100,7 +114,7 @@ async function iniciar() {
     window.abrirInventario = (j) => { estadoUI.jugadorInv = j; window.mostrarPagina('inventario'); };
     window.volverAGrilla = () => { estadoUI.jugadorInv = null; window.mostrarPagina('grilla'); };
 
-    // CONTROL Y MULTIPLICADORES (EDICIÓN IN-SITU)
+    // CONTROL IN-SITU
     window.setEditMult = (val) => { estadoUI.editMult = val; refrescarUI(); };
     window.setEditModo = (val) => { estadoUI.editModo = val; refrescarUI(); };
     window.hexMod = (j, o, c) => {
@@ -161,10 +175,9 @@ async function iniciar() {
         agregarObjetoManual(d, rep, () => { alert("Objeto Creado"); window.mostrarPagina('op-menu'); });
     };
 
-    window.descargarEstadoCSV = descargarEstadoCSV; window.descargarInventariosJPG = descargarInventariosJPG; window.descargarLog = descargarLog;
+    window.descargarEstadoCSV = descargarEstadoCSV; window.descargarLog = descargarLog;
     window.toggleLibre = toggleLibre;
     
     window.mostrarPagina('grilla'); 
 }
 iniciar();
-
