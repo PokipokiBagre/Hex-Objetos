@@ -4,7 +4,6 @@ import { modificar, modificarMulti, transferir, descargarLog, descargarEstadoCSV
 import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
 import { toggleLibre } from './libre.js';
 
-// MODO SINCRONIZADO AUTO (10 SEGUNDOS)
 setInterval(async () => {
     if (estadoUI.modoSincronizado) {
         console.log("Sincronizando inventarios con la nube...");
@@ -19,7 +18,6 @@ window.toggleSync = () => {
     if (btn) {
         btn.innerText = estadoUI.modoSincronizado ? "CONECTADO (AUTO)" : "MODO EDICIÓN LOCAL";
         btn.style.background = estadoUI.modoSincronizado ? "#006400" : "#8b0000";
-        btn.style.color = "white";
     }
     guardar();
 };
@@ -39,7 +37,6 @@ async function iniciar() {
         btn.style.background = estadoUI.modoSincronizado ? "#006400" : "#8b0000";
     }
 
-    // Modal para expandir imágenes
     const modal = document.createElement('div');
     modal.id = 'hex-modal-view'; modal.className = 'hex-modal';
     modal.innerHTML = `<img id="hex-modal-img" src="" draggable="false">`;
@@ -81,7 +78,6 @@ async function iniciar() {
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Copiado al portapapeles."); };
     
-    // NAVEGACIÓN Y MENÚS
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
         document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa')); 
@@ -151,13 +147,20 @@ async function iniciar() {
         transferir(origen, dest, item, cantToPass, refrescarUI);
     };
 
-    // BUSCADORES
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; dibujarCatalogo(); };
     window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
     
+    window.mostrarCreacionObjeto = () => { window.mostrarPagina('crear'); dibujarCreacionObjeto(); };
+    window.ejecutarAgregarObjeto = () => {
+        const d = { nombre: document.getElementById('new-obj-name').value.trim(), tipo: document.getElementById('new-obj-tipo').value, mat: document.getElementById('new-obj-mat').value, eff: document.getElementById('new-obj-eff').value.trim(), rar: document.getElementById('new-obj-rar').value };
+        const rep = {}; document.querySelectorAll('.cant-input').forEach(i => rep[i.dataset.player] = i.value);
+        if(!d.nombre) return alert("Nombre vacío");
+        agregarObjetoManual(d, rep, () => { alert("Objeto Creado"); window.mostrarPagina('op-menu'); });
+    };
+
     window.descargarEstadoCSV = descargarEstadoCSV; window.descargarInventariosJPG = descargarInventariosJPG; window.descargarLog = descargarLog;
     window.toggleLibre = toggleLibre;
     
