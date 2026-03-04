@@ -15,14 +15,13 @@ export let estadoUI = {
     cambiosSesion: {},
     modoSincronizado: true,
     
-    // MEMORIA DE MULTIPLICADORES OP
     partyLoot: [], 
     partyMult: 1, 
     transOrigen: null, 
     transDestino: null,
     transMult: 1,
     editMult: 1,
-    editModo: 1 // 1 para sumar, -1 para restar
+    editModo: 1
 };
 
 export function guardar() { 
