@@ -1,4 +1,4 @@
-    import { statsGlobal, estadoUI, listaEstados, guardar } from './stats-state.js';
+import { statsGlobal, estadoUI, listaEstados, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV, cargarDiccionarioEstados } from './stats-data.js';
 import { dibujarCatalogo, dibujarDetalle, dibujarMenuOP, dibujarHexOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMysticBonus } from './stats-logic.js';
@@ -18,7 +18,6 @@ function updateHexLogText() {
 
         const asisStr = p.isPlayer ? ` (${p.asistencia || 1}/7)` : "";
 
-        // Imprime en el orden en que ocurrieron los tipos de acción
         log.order.forEach(actionType => {
             if (actionType === 'pos' && log.pos.amount >= 0) {
                 finalOutput += `${char} +${log.pos.amount} Hex (${log.pos.finalHex})${asisStr}\n`;
@@ -65,7 +64,6 @@ window.addHexLogEntry = (nombre, amount, isExtra = false) => {
         log.order = log.order.filter(k => k !== 'neg');
         log.order.push('neg');
     } else if (amount === 0) {
-        // Si no hay nada registrado, crea una línea base de +0 para mostrar la asistencia
         if (log.order.length === 0) {
             log.pos.amount = 0;
             log.pos.finalHex = p.hex;
@@ -88,7 +86,7 @@ window.copiarHexLog = () => {
     }
 };
 
-// --- NAVEGACIÓN Y RENDERIZADO AISLADO ---
+// --- NAVEGACIÓN Y RENDERIZADO SEGURO ---
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -168,48 +166,23 @@ window.setFiltro = (tipo, valor) => {
     refrescarVistas();
 };
 
-// --- GESTIÓN DE PARTY (SELECTOR NO BLOQUEANTE) ---
-window.abrirSelectorParty = (index) => {
-    estadoUI.selectorIndex = index;
-    const container = document.getElementById('party-selector-container');
-    const grid = document.getElementById('party-modal-grid');
-    const label = document.getElementById('party-slot-label');
-    const btnQuitar = document.getElementById('btn-quitar-slot');
-
-    label.innerText = index + 1;
-    
-    let html = '';
-    Object.keys(statsGlobal).sort().forEach(nombre => {
-        const p = statsGlobal[nombre];
-        // SOLO JUGADORES Y QUE NO ESTÉN YA EN LOS SLOTS
-        if (p.isPlayer && !estadoUI.party.includes(nombre)) {
-            const iconoMuestra = normalizar(p.iconoOverride || nombre);
-            html += `<div onclick="window.seleccionarParaParty('${nombre}')" style="text-align:center; cursor:pointer; width:70px;">
-                <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:60px; height:60px; border-radius:8px; border:2px solid var(--gold); object-fit:cover;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div style="font-size:0.7em; margin-top:5px; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nombre}</div>
-            </div>`;
+// --- GESTIÓN DE PARTY (EL NUEVO CHECKLIST) ---
+window.togglePartyMember = (nombre, isChecked) => {
+    if (isChecked) {
+        // Intenta agregarlo al primer slot vacío
+        const emptyIndex = estadoUI.party.indexOf(null);
+        if (emptyIndex !== -1) {
+            estadoUI.party[emptyIndex] = nombre;
+        } else {
+            alert("¡La party ya tiene el máximo de 6 jugadores! Desmarca a uno primero.");
         }
-    });
-    
-    if (html === '') html = `<p style="color:#aaa; font-size:0.9em; width:100%; text-align:center;">No hay más jugadores disponibles para seleccionar.</p>`;
-    
-    grid.innerHTML = html; 
-    btnQuitar.style.display = estadoUI.party[index] ? 'block' : 'none';
-    
-    // Panel inline debajo de los slots
-    container.style.display = 'block';
-};
-
-window.seleccionarParaParty = (nombre) => {
-    estadoUI.party[estadoUI.selectorIndex] = nombre;
-    document.getElementById('party-selector-container').style.display = 'none';
-    guardar();
-    repintarConScroll('hex');
-};
-
-window.quitarDeParty = () => {
-    estadoUI.party[estadoUI.selectorIndex] = null;
-    document.getElementById('party-selector-container').style.display = 'none';
+    } else {
+        // Busca si estaba y lo borra
+        const charIndex = estadoUI.party.indexOf(nombre);
+        if (charIndex !== -1) {
+            estadoUI.party[charIndex] = null;
+        }
+    }
     guardar();
     repintarConScroll('hex');
 };
@@ -220,21 +193,11 @@ window.vaciarParty = () => {
     repintarConScroll('hex');
 };
 
-window.autoLlenarParty = () => {
-    const jugadoresActivos = Object.keys(statsGlobal).filter(n => statsGlobal[n].isPlayer && statsGlobal[n].isActive).sort();
-    estadoUI.party = [null, null, null, null, null, null];
-    for(let i = 0; i < Math.min(6, jugadoresActivos.length); i++){
-        estadoUI.party[i] = jugadoresActivos[i];
-    }
-    guardar(); 
-    repintarConScroll('hex');
-};
-
 window.establecerPartyActiva = () => {
     const hayParty = estadoUI.party.some(n => n !== null);
-    if (!hayParty) return alert("¡No hay nadie en los slots! Selecciona jugadores primero o usa el botón de auto-llenar.");
+    if (!hayParty) return alert("¡No hay nadie marcado! Marca jugadores en la lista primero.");
     
-    if(!confirm("Esto marcará a los personajes de los slots como 'Activos' y al resto de jugadores como 'Inactivos'. ¿Proceder?")) return;
+    if(!confirm("Esto marcará a los personajes seleccionados como 'Activos' y al resto de jugadores como 'Inactivos'. ¿Proceder?")) return;
     Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) statsGlobal[n].isActive = false; });
     estadoUI.party.forEach(n => {
         if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; }
@@ -253,7 +216,7 @@ window.modHexInd = (nombre, amount) => {
 
 window.modHexGlobal = (amount) => {
     const hayParty = estadoUI.party.some(n => n !== null);
-    if (!hayParty) return alert("¡La Party está vacía! Añade personajes a los slots primero.");
+    if (!hayParty) return alert("¡La Party está vacía! Marca jugadores primero.");
 
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
@@ -268,7 +231,7 @@ window.modHexGlobal = (amount) => {
 
 window.addAsistenciaGlobal = () => {
     const hayParty = estadoUI.party.some(n => n !== null);
-    if (!hayParty) return alert("¡La Party está vacía! Añade personajes a los slots primero.");
+    if (!hayParty) return alert("¡La Party está vacía! Marca jugadores primero.");
 
     let leveledUp = [];
     estadoUI.party.forEach(nombre => {
@@ -630,7 +593,6 @@ async function iniciar() {
             btn.style.borderColor = estadoUI.modoSincronizado ? "#00ff00" : "#ff0000";
         }
         refrescarVistas(); 
-        // Seguridad extra: si cargamos en OP, renderiza el texto del log
         if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
