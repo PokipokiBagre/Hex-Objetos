@@ -142,8 +142,8 @@ export function dibujarMenuOP() {
             <button onclick="window.mostrarPagina('transfer')" style="background:#1a4b8c; color:#fff;">Mercado de Transferencias</button>
             <button onclick="window.mostrarCreacionObjeto()" style="background:#4a004a">Creación Rápida de Objeto</button>
             <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar todos los JPGs</button>
-            <button onclick="window.descargarLog()" style="background:#004a00">Descargar Log Histórico</button>
-            <button onclick="window.descargarEstadoCSV()" style="background:#d4af37; color:#000">Descargar CSV Actual</button>
+            <button onclick="window.descargarLogExcel()" style="background:#107c41; color:#fff;">Descargar Log (Excel)</button>
+            <button onclick="window.descargarEstadoExcel()" style="background:#107c41; color:#fff;">Descargar Stock (Excel)</button>
         </div>`;
 }
 
@@ -190,7 +190,7 @@ export function dibujarControl() {
             html += `<div class="control-card ${c > 0 ? "item-con-stock" : ""}">
                         <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
                              onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
-                             style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid ${actionColor}; transition:0.2s; box-shadow:0 0 10px ${actionColor};"
+                             style="border:2px solid ${actionColor}; box-shadow:0 0 10px ${actionColor};"
                              onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                              onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Click para aplicar">
                         <span class="item-name" style="margin-top:10px;">${o}</span>
@@ -242,7 +242,7 @@ export function dibujarPartyLoot() {
             html += `<div class="control-card">
                         <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
                              onclick="window.giveLootToParty('${o}')" 
-                             style="width:80px; height:80px; object-fit:cover; border:2px solid var(--gold); border-radius:8px; background:#000; cursor:pointer; transition:0.2s;" 
+                             style="border:2px solid var(--gold); background:#000;" 
                              onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                              onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                         <span class="item-name" style="margin-top:10px; color:#fff;">${o}</span>
@@ -302,7 +302,7 @@ export function dibujarTransferencia() {
                     html += `<div class="control-card item-con-stock">
                                 <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
                                      onclick="window.ejecutarTransfer('${o}', ${cantToPass})" 
-                                     style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid #00ff00; transition:0.2s; box-shadow:0 0 10px #00ff00;"
+                                     style="border:2px solid #00ff00; box-shadow:0 0 10px #00ff00;"
                                      onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                                      onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Clic para Transferir ${cantToPass}">
                                 <span class="item-name" style="margin-top:10px;">${o}</span>
