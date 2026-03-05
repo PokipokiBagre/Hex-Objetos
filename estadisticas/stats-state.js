@@ -6,9 +6,9 @@ export let estadoUI = {
     esAdmin: false,
     filtroRol: 'Todos',
     filtroAct: 'Todos',
-    party: [null, null, null, null, null, null], // Slots
-    hexLog: {}, // Memoria del Log Agrupado
-    modoSincronizado: true // Sincronización Automática a 10s
+    party: [null, null, null, null, null, null],
+    hexLog: {}, 
+    modoSincronizado: true
 };
 
 export function guardar() {
