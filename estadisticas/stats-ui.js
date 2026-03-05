@@ -161,9 +161,9 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modLibre('hex', 10)">+10</button><button type="button" class="btn-minus" onclick="window.modLibre('hex', -10)">-10</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 50)">+50</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -50)">-50</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00;" onclick="window.modLibre('hex', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -100)">-100</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 300)">+300</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -300)">-300</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -500)">-500</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -1000)">-1000</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 300)">+300</button><button type="button" class="btn-minus" style="background:#4a0040;" onclick="window.modLibre('hex', -300)">-300</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0040;" onclick="window.modLibre('hex', -500)">-500</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a0040;" onclick="window.modLibre('hex', -1000)">-1000</button></div>
             </div>
             <div class="edit-card">
                 <h4>Vida Roja (Actual)</h4>
@@ -191,7 +191,7 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modGoldExtra(5)">+5</button><button type="button" class="btn-minus5" onclick="window.modGoldExtra(-5)">-5</button></div>
             </div>
             
-            ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (TOTAL)', val: calcularVidaRojaMax(p) }, 'baseTop')}
+            ${genCard({ id: 'vidaRojaMax', label: 'Límite Rojo (BASE)', val: p.vidaRojaMax }, 'baseTop')}
             
             <div class="edit-card" style="grid-column: 1 / -1; background:#1a1a00; border-color:#b8860b;">
                 <h4 style="color:#b8860b;">Restauración Teórica Óptima</h4>
@@ -201,7 +201,7 @@ export function dibujarDetalle() {
         </div>
     </div>`;
 
-    const pVidaDanoE = [ { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
+    const pVidaDanoE = [ { id: 'vidaRojaMaxExtra', label: 'Límite Rojo Extra', val: p.buffs.vidaRojaMaxExtra }, { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
     const pAfinidadesE = [ { id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura } ];
 
     html += `
