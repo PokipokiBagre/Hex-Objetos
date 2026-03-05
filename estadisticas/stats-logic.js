@@ -26,6 +26,7 @@ export function getMysticBonus(p) {
 }
 
 export function generarCSVExportacion() {
+    // Cabecera idéntica a la que espera tu lector
     let csv = "Personaje,Hex,Vex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,Corazones Rojo,Corazones Rojos Max,Corazones Azules,Guarda Dorada,Daño Rojo,Daño Azul,Eliminacion Dorada,Estado,Jugador_Activo,Copia\n";
 
     const fStr = (base, spells, spellEff, buff) => {
@@ -47,34 +48,36 @@ export function generarCSVExportacion() {
             return v || '0';
         }).join('-');
 
-        // AQUÍ EMPAQUETAMOS HEX Y ASISTENCIA (Ej: 4300_4)
-        const hexEmpaquetado = `${p.hex || 0}_${p.asistencia || 1}`;
+        // Formato compuesto que lee tu parseador: "2200_1"
+        const hexCompound = `${p.hex || 0}_${p.asistencia || 1}`;
+        const identityStr = `${p.isPlayer ? 1 : 0}_${p.isActive ? 1 : 0}`;
 
         const row = [
             nombre,
-            hexEmpaquetado, 
-            p.vex || 0,
-            fStr(af.fisica, hz.fisica, he.fisica, bf.fisica),
-            fStr(af.energetica, hz.energetica, he.energetica, bf.energetica),
-            fStr(af.espiritual, hz.espiritual, he.espiritual, bf.espiritual),
-            fStr(af.mando, hz.mando, he.mando, bf.mando),
-            fStr(af.psiquica, hz.psiquica, he.psiquica, bf.psiquica),
-            fStr(af.oscura, hz.oscura, he.oscura, bf.oscura),
-            p.vidaRojaActual || 0,
-            fStr(p.vidaRojaMax, hz.vidaRojaMaxExtra, he.vidaRojaMaxExtra, bf.vidaRojaMaxExtra),
-            fStr(p.baseVidaAzul !== undefined ? p.baseVidaAzul : (p.vidaAzul || 0), hz.vidaAzulExtra, he.vidaAzulExtra, bf.vidaAzulExtra),
-            fStr(p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : (p.guardaDorada || 0), hz.guardaDoradaExtra, he.guardaDoradaExtra, bf.guardaDoradaExtra),
-            fStr(p.danoRojo, hz.danoRojo, he.danoRojo, bf.danoRojo),
-            fStr(p.danoAzul, hz.danoAzul, he.danoAzul, bf.danoAzul),
-            fStr(p.elimDorada, hz.elimDorada, he.elimDorada, bf.elimDorada),
-            estadoStr,
-            `${p.isPlayer ? 1 : 0}_${p.isActive ? 1 : 0}`,
-            p.iconoOverride || ""
+            hexCompound, // Columna 1: Hex y Asistencia
+            p.vex || 0,  // Columna 2: Vex
+            fStr(af.fisica, hz.fisica, he.fisica, bf.fisica), // Columna 3
+            fStr(af.energetica, hz.energetica, he.energetica, bf.energetica), // Columna 4
+            fStr(af.espiritual, hz.espiritual, he.espiritual, bf.espiritual), // Columna 5
+            fStr(af.mando, hz.mando, he.mando, bf.mando), // Columna 6
+            fStr(af.psiquica, hz.psiquica, he.psiquica, bf.psiquica), // Columna 7
+            fStr(af.oscura, hz.oscura, he.oscura, bf.oscura), // Columna 8
+            p.vidaRojaActual || 0, // Columna 9
+            fStr(p.vidaRojaMax, hz.vidaRojaMaxExtra, he.vidaRojaMaxExtra, bf.vidaRojaMaxExtra), // Col 10
+            fStr(p.baseVidaAzul !== undefined ? p.baseVidaAzul : (p.vidaAzul || 0), hz.vidaAzulExtra, he.vidaAzulExtra, bf.vidaAzulExtra), // Col 11
+            fStr(p.baseGuardaDorada !== undefined ? p.baseGuardaDorada : (p.guardaDorada || 0), hz.guardaDoradaExtra, he.guardaDoradaExtra, bf.guardaDoradaExtra), // Col 12
+            fStr(p.danoRojo, hz.danoRojo, he.danoRojo, bf.danoRojo), // Col 13
+            fStr(p.danoAzul, hz.danoAzul, he.danoAzul, bf.danoAzul), // Col 14
+            fStr(p.elimDorada, hz.elimDorada, he.elimDorada, bf.elimDorada), // Col 15
+            estadoStr, // Col 16
+            identityStr, // Col 17
+            p.iconoOverride || "" // Col 18
         ];
 
         const rowStr = row.map((v, i) => {
-            if (i === 0 || i === 1 || i === 2 || i === 9) return v; // Sin comillas para números puros
-            return `"${v}"`; // Con comillas para arrays de _
+            // No ponemos comillas a Nombre, Vex ni Vida Actual
+            if (i === 0 || i === 2 || i === 9) return v; 
+            return `"${v}"`;
         }).join(",");
 
         csv += rowStr + "\n";
