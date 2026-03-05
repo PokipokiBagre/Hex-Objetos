@@ -161,8 +161,9 @@ export function dibujarDetalle() {
                 <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modLibre('hex', 10)">+10</button><button type="button" class="btn-minus" onclick="window.modLibre('hex', -10)">-10</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a4a;" onclick="window.modLibre('hex', 50)">+50</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -50)">-50</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00;" onclick="window.modLibre('hex', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -100)">-100</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a004a;" onclick="window.modLibre('hex', -500)">-500</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a004a;" onclick="window.modLibre('hex', -1000)">-1000</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 300)">+300</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -300)">-300</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -500)">-500</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modLibre('hex', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modLibre('hex', -1000)">-1000</button></div>
             </div>
             <div class="edit-card">
                 <h4>Vida Roja (Actual)</h4>
@@ -304,10 +305,12 @@ export function dibujarHexOP() {
                 <button type="button" onclick="window.modHexGlobal(-10)" class="btn-minus">-10</button>
                 <button type="button" onclick="window.modHexGlobal(30)" class="btn-plus">+30</button>
                 <button type="button" onclick="window.modHexGlobal(-30)" class="btn-minus">-30</button>
+                <button type="button" onclick="window.modHexGlobal(300)" class="btn-plus" style="background:#4a004a;">+300</button>
+                <button type="button" onclick="window.modHexGlobal(-300)" class="btn-minus" style="background:#4a0000;">-300</button>
                 <button type="button" onclick="window.modHexGlobal(500)" class="btn-plus" style="background:#4a004a;">+500</button>
-                <button type="button" onclick="window.modHexGlobal(-500)" class="btn-minus" style="background:#4a004a;">-500</button>
+                <button type="button" onclick="window.modHexGlobal(-500)" class="btn-minus" style="background:#4a0000;">-500</button>
                 <button type="button" onclick="window.modHexGlobal(1000)" class="btn-plus" style="background:#4a004a;">+1000</button>
-                <button type="button" onclick="window.modHexGlobal(-1000)" class="btn-minus" style="background:#4a004a;">-1000</button>
+                <button type="button" onclick="window.modHexGlobal(-1000)" class="btn-minus" style="background:#4a0000;">-1000</button>
             </div>
         </div>
 
