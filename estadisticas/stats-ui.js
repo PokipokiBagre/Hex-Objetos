@@ -201,25 +201,17 @@ export function dibujarDetalle() {
         </div>
     </div>`;
 
+    const pVidaDanoE = [ { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
+    const pAfinidadesE = [ { id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura } ];
+
     html += `
     <div style="margin-top:20px; background:#110022; border:1px solid #00ffff; padding:20px; border-radius:8px;">
         <h3 style="margin-top:0; color:#00ffff; text-align:center;">Alteraciones Temporales (Extras)</h3>
         <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:20px;">Estos valores representan buffs aplicados sobre la base.</p>
         <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">1. Buffs de Vida y Daño</h4>
-        <div class="edit-grid" style="margin-bottom: 30px;">
-            ${genCard({ id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, 'buff')}
-            ${genCard({ id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, 'buff')}
-            ${genCard({ id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada }, 'buff')}
-        </div>
+        <div class="edit-grid" style="margin-bottom: 30px;">${pVidaDanoE.map(f => genCard(f, 'buff')).join('')}</div>
         <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">2. Afinidades Temporales</h4>
-        <div class="edit-grid" style="margin-bottom: 10px;">
-            ${genCard({ id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, 'buff')}
-            ${genCard({ id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, 'buff')}
-            ${genCard({ id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, 'buff')}
-            ${genCard({ id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, 'buff')}
-            ${genCard({ id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, 'buff')}
-            ${genCard({ id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura }, 'buff')}
-        </div>
+        <div class="edit-grid" style="margin-bottom: 10px;">${pAfinidadesE.map(f => genCard(f, 'buff')).join('')}</div>
     </div>`;
 
     let opcionesPersonajes = Object.keys(statsGlobal).filter(n => n !== nombre).map(n => `<option value="${n}">${n}</option>`).join('');
