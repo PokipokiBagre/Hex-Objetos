@@ -151,7 +151,6 @@ export function dibujarControl() {
     if (!estadoUI.jugadorInv) return; const j = estadoUI.jugadorInv; 
     let html = `<h2>Edición In-Situ: ${j}</h2><button onclick="window.mostrarPagina('inventario')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Inventario</button>`;
     
-    // EL MINI CATÁLOGO SOLICITADO
     html += `<h3 style="color:var(--gold); margin-top:10px;">Inventario Actual</h3>
              <div style="background:#0a0014; padding:15px; border:1px solid var(--gold); border-radius:8px; margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">`;
     let hasItems = false;
@@ -181,7 +180,6 @@ export function dibujarControl() {
              <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto y haz clic en la imagen..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
              <div class="grid-control">`;
     
-    // Todos los objetos ordenados primero por los que ya tiene
     Object.keys(objGlobal).sort((a, b) => (invGlobal[j][b]||0) - (invGlobal[j][a]||0) || a.localeCompare(b)).forEach(o => {
         const term = estadoUI.busquedaOP.toLowerCase();
         if (!term || o.toLowerCase().includes(term)) {
@@ -190,7 +188,7 @@ export function dibujarControl() {
             html += `<div class="control-card ${c > 0 ? "item-con-stock" : ""}">
                         <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
                              onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
-                             style="border:2px solid ${actionColor}; box-shadow:0 0 10px ${actionColor};"
+                             style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid ${actionColor}; transition:0.2s; box-shadow:0 0 10px ${actionColor};"
                              onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                              onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Click para aplicar">
                         <span class="item-name" style="margin-top:10px;">${o}</span>
@@ -242,7 +240,7 @@ export function dibujarPartyLoot() {
             html += `<div class="control-card">
                         <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
                              onclick="window.giveLootToParty('${o}')" 
-                             style="border:2px solid var(--gold); background:#000;" 
+                             style="width:80px; height:80px; object-fit:cover; border:2px solid var(--gold); border-radius:8px; background:#000; cursor:pointer; transition:0.2s;" 
                              onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                              onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                         <span class="item-name" style="margin-top:10px; color:#fff;">${o}</span>
@@ -302,7 +300,7 @@ export function dibujarTransferencia() {
                     html += `<div class="control-card item-con-stock">
                                 <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
                                      onclick="window.ejecutarTransfer('${o}', ${cantToPass})" 
-                                     style="border:2px solid #00ff00; box-shadow:0 0 10px #00ff00;"
+                                     style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid #00ff00; transition:0.2s; box-shadow:0 0 10px #00ff00;"
                                      onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                                      onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Clic para Transferir ${cantToPass}">
                                 <span class="item-name" style="margin-top:10px;">${o}</span>
