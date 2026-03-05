@@ -65,7 +65,6 @@ export function procesarTextoCSV(texto) {
         const fVRM = parseCell(cols[10]); const fVA = parseCell(cols[11]); const fGD = parseCell(cols[12]);
         const fDR = parseCell(cols[13]); const fDA = parseCell(cols[14]); const fED = parseCell(cols[15]);
 
-        // Carga estricta de la base. Así se evitan multiplicaciones infinitas al exportar.
         let baseVRM = fVRM.base; 
         let baseVA = fVA.base;
 
