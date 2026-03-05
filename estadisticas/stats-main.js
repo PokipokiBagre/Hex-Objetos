@@ -5,7 +5,6 @@ import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMys
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
-// --- SISTEMA DE LOGS DE HEX AGRUPADO (SUMAS Y RESTAS PERFECTAS) ---
 function updateHexLogText() {
     const textarea = document.getElementById('hex-log-textarea');
     if (!textarea) return; 
@@ -38,55 +37,29 @@ window.addHexLogEntry = (nombre, amount, isExtra = false) => {
     if (!p) return;
 
     if (!estadoUI.hexLog[nombre]) {
-        estadoUI.hexLog[nombre] = {
-            pos: { amount: 0, finalHex: 0 },
-            neg: { amount: 0, finalHex: 0 },
-            extra: { amount: 0, finalHex: 0 },
-            order: []
-        };
+        estadoUI.hexLog[nombre] = { pos: { amount: 0, finalHex: 0 }, neg: { amount: 0, finalHex: 0 }, extra: { amount: 0, finalHex: 0 }, order: [] };
     }
 
     const log = estadoUI.hexLog[nombre];
 
     if (isExtra) {
-        log.extra.amount += amount;
-        log.extra.finalHex = p.hex;
-        log.order = log.order.filter(k => k !== 'extra');
-        log.order.push('extra');
+        log.extra.amount += amount; log.extra.finalHex = p.hex; log.order = log.order.filter(k => k !== 'extra'); log.order.push('extra');
     } else if (amount > 0) {
-        log.pos.amount += amount;
-        log.pos.finalHex = p.hex;
-        log.order = log.order.filter(k => k !== 'pos');
-        log.order.push('pos');
+        log.pos.amount += amount; log.pos.finalHex = p.hex; log.order = log.order.filter(k => k !== 'pos'); log.order.push('pos');
     } else if (amount < 0) {
-        log.neg.amount += Math.abs(amount);
-        log.neg.finalHex = p.hex;
-        log.order = log.order.filter(k => k !== 'neg');
-        log.order.push('neg');
+        log.neg.amount += Math.abs(amount); log.neg.finalHex = p.hex; log.order = log.order.filter(k => k !== 'neg'); log.order.push('neg');
     } else if (amount === 0) {
-        if (log.order.length === 0) {
-            log.pos.amount = 0;
-            log.pos.finalHex = p.hex;
-            log.order.push('pos');
-        }
+        if (log.order.length === 0) { log.pos.amount = 0; log.pos.finalHex = p.hex; log.order.push('pos'); }
     }
 };
 
-window.limpiarHexLog = () => { 
-    estadoUI.hexLog = {}; 
-    updateHexLogText(); 
-};
+window.limpiarHexLog = () => { estadoUI.hexLog = {}; updateHexLogText(); };
 
 window.copiarHexLog = () => {
     const textarea = document.getElementById('hex-log-textarea');
-    if (textarea) { 
-        textarea.select(); 
-        document.execCommand('copy'); 
-        alert("Log copiado al portapapeles exitosamente."); 
-    }
+    if (textarea) { textarea.select(); document.execCommand('copy'); alert("Log copiado al portapapeles exitosamente."); }
 };
 
-// --- NAVEGACIÓN Y RENDERIZADO SEGURO ---
 function repintarConScroll(vista) {
     const scrollY = window.scrollY;
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op';
@@ -96,17 +69,14 @@ function repintarConScroll(vista) {
         const h = container.getBoundingClientRect().height;
         container.style.minHeight = h + 'px';
         
-        if (vista === 'detalle') {
-            dibujarDetalle();
-        } else {
+        if (vista === 'detalle') { dibujarDetalle(); } 
+        else {
             if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
             else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
             else container.innerHTML = dibujarFormularioEditar();
         }
         
-        if (estadoUI.vistaActual === 'hex') {
-            updateHexLogText();
-        }
+        if (estadoUI.vistaActual === 'hex') updateHexLogText();
         
         window.scrollTo(0, scrollY);
         requestAnimationFrame(() => container.style.minHeight = '');
@@ -120,23 +90,14 @@ function refrescarVistas() {
     document.getElementById('vista-detalle').classList.add('oculto'); 
     document.getElementById('vista-op').classList.add('oculto');
     
-    if (estadoUI.vistaActual === 'catalogo') { 
-        document.getElementById('vista-catalogo').classList.remove('oculto'); 
-        dibujarCatalogo(); 
-    }
-    else if (estadoUI.vistaActual === 'detalle') { 
-        document.getElementById('vista-detalle').classList.remove('oculto'); 
-        dibujarDetalle(); 
-    }
+    if (estadoUI.vistaActual === 'catalogo') { document.getElementById('vista-catalogo').classList.remove('oculto'); dibujarCatalogo(); }
+    else if (estadoUI.vistaActual === 'detalle') { document.getElementById('vista-detalle').classList.remove('oculto'); dibujarDetalle(); }
     else { 
         document.getElementById('vista-op').classList.remove('oculto'); 
         document.getElementById('vista-op').innerHTML = dibujarMenuOP();
         const sub = document.getElementById('sub-vista-op');
         
-        if (estadoUI.vistaActual === 'hex') {
-            sub.innerHTML = dibujarHexOP();
-            updateHexLogText(); 
-        }
+        if (estadoUI.vistaActual === 'hex') { sub.innerHTML = dibujarHexOP(); updateHexLogText(); }
         else if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
         else sub.innerHTML = dibujarFormularioEditar();
     }
@@ -146,194 +107,127 @@ window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVis
 window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
 
 window.abrirMenuOP = () => { 
-    const enrutarOP = () => { 
-        estadoUI.vistaActual = 'hex'; 
-        refrescarVistas(); 
-    };
+    const enrutarOP = () => { estadoUI.vistaActual = 'hex'; refrescarVistas(); };
     if (estadoUI.esAdmin) { enrutarOP(); return; }
     const pass = prompt("Acceso Restringido. Contraseña:");
     if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } else { if(pass !== null) alert("Acceso denegado."); }
 };
 
-window.mostrarPaginaOP = (subvista) => {
-    estadoUI.vistaActual = subvista; 
-    refrescarVistas();
-};
+window.mostrarPaginaOP = (subvista) => { estadoUI.vistaActual = subvista; refrescarVistas(); };
+window.setFiltro = (tipo, valor) => { if(tipo === 'rol') estadoUI.filtroRol = valor; if(tipo === 'act') estadoUI.filtroAct = valor; refrescarVistas(); };
 
-window.setFiltro = (tipo, valor) => {
-    if(tipo === 'rol') estadoUI.filtroRol = valor;
-    if(tipo === 'act') estadoUI.filtroAct = valor;
-    refrescarVistas();
-};
-
-// --- GESTIÓN DE PARTY (EL NUEVO CHECKLIST) ---
 window.togglePartyMember = (nombre, isChecked) => {
     if (isChecked) {
         const emptyIndex = estadoUI.party.indexOf(null);
-        if (emptyIndex !== -1) {
-            estadoUI.party[emptyIndex] = nombre;
-        } else {
-            alert("¡La party ya tiene el máximo de 6 jugadores! Desmarca a uno primero.");
-        }
+        if (emptyIndex !== -1) { estadoUI.party[emptyIndex] = nombre; } 
+        else { alert("¡La party ya tiene el máximo de 6 jugadores! Desmarca a uno primero."); }
     } else {
         const charIndex = estadoUI.party.indexOf(nombre);
-        if (charIndex !== -1) {
-            estadoUI.party[charIndex] = null;
-        }
+        if (charIndex !== -1) { estadoUI.party[charIndex] = null; }
     }
-    guardar();
-    repintarConScroll('hex');
+    guardar(); repintarConScroll('hex');
 };
 
-window.vaciarParty = () => {
-    estadoUI.party = [null, null, null, null, null, null];
-    guardar();
-    repintarConScroll('hex');
-};
+window.vaciarParty = () => { estadoUI.party = [null, null, null, null, null, null]; guardar(); repintarConScroll('hex'); };
 
 window.establecerPartyActiva = () => {
     const hayParty = estadoUI.party.some(n => n !== null);
     if (!hayParty) return alert("¡No hay nadie marcado! Marca jugadores en la lista primero.");
-    
     if(!confirm("Esto marcará a los personajes seleccionados como 'Activos' y al resto de jugadores como 'Inactivos'. ¿Proceder?")) return;
     Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) statsGlobal[n].isActive = false; });
-    estadoUI.party.forEach(n => {
-        if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; }
-    });
+    estadoUI.party.forEach(n => { if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; } });
     guardar(); repintarConScroll('hex'); alert("Party actualizada correctamente.");
 };
 
-window.modHexInd = (nombre, amount) => {
-    const p = statsGlobal[nombre];
-    if(!p) return;
-    p.hex = Math.max(0, p.hex + amount);
-    window.addHexLogEntry(nombre, amount, false);
-    guardar(); 
-    repintarConScroll('hex');
-};
+window.modHexInd = (nombre, amount) => { const p = statsGlobal[nombre]; if(!p) return; p.hex = Math.max(0, p.hex + amount); window.addHexLogEntry(nombre, amount, false); guardar(); repintarConScroll('hex'); };
 
 window.modHexGlobal = (amount) => {
     const hayParty = estadoUI.party.some(n => n !== null);
     if (!hayParty) return alert("¡La Party está vacía! Marca jugadores primero.");
-
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
-            const p = statsGlobal[nombre];
-            p.hex = Math.max(0, p.hex + amount);
-            window.addHexLogEntry(nombre, amount, false);
+            const p = statsGlobal[nombre]; p.hex = Math.max(0, p.hex + amount); window.addHexLogEntry(nombre, amount, false);
         }
     });
-    guardar(); 
-    repintarConScroll('hex');
+    guardar(); repintarConScroll('hex');
 };
 
 window.addAsistenciaGlobal = () => {
     const hayParty = estadoUI.party.some(n => n !== null);
     if (!hayParty) return alert("¡La Party está vacía! Marca jugadores primero.");
-
     let leveledUp = [];
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
             const p = statsGlobal[nombre];
             p.asistencia = (p.asistencia || 1) + 1;
             if (p.asistencia >= 8) {
-                p.asistencia = 1;
-                p.hex += 1000;
-                window.addHexLogEntry(nombre, 1000, true);
-                leveledUp.push(nombre);
-            } else {
-                window.addHexLogEntry(nombre, 0, false);
-            }
+                p.asistencia = 1; p.hex += 1000; window.addHexLogEntry(nombre, 1000, true); leveledUp.push(nombre);
+            } else { window.addHexLogEntry(nombre, 0, false); }
         }
     });
     guardar(); 
-    if (leveledUp.length > 0) {
-        alert(`¡ASISTENCIA MÁXIMA ALCANZADA!\n\nLos siguientes personajes han regresado a Asistencia 1 y ganado +1000 HEX EXTRA:\n\n${leveledUp.join(', ')}`);
-    }
+    if (leveledUp.length > 0) { alert(`¡ASISTENCIA MÁXIMA ALCANZADA!\n\nLos siguientes personajes han regresado a Asistencia 1 y ganado +1000 HEX EXTRA:\n\n${leveledUp.join(', ')}`); }
     repintarConScroll('hex');
 };
 
-// --- FUNCIONES DE FORMULARIOS Y EDICIÓN ---
 window.toggleCrearRol = () => {
     const btn = document.getElementById('btn-crear-rol');
-    if (btn.dataset.val === 'npc') {
-        btn.dataset.val = 'jugador'; btn.innerText = 'ROL: JUGADOR';
-        btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00';
-    } else {
-        btn.dataset.val = 'npc'; btn.innerText = 'ROL: NPC';
-        btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000';
-    }
+    if (btn.dataset.val === 'npc') { btn.dataset.val = 'jugador'; btn.innerText = 'ROL: JUGADOR'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } 
+    else { btn.dataset.val = 'npc'; btn.innerText = 'ROL: NPC'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; }
 };
 
 window.toggleCrearAct = () => {
     const btn = document.getElementById('btn-crear-act');
-    if (btn.dataset.val === 'activo') {
-        btn.dataset.val = 'inactivo'; btn.innerText = 'ESTADO: INACTIVO';
-        btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000';
-    } else {
-        btn.dataset.val = 'activo'; btn.innerText = 'ESTADO: ACTIVO';
-        btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00';
-    }
+    if (btn.dataset.val === 'activo') { btn.dataset.val = 'inactivo'; btn.innerText = 'ESTADO: INACTIVO'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } 
+    else { btn.dataset.val = 'activo'; btn.innerText = 'ESTADO: ACTIVO'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; }
 };
 
 window.updateCreationAfinitySum = () => {
-    const fis = parseInt(document.getElementById('npc-fis')?.value) || 0;
-    const ene = parseInt(document.getElementById('npc-ene')?.value) || 0;
-    const esp = parseInt(document.getElementById('npc-esp')?.value) || 0;
-    const man = parseInt(document.getElementById('npc-man')?.value) || 0;
-    const psi = parseInt(document.getElementById('npc-psi')?.value) || 0;
-    const osc = parseInt(document.getElementById('npc-osc')?.value) || 0;
-    
+    const fis = parseInt(document.getElementById('npc-fis')?.value) || 0; const ene = parseInt(document.getElementById('npc-ene')?.value) || 0;
+    const esp = parseInt(document.getElementById('npc-esp')?.value) || 0; const man = parseInt(document.getElementById('npc-man')?.value) || 0;
+    const psi = parseInt(document.getElementById('npc-psi')?.value) || 0; const osc = parseInt(document.getElementById('npc-osc')?.value) || 0;
     const display = document.getElementById('creation-affinity-sum-display');
     if(display) display.innerText = `Total Afinidades: ${fis + ene + esp + man + psi + osc}`;
 };
 
-window.toggleIdentidad = (prop) => {
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
-    p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; 
-    guardar(); repintarConScroll('op');
-};
+window.toggleIdentidad = (prop) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; guardar(); repintarConScroll('op'); };
 
-// CORRECCIÓN: Ahora el recalcular lee el total absoluto de atributos (base + hechizos + buffs)
+// EL NÚCLEO DINÁMICO: Si el límite maximo rojo aumenta por un buff de afinidad temporal, ¡Cura al personaje!
+function recalcularVidasManual(p, accion) {
+    const prevRojo = calcularVidaRojaMax(p);
+    accion(); // Aplica el cambio (ej. +10 de Física)
+    const newRojo = calcularVidaRojaMax(p);
+    
+    // Si el Max Rojo subió, te curas el equivalente
+    const deltaRojo = newRojo - prevRojo;
+    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
+    
+    // Si te quitaron el buff y tu vida sobrepasa el límite nuevo, la recorta.
+    const finalMax = calcularVidaRojaMax(p);
+    if (p.vidaRojaActual > finalMax) p.vidaRojaActual = finalMax;
+}
+
 window.recalcularBases = () => {
     const p = statsGlobal[estadoUI.personajeSeleccionado];
     if(!p) return;
     
-    if(confirm(`¿Seguro que deseas RECALCULAR las vidas bases de ${estadoUI.personajeSeleccionado}?\n\nEsto pondrá el Límite Rojo a [10 + Física Total/2], la Vida Azul a [Magia Total/4] y curará al personaje al máximo.`)) {
-        const calcTotal = (base, spells, spellEff, buff) => (base || 0) + (spells || 0) + (spellEff || 0) + (buff || 0);
-
-        const totalFis = calcTotal(p.afinidades?.fisica, p.hechizos?.fisica, p.hechizosEfecto?.fisica, p.buffs?.fisica);
-        p.vidaRojaMax = 10 + Math.floor(totalFis / 2);
+    if(confirm(`¿Seguro que deseas RECALCULAR las vidas bases de ${estadoUI.personajeSeleccionado}?\n\nEsto pondrá el Límite Rojo Base a [10 + Física Base/2], la Vida Azul a [Magia Base/4] y curará al personaje al máximo.`)) {
         
+        // Recalcular el LÍMITE BASE (solo con la Física Base), porque el motor ya suma los temporales en vivo.
+        p.vidaRojaMax = 10 + Math.floor((p.afinidades?.fisica || 0) / 2);
+        
+        // Curamos al límite total actual
         p.vidaRojaActual = calcularVidaRojaMax(p);
         
-        const totalEne = calcTotal(p.afinidades?.energetica, p.hechizos?.energetica, p.hechizosEfecto?.energetica, p.buffs?.energetica);
-        const totalEsp = calcTotal(p.afinidades?.espiritual, p.hechizos?.espiritual, p.hechizosEfecto?.espiritual, p.buffs?.espiritual);
-        const totalMan = calcTotal(p.afinidades?.mando, p.hechizos?.mando, p.hechizosEfecto?.mando, p.buffs?.mando);
-        const totalPsi = calcTotal(p.afinidades?.psiquica, p.hechizos?.psiquica, p.hechizosEfecto?.psiquica, p.buffs?.psiquica);
-        
-        p.vidaAzul = Math.floor((totalEne + totalEsp + totalMan + totalPsi) / 4);
+        // Lo mismo para la magia base
+        const magBase = (p.afinidades?.energetica || 0) + (p.afinidades?.espiritual || 0) + (p.afinidades?.mando || 0) + (p.afinidades?.psiquica || 0);
+        p.vidaAzul = Math.floor(magBase / 4);
         p.baseVidaAzul = p.vidaAzul;
         
         guardar();
         repintarConScroll('detalle');
     }
 };
-
-function recalcularVidasManual(p, accion) {
-    const prevRojo = calcularVidaRojaMax(p);
-    const prevMystic = getMysticBonus(p);
-    accion();
-    const newRojo = calcularVidaRojaMax(p);
-    const newMystic = getMysticBonus(p);
-    const deltaRojo = newRojo - prevRojo;
-    const deltaMystic = newMystic - prevMystic;
-    
-    if (deltaRojo !== 0) p.vidaRojaActual = Math.max(0, p.vidaRojaActual + deltaRojo);
-    if (deltaMystic !== 0) p.vidaAzul = Math.max(0, p.vidaAzul + deltaMystic);
-    const finalMax = calcularVidaRojaMax(p);
-    if (p.vidaRojaActual > finalMax) p.vidaRojaActual = finalMax;
-}
 
 window.cambioManual = (statId, valorStr, tipoAccion) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return;
@@ -350,6 +244,12 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
     if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle'); else repintarConScroll('op');
 };
 
+window.modLibre = (statId, cantidad) => { 
+    const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; 
+    recalcularVidasManual(p, () => { p[statId] = Math.max(0, (p[statId] || 0) + cantidad); });
+    guardar(); repintarConScroll('detalle'); 
+};
+
 window.modificarBuff = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, () => { p.buffs[statId] = (p.buffs[statId] || 0) + cantidad; }); guardar(); repintarConScroll('detalle'); };
 window.modBaseTop = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, () => { p[statId] = Math.max(0, (p[statId] || 0) + cantidad); }); guardar(); repintarConScroll('op'); };
 window.modBaseAfin = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, () => { p.afinidades[statId] = Math.max(0, (p.afinidades[statId] || 0) + cantidad); }); guardar(); repintarConScroll('op'); };
@@ -358,10 +258,9 @@ window.modSpellAfin = (statId, cantidad) => { const p = statsGlobal[estadoUI.per
 window.modSpellEffTop = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, () => { p.hechizosEfecto[statId] = (p.hechizosEfecto[statId] || 0) + Math.max(-Math.abs(p.hechizosEfecto[statId] || 0), Math.min(Math.abs(p.hechizosEfecto[statId] || 0), cantidad)); }); guardar(); repintarConScroll('op'); };
 window.modSpellEffAfin = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, () => { p.hechizosEfecto[statId] = (p.hechizosEfecto[statId] || 0) + cantidad; }); guardar(); repintarConScroll('op'); };
 window.modificarDirecto = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar(); repintarConScroll('op'); };
-window.modLibre = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar(); repintarConScroll('detalle'); };
 
-window.modBlueExtra = (cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra || 0) + cantidad); p.vidaAzul = Math.max(0, (p.vidaAzul || 0) + cantidad); guardar(); repintarConScroll('detalle'); };
-window.modGoldExtra = (cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra || 0) + cantidad); p.guardaDorada = Math.max(0, (p.guardaDorada || 0) + cantidad); guardar(); repintarConScroll('detalle'); };
+window.modBlueExtra = (cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra || 0) + cantidad); guardar(); repintarConScroll('detalle'); };
+window.modGoldExtra = (cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra || 0) + cantidad); guardar(); repintarConScroll('detalle'); };
 
 window.checkFormOverrides = (inputId) => {
     if (['npc-vrm', 'npc-vra', 'npc-va'].includes(inputId)) formOverrides[inputId] = true;
