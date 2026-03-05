@@ -151,15 +151,28 @@ export function dibujarControl() {
     if (!estadoUI.jugadorInv) return; const j = estadoUI.jugadorInv; 
     let html = `<h2>Edición In-Situ: ${j}</h2><button onclick="window.mostrarPagina('inventario')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Inventario</button>`;
     
+    // EL MINI CATÁLOGO SOLICITADO
+    html += `<h3 style="color:var(--gold); margin-top:10px;">Inventario Actual</h3>
+             <div style="background:#0a0014; padding:15px; border:1px solid var(--gold); border-radius:8px; margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">`;
+    let hasItems = false;
+    Object.keys(invGlobal[j]).sort().forEach(o => {
+        if (invGlobal[j][o] > 0) {
+            html += `<span style="background:#222; padding:5px 12px; border-radius:4px; border:1px solid #444; font-size:0.9em; box-shadow:0 2px 4px #000;">${o}: <b style="color:var(--gold); font-size:1.3em; margin-left:5px;">${invGlobal[j][o]}</b></span>`;
+            hasItems = true;
+        }
+    });
+    if(!hasItems) html += `<span style="color:#666;">El inventario está vacío.</span>`;
+    html += `</div>`;
+
     html += `<div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
                 <textarea id="copy-log-stock" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Bitácora de sesión...'}</textarea>
                 <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-stock')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO TOTAL</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
              </div>
              
-             <h4 style="color:var(--gold); margin-bottom:5px;">Configura tu Clic</h4>
-             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:10px;">
-                <button onclick="window.setEditModo(1)" style="background:${estadoUI.editModo === 1 ? '#004a00' : '#222'}">SUMAR (+)</button>
-                <button onclick="window.setEditModo(-1)" style="background:${estadoUI.editModo === -1 ? '#660000' : '#222'}">RESTAR (-)</button>
+             <h3 style="color:var(--gold); margin-top:20px; border-bottom:1px solid #333; padding-bottom:10px;">Catálogo (Haz clic en la imagen)</h3>
+             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:10px; margin-top:15px;">
+                <button onclick="window.setEditModo(1)" style="background:${estadoUI.editModo === 1 ? '#004a00' : '#222'}">MODO SUMAR (+)</button>
+                <button onclick="window.setEditModo(-1)" style="background:${estadoUI.editModo === -1 ? '#660000' : '#222'}">MODO RESTAR (-)</button>
              </div>
              <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
                 ${[1, 5, 10, 50, 100].map(m => `<button onclick="window.setEditMult(${m})" style="background:${estadoUI.editMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.editMult === m ? '#000' : '#fff'}">x${m}</button>`).join('')}
@@ -168,6 +181,7 @@ export function dibujarControl() {
              <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto y haz clic en la imagen..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
              <div class="grid-control">`;
     
+    // Todos los objetos ordenados primero por los que ya tiene
     Object.keys(objGlobal).sort((a, b) => (invGlobal[j][b]||0) - (invGlobal[j][a]||0) || a.localeCompare(b)).forEach(o => {
         const term = estadoUI.busquedaOP.toLowerCase();
         if (!term || o.toLowerCase().includes(term)) {
@@ -180,7 +194,6 @@ export function dibujarControl() {
                              onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                              onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Click para aplicar">
                         <span class="item-name" style="margin-top:10px;">${o}</span>
-                        <span style="font-size:1.2em; color:white;">Stock: <b>${c}</b></span>
                      </div>`;
         }
     });
@@ -286,4 +299,45 @@ export function dibujarTransferencia() {
                 if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
                     const c = invGlobal[j][o];
                     const cantToPass = estadoUI.transMult === 'TODO' ? c : estadoUI.transMult;
-          
+                    html += `<div class="control-card item-con-stock">
+                                <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
+                                     onclick="window.ejecutarTransfer('${o}', ${cantToPass})" 
+                                     style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid #00ff00; transition:0.2s; box-shadow:0 0 10px #00ff00;"
+                                     onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                                     onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Clic para Transferir ${cantToPass}">
+                                <span class="item-name" style="margin-top:10px;">${o}</span>
+                                <span style="font-size:1.1em; color:white;">Stock: <b>${c}</b></span>
+                             </div>`;
+                }
+            });
+            html += `</div>`;
+        }
+    }
+    drawnHEXPreserveFocus('panel-transferencia', html);
+}
+
+export function dibujarCreacionObjeto() {
+    let html = `<h2>Creación Rápida</h2>
+    <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
+        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateCreationLog()" style="width:95%">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+            <select id="new-obj-tipo" class="search-bar" style="width:100%"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
+            <select id="new-obj-mat" class="search-bar" style="width:100%"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
+        </div>
+        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
+        <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
+        <h3 style="margin-top:20px; font-size:1em;">Entregar a (Opcional)</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
+    Object.keys(invGlobal).sort().forEach(j => {
+        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()"></div>`;
+    });
+    html += `</div>
+        <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
+            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;"></textarea>
+            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
+        </div>
+        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">FORJAR Y REPARTIR</button>
+        <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
+    </div>`;
+    drawnHEXPreserveFocus('panel-creacion', html);
+}
