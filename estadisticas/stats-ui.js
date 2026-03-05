@@ -201,17 +201,25 @@ export function dibujarDetalle() {
         </div>
     </div>`;
 
-    const pVidaDanoE = [ { id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada } ];
-    const pAfinidadesE = [ { id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura } ];
-
     html += `
     <div style="margin-top:20px; background:#110022; border:1px solid #00ffff; padding:20px; border-radius:8px;">
         <h3 style="margin-top:0; color:#00ffff; text-align:center;">Alteraciones Temporales (Extras)</h3>
         <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:20px;">Estos valores representan buffs aplicados sobre la base.</p>
         <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">1. Buffs de Vida y Daño</h4>
-        <div class="edit-grid" style="margin-bottom: 30px;">${pVidaDanoE.map(f => genCard(f, 'buff')).join('')}</div>
+        <div class="edit-grid" style="margin-bottom: 30px;">
+            ${genCard({ id: 'danoRojo', label: 'Daño Rojo Extra', val: p.buffs.danoRojo }, 'buff')}
+            ${genCard({ id: 'danoAzul', label: 'Daño Azul Extra', val: p.buffs.danoAzul }, 'buff')}
+            ${genCard({ id: 'elimDorada', label: 'Elim. Dorada Extra', val: p.buffs.elimDorada }, 'buff')}
+        </div>
         <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">2. Afinidades Temporales</h4>
-        <div class="edit-grid" style="margin-bottom: 10px;">${pAfinidadesE.map(f => genCard(f, 'buff')).join('')}</div>
+        <div class="edit-grid" style="margin-bottom: 10px;">
+            ${genCard({ id: 'fisica', label: 'Afin. Física Extra', val: p.buffs.fisica }, 'buff')}
+            ${genCard({ id: 'energetica', label: 'Afin. Energética Extra', val: p.buffs.energetica }, 'buff')}
+            ${genCard({ id: 'espiritual', label: 'Afin. Espiritual Extra', val: p.buffs.espiritual }, 'buff')}
+            ${genCard({ id: 'mando', label: 'Afin. Mando Extra', val: p.buffs.mando }, 'buff')}
+            ${genCard({ id: 'psiquica', label: 'Afin. Psíquica Extra', val: p.buffs.psiquica }, 'buff')}
+            ${genCard({ id: 'oscura', label: 'Afin. Oscura Extra', val: p.buffs.oscura }, 'buff')}
+        </div>
     </div>`;
 
     let opcionesPersonajes = Object.keys(statsGlobal).filter(n => n !== nombre).map(n => `<option value="${n}">${n}</option>`).join('');
@@ -426,7 +434,7 @@ export function dibujarFormularioEditar() {
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
     asegurarEstructuras(p);
     
-    // CORRECCIÓN: Se eliminó el parámetro confuso de vidaRojaMax de este panel.
+    // Eliminado el parámetro de vidaRojaMax de esta sección (Solo editable en Detalles ahora)
     const pVidaDanoBase = [ { id: 'baseVidaAzul', label: 'C. Azules Base', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada Base', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
 
@@ -518,30 +526,3 @@ export function dibujarFormularioEditar() {
 
     return html;
 }
-
-// CORRECCIÓN DE CÁLCULOS: La función RecalcularVidas en UI para que escuche tu Física Total
-window.recalcularBases = () => {
-    const p = statsGlobal[estadoUI.personajeSeleccionado];
-    if(!p) return;
-    if(confirm(`¿Seguro que deseas RECALCULAR las vidas bases de ${estadoUI.personajeSeleccionado}?\n\nEsto pondrá el Límite Rojo a [10 + Física Total/2], la Vida Azul a [Magia Total/4] y curará al personaje al máximo.`)) {
-        
-        // Sumamos TODA la Física
-        const totalFis = calcTotal(p.afinidades?.fisica, p.hechizos?.fisica, p.hechizosEfecto?.fisica, p.buffs?.fisica);
-        p.vidaRojaMax = 10 + Math.floor(totalFis / 2);
-        
-        // Como hemos eliminado los extras de Rojo, la Vida Actual puede curarse exactamente a p.vidaRojaMax
-        p.vidaRojaActual = calcularVidaRojaMax(p); 
-        
-        // Sumamos TODA la Magia
-        const totalEne = calcTotal(p.afinidades?.energetica, p.hechizos?.energetica, p.hechizosEfecto?.energetica, p.buffs?.energetica);
-        const totalEsp = calcTotal(p.afinidades?.espiritual, p.hechizos?.espiritual, p.hechizosEfecto?.espiritual, p.buffs?.espiritual);
-        const totalMan = calcTotal(p.afinidades?.mando, p.hechizos?.mando, p.hechizosEfecto?.mando, p.buffs?.mando);
-        const totalPsi = calcTotal(p.afinidades?.psiquica, p.hechizos?.psiquica, p.hechizosEfecto?.psiquica, p.buffs?.psiquica);
-        
-        p.vidaAzul = Math.floor((totalEne + totalEsp + totalMan + totalPsi) / 4);
-        p.baseVidaAzul = p.vidaAzul;
-        
-        guardar();
-        repintarConScroll('detalle');
-    }
-};
