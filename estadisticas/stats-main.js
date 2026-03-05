@@ -309,14 +309,11 @@ window.toggleIdentidad = (prop) => {
 
 // =========================================================================================
 // CORAZÓN DEL SISTEMA: EL INTERCEPTOR DINÁMICO
-// Aquí detectamos cada clic que le das a un botón, vemos si aumentó la Física o Magia Total,
-// y le inyectamos los corazones a la misma categoría al instante.
+// Detecta alteraciones temporales (hechizos, buffs) para curar o alterar vidas
 // =========================================================================================
 function recalcularVidasManual(p, tipoAccion, accion) {
-    // Obtenemos el Límite Total antes de la acción
     const prevRojoMax = calcularVidaRojaMax(p);
 
-    // Funciones auxiliares para sumar la afinidad TOTAL en todo el personaje
     const calcTotalFis = (obj) => {
         return (obj.afinidades?.fisica || 0) + (obj.hechizos?.fisica || 0) + (obj.hechizosEfecto?.fisica || 0) + (obj.buffs?.fisica || 0);
     };
@@ -329,64 +326,41 @@ function recalcularVidasManual(p, tipoAccion, accion) {
         return ene + esp + man + psi;
     };
 
-    // Tomamos "foto" ANTES de que el botón cambie el número
     const fisPre = calcTotalFis(p);
     const magPre = calcTotalMag(p);
 
-    // Ejecutamos la acción del botón (ej. sumar +60 de Física Buff)
     accion();
 
-    // Tomamos "foto" DESPUÉS de que el botón cambió el número
     const fisPost = calcTotalFis(p);
     const magPost = calcTotalMag(p);
 
-    // Calculamos cuántos corazones matemáticos deberías ganar por esa inyección
     const deltaFis = Math.floor(fisPost / 2) - Math.floor(fisPre / 2);
     const deltaMag = Math.floor(magPost / 4) - Math.floor(magPre / 4);
 
-    // 1. Inyectamos los corazones ganados de Física a su límite Rojo respectivo
     if (deltaFis !== 0) {
-        if (tipoAccion === 'buff') {
-            p.buffs.vidaRojaMaxExtra = (p.buffs.vidaRojaMaxExtra || 0) + deltaFis;
-        } else if (tipoAccion === 'spellEff' || tipoAccion === 'spellEffAfin') {
-            p.hechizosEfecto.vidaRojaMaxExtra = (p.hechizosEfecto.vidaRojaMaxExtra || 0) + deltaFis;
-        } else if (tipoAccion === 'spell' || tipoAccion === 'spellAfin') {
-            p.hechizos.vidaRojaMaxExtra = (p.hechizos.vidaRojaMaxExtra || 0) + deltaFis;
-        } else if (tipoAccion === 'base' || tipoAccion === 'baseAfin') {
-            p.vidaRojaMax = Math.max(0, (p.vidaRojaMax || 10) + deltaFis);
-        }
+        if (tipoAccion === 'buff') p.buffs.vidaRojaMaxExtra = (p.buffs.vidaRojaMaxExtra || 0) + deltaFis;
+        else if (tipoAccion === 'spellEff' || tipoAccion === 'spellEffAfin') p.hechizosEfecto.vidaRojaMaxExtra = (p.hechizosEfecto.vidaRojaMaxExtra || 0) + deltaFis;
+        else if (tipoAccion === 'spell' || tipoAccion === 'spellAfin') p.hechizos.vidaRojaMaxExtra = (p.hechizos.vidaRojaMaxExtra || 0) + deltaFis;
+        else if (tipoAccion === 'base' || tipoAccion === 'baseAfin') p.vidaRojaMax = Math.max(0, (p.vidaRojaMax || 10) + deltaFis);
     }
 
-    // 2. Inyectamos los corazones ganados de Magia a su límite Azul respectivo
     if (deltaMag !== 0) {
-        if (tipoAccion === 'buff') {
-            p.buffs.vidaAzulExtra = (p.buffs.vidaAzulExtra || 0) + deltaMag;
-        } else if (tipoAccion === 'spellEff' || tipoAccion === 'spellEffAfin') {
-            p.hechizosEfecto.vidaAzulExtra = (p.hechizosEfecto.vidaAzulExtra || 0) + deltaMag;
-        } else if (tipoAccion === 'spell' || tipoAccion === 'spellAfin') {
-            p.hechizos.vidaAzulExtra = (p.hechizos.vidaAzulExtra || 0) + deltaMag;
-        } else if (tipoAccion === 'base' || tipoAccion === 'baseAfin') {
-            p.baseVidaAzul = Math.max(0, (p.baseVidaAzul || 0) + deltaMag);
-            p.vidaAzul = p.baseVidaAzul;
-        }
+        if (tipoAccion === 'buff') p.buffs.vidaAzulExtra = (p.buffs.vidaAzulExtra || 0) + deltaMag;
+        else if (tipoAccion === 'spellEff' || tipoAccion === 'spellEffAfin') p.hechizosEfecto.vidaAzulExtra = (p.hechizosEfecto.vidaAzulExtra || 0) + deltaMag;
+        else if (tipoAccion === 'spell' || tipoAccion === 'spellAfin') p.hechizos.vidaAzulExtra = (p.hechizos.vidaAzulExtra || 0) + deltaMag;
+        else if (tipoAccion === 'base' || tipoAccion === 'baseAfin') { p.baseVidaAzul = Math.max(0, (p.baseVidaAzul || 0) + deltaMag); p.vidaAzul = p.baseVidaAzul; }
     }
 
-    // 3. Comparamos el Límite Rojo Total Nuevo vs el Viejo para curar
     const newRojoMax = calcularVidaRojaMax(p);
     const diffRojoTotal = newRojoMax - prevRojoMax;
 
     if (diffRojoTotal !== 0) {
-        // Curamos la vida real al instante si el límite rojo creció.
         p.vidaRojaActual = Math.max(0, (p.vidaRojaActual || 0) + diffRojoTotal);
     }
 
-    // 4. Seguro: Si tu vida actual quedó por encima del límite total (por haber perdido afinidad), la recorta.
-    if (p.vidaRojaActual > newRojoMax) {
-        p.vidaRojaActual = newRojoMax;
-    }
+    if (p.vidaRojaActual > newRojoMax) p.vidaRojaActual = newRojoMax;
 }
 
-// Botón de Restauración y Recálculo Manual
 window.recalcularBases = () => {
     const p = statsGlobal[estadoUI.personajeSeleccionado];
     if(!p) return;
@@ -412,9 +386,6 @@ window.recalcularBases = () => {
     }
 };
 
-// =========================================================================================
-
-// Esta función conecta los inputs de texto manuales con el interceptor dinámico
 window.cambioManual = (statId, valorStr, tipoAccion) => {
     const p = statsGlobal[estadoUI.personajeSeleccionado]; 
     if(!p) return;
@@ -423,9 +394,8 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
     if (isNaN(val)) val = 0; 
     
     recalcularVidasManual(p, tipoAccion, () => {
-        if (tipoAccion === 'buff') {
-            p.buffs[statId] = val;
-        } else if (tipoAccion === 'baseTop' || tipoAccion === 'baseAfin') { 
+        if (tipoAccion === 'buff') p.buffs[statId] = val;
+        else if (tipoAccion === 'baseTop' || tipoAccion === 'baseAfin') { 
             if(p.afinidades[statId] !== undefined) p.afinidades[statId] = Math.max(0, val); 
             else p[statId] = Math.max(0, val); 
         } else if (tipoAccion === 'spellTop' || tipoAccion === 'spellAfin') { 
@@ -438,14 +408,9 @@ window.cambioManual = (statId, valorStr, tipoAccion) => {
     });
     
     guardar(); 
-    if (estadoUI.vistaActual === 'detalle') {
-        repintarConScroll('detalle'); 
-    } else {
-        repintarConScroll('op');
-    }
+    if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle'); else repintarConScroll('op');
 };
 
-// Función para botones simples (+ / -) de Vida, Daño o Hex
 window.modLibre = (statId, cantidad) => { 
     const p = statsGlobal[estadoUI.personajeSeleccionado]; 
     if(!p) return; 
@@ -461,93 +426,39 @@ window.modLibre = (statId, cantidad) => {
     repintarConScroll('detalle'); 
 };
 
-// Botones directos de cada categoría que disparan el Interceptor de matemáticas.
-window.modificarBuff = (statId, cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    recalcularVidasManual(p, 'buff', () => { p.buffs[statId] = (p.buffs[statId] || 0) + cantidad; }); 
-    guardar(); 
-    repintarConScroll('detalle'); 
-};
-
+// =========================================================================================
+// CORRECCIÓN: Botón "Límite Rojo (BASE)" - Ahora SOLO modifica el límite, sin curar vida.
+// =========================================================================================
 window.modBaseTop = (statId, cantidad) => { 
     const p = statsGlobal[estadoUI.personajeSeleccionado]; 
     if(!p) return; 
+    
     if (statId === 'vidaRojaMax') { 
+        // Sube solo el límite máximo del contenedor
         p.vidaRojaMax = Math.max(0, (p.vidaRojaMax || 0) + cantidad); 
-        p.vidaRojaActual = Math.max(0, (p.vidaRojaActual || 0) + cantidad); 
+        
+        // Recorta la vida si el jugador bajó el límite por debajo de su salud actual
+        const max = calcularVidaRojaMax(p);
+        if (p.vidaRojaActual > max) p.vidaRojaActual = max;
     } else { 
         recalcularVidasManual(p, 'base', () => { p[statId] = Math.max(0, (p[statId] || 0) + cantidad); }); 
     }
+    
     guardar(); 
-    repintarConScroll('op'); 
+    if (estadoUI.vistaActual === 'detalle') repintarConScroll('detalle'); else repintarConScroll('op'); 
 };
 
-window.modBaseAfin = (statId, cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    recalcularVidasManual(p, 'baseAfin', () => { p.afinidades[statId] = Math.max(0, (p.afinidades[statId] || 0) + cantidad); }); 
-    guardar(); 
-    repintarConScroll('op'); 
-};
+window.modificarBuff = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, 'buff', () => { p.buffs[statId] = (p.buffs[statId] || 0) + cantidad; }); guardar(); repintarConScroll('detalle'); };
+window.modBaseAfin = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, 'baseAfin', () => { p.afinidades[statId] = Math.max(0, (p.afinidades[statId] || 0) + cantidad); }); guardar(); repintarConScroll('op'); };
+window.modSpellTop = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, 'spell', () => { p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad; }); guardar(); repintarConScroll('op'); };
+window.modSpellAfin = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, 'spellAfin', () => { p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad; }); guardar(); repintarConScroll('op'); };
+window.modSpellEffTop = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, 'spellEff', () => { p.hechizosEfecto[statId] = (p.hechizosEfecto[statId] || 0) + Math.max(-Math.abs(p.hechizosEfecto[statId] || 0), Math.min(Math.abs(p.hechizosEfecto[statId] || 0), cantidad)); }); guardar(); repintarConScroll('op'); };
+window.modSpellEffAfin = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; recalcularVidasManual(p, 'spellEffAfin', () => { p.hechizosEfecto[statId] = (p.hechizosEfecto[statId] || 0) + cantidad; }); guardar(); repintarConScroll('op'); };
+window.modificarDirecto = (statId, cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p[statId] = Math.max(0, (p[statId] || 0) + cantidad); guardar(); repintarConScroll('op'); };
 
-window.modSpellTop = (statId, cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    recalcularVidasManual(p, 'spell', () => { p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad; }); 
-    guardar(); 
-    repintarConScroll('op'); 
-};
+window.modBlueExtra = (cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra || 0) + cantidad); guardar(); repintarConScroll('detalle'); };
+window.modGoldExtra = (cantidad) => { const p = statsGlobal[estadoUI.personajeSeleccionado]; if(!p) return; p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra || 0) + cantidad); guardar(); repintarConScroll('detalle'); };
 
-window.modSpellAfin = (statId, cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    recalcularVidasManual(p, 'spellAfin', () => { p.hechizos[statId] = (p.hechizos[statId] || 0) + cantidad; }); 
-    guardar(); 
-    repintarConScroll('op'); 
-};
-
-window.modSpellEffTop = (statId, cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    recalcularVidasManual(p, 'spellEff', () => { p.hechizosEfecto[statId] = (p.hechizosEfecto[statId] || 0) + Math.max(-Math.abs(p.hechizosEfecto[statId] || 0), Math.min(Math.abs(p.hechizosEfecto[statId] || 0), cantidad)); }); 
-    guardar(); 
-    repintarConScroll('op'); 
-};
-
-window.modSpellEffAfin = (statId, cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    recalcularVidasManual(p, 'spellEffAfin', () => { p.hechizosEfecto[statId] = (p.hechizosEfecto[statId] || 0) + cantidad; }); 
-    guardar(); 
-    repintarConScroll('op'); 
-};
-
-window.modificarDirecto = (statId, cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    p[statId] = Math.max(0, (p[statId] || 0) + cantidad); 
-    guardar(); 
-    repintarConScroll('op'); 
-};
-
-window.modBlueExtra = (cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra || 0) + cantidad); 
-    guardar(); 
-    repintarConScroll('detalle'); 
-};
-
-window.modGoldExtra = (cantidad) => { 
-    const p = statsGlobal[estadoUI.personajeSeleccionado]; 
-    if(!p) return; 
-    p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra || 0) + cantidad); 
-    guardar(); 
-    repintarConScroll('detalle'); 
-};
-
-// --- EL RESTO DE FUNCIONES (CREACIÓN, CLONACIÓN, ETC) ---
 window.checkFormOverrides = (inputId) => {
     if (['npc-vrm', 'npc-vra', 'npc-va'].includes(inputId)) formOverrides[inputId] = true;
     const fis = parseInt(document.getElementById('npc-fis')?.value) || 0;
