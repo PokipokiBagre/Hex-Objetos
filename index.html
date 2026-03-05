@@ -3,59 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hexcraft Heptagram</title>
-    <link rel="icon" type="image/png" href="img/icon.png">
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <title>HEX - GESTIÓN DE OBJETOS</title>
+    <link rel="icon" type="image/png" href="../img/icon.png"> 
+    <link rel="stylesheet" href="../styleobjetos.css?v=6.0"> 
 </head>
 <body>
     <div class="container-hex">
-        <header class="hero-section" style="background-image: linear-gradient(rgba(18,0,36,0.7), rgba(18,0,36,0.7)), url('img/hex-002.png');">
-            <h1>Hexcraft Heptagram</h1>
-            <p>Campaña de rol mágica estructurada en el tablón Hisrol</p>
-        </header>
-
-        <section class="lore-summary">
-            <p>HEX es un sistema de rol con actividad diaria alojado en Hisrol. La progresión se gestiona mediante hilos donde el entorno reacciona a las entradas del usuario. El desarrollo integra una infraestructura de videos informativos y un mapa de hechizos dinámico que registra la evolución del sistema en tiempo real.</p>
-        </section>
-
-            <div class="main-grid">
-            <a href="objetos/index.html" class="grid-item">
-                <img src="img/objetos.jpg" alt="Objetos">
-                <span>OBJETOS</span>
-            </a>
-
-            <a href="estadisticas/index.html" class="grid-item">
-                <img src="img/estadisticas.jpg" alt="Estadísticas">
-                <span>ESTADÍSTICAS</span>
-            </a>
-
-            <div class="grid-item disabled">
-                <img src="img/misiones.jpg" alt="Misiones">
-                <span>MISIONES</span>
-            </div>
-            
-            <div class="grid-item disabled">
-                <img src="img/hechizos.jpg" alt="Hechizos">
-                <span>HECHIZOS</span>
-            </div>
-            </div>
-
-        <h2 style="margin-top: 50px;">Hilos</h2>
-        <section class="direct-access">
-            <a href="https://8chan.moe/hisrol/res/127489.html" target="_blank" class="access-card">
-                <img src="img/hex-002.png" alt="Rol Actual">
-                <div class="overlay"><span>ROL ACTUAL</span></div>
-            </a>
-            <a href="https://8chan.moe/hisrol/res/127883.html" target="_blank" class="access-card">
-                <img src="img/met-003.png" alt="Meta">
-                <div class="overlay"><span>META</span></div>
-            </a>
-        </section>
+        <div style="text-align: left; margin-bottom: 10px;"><a href="../index.html" style="color: #d4af37; text-decoration: none; font-size: 0.8em;">⬅ Volver al Inicio</a></div>
+        <h1>SISTEMA DE OBJETOS</h1>
+        <nav>
+            <button onclick="window.mostrarPagina('grilla')">Inventarios</button>
+            <button onclick="window.mostrarPagina('catalogo')">Catálogo</button>
+            <button id="btn-sync" onclick="window.toggleSync()" style="background:#006400; color:white; font-weight: bold;">CONECTADO (AUTO)</button>
+            <button onclick="window.ejecutarSyncLog()" style="background:#2e004f; border-style: dashed;">Acceso OP</button>
+            <button onclick="window.toggleLibre()" style="background:#b8860b; color:#000; font-weight:bold;">Modo Libre 🧲</button>
+        </nav>
+        
+        <section id="pag-grilla" class="pagina"><div id="contenedor-grilla"></div></section>
+        <section id="pag-inventario" class="pagina"><div id="contenedor-jugadores"></div></section>
+        <section id="pag-catalogo" class="pagina"><div id="tabla-todos-objetos"></div></section>
+        <section id="pag-op-menu" class="pagina"><div id="menu-op-central"></div></section>
+        <section id="pag-control" class="pagina"><div id="panel-interactivo"></div></section>
+        <section id="pag-crear" class="pagina"><div id="panel-creacion"></div></section>
+        <section id="pag-party-loot" class="pagina"><div id="panel-party-loot"></div></section>
+        <section id="pag-transfer" class="pagina"><div id="panel-transferencia"></div></section>
+        
+        <input type="file" id="input-log" style="display:none">
     </div>
+
+    <div id="modal-libre-bg" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9000; align-items:center; justify-content:center;">
+        <div id="contenedor-libre" style="position:relative; width:1000px; height:700px; background:radial-gradient(circle at top, #1a0033, #000); border: 3px solid var(--gold); border-radius: 12px; overflow:hidden; box-shadow: 0 0 30px rgba(212,175,55,0.4);">
+            <button onclick="window.toggleLibre()" style="position:absolute; top:10px; right:10px; background:#ff0000; color:white; z-index:9999; font-size:1em; border:2px solid #fff; border-radius:8px; cursor:pointer;">CERRAR</button>
+            <h2 style="position:absolute; top:10px; left:20px; color:#d4af37; pointer-events:none; text-shadow: 0 0 10px #000; margin:0; font-size:1.2em;">Zamaquea (agita) rápido para soltar loot</h2>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script type="module" src="obj-main.js?v=6.1"></script>
 </body>
 </html>
-
-
-
-
 
