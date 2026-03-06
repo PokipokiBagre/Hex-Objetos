@@ -3,6 +3,7 @@ import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
+const safeStr = (str) => str ? str.toString().replace(/'/g, "\\'") : ''; // Seguro contra apóstrofes
 
 function getColorAfinidad(af) {
     if(af === 'Física') return { b: '#8b4513', t: '#e2a673' };
@@ -100,7 +101,6 @@ export function renderHeaders() {
     const afOscura = char.rawRow ? (parseInt((char.rawRow[8] || '0').split('_')[0]) || 0) : 0;
     const maxVex = Math.round(((afOscura * 300) / 4) / 50) * 50;
 
-    // --- RESTRICCIÓN OP PARA EL LOG DE CONJUROS ---
     let logCasteoGlobalHTML = '';
     if (estadoUI.esAdmin) {
         logCasteoGlobalHTML = `
@@ -120,7 +120,7 @@ export function renderHeaders() {
         </div>`;
     }
 
-document.getElementById('header-grimorio').innerHTML = `
+    document.getElementById('header-grimorio').innerHTML = `
         <div class="player-header">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
@@ -168,7 +168,13 @@ document.getElementById('header-grimorio').innerHTML = `
         <div class="player-header">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div><h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Actual: <strong>${char.hex}</strong></p>${statsHTML}</div>
+                <div>
+                    <h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2>
+                    <p style="margin:5px 0 0 0; color:var(--gold); font-weight:bold;">
+                        HEX Actual: <span style="color:white;">${char.hex}</span> &nbsp;|&nbsp; VEX MAX: <span style="color:#dcb1f0;">${maxVex}</span>
+                    </p>
+                    ${statsHTML}
+                </div>
             </div>
             <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (Afinidades/HEX)</button>
         </div>
@@ -223,7 +229,8 @@ export function dibujarGrimorioGrid() {
         const efe = isHidden ? '' : getValInfo(info, ['efecto', 'Efecto']);
         const detailsHTML = isHidden ? '' : generarDetalles(info);
         
-        const btnVis = (estadoUI.esAdmin && info.Nombre) ? `<button onclick="window.accionCola('toggle_conocido', '${info.Nombre}', '', 0, '${isKnown ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:10px; font-size:0.8em; padding:5px;">${isKnown ? '👁️ Ocultar Hechizo Globalmente' : '🙈 Hacer Público'}</button>` : '';
+        // Uso de safeStr para evitar que nombres con ' rompan el HTML
+        const btnVis = (estadoUI.esAdmin && info.Nombre) ? `<button onclick="window.accionCola('toggle_conocido', '${safeStr(info.Nombre)}', '', 0, '${isKnown ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:10px; font-size:0.8em; padding:5px;">${isKnown ? '👁️ Ocultar Hechizo Globalmente' : '🙈 Hacer Público'}</button>` : '';
 
         html += `<div class="spell-card" style="border-top-color: ${col.b};">
                     <h3 style="color:${isHidden ? '#666' : col.t}">${titulo}</h3>
@@ -263,10 +270,10 @@ export function dibujarGestionGrid() {
         const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
         
         const btn = isOwned 
-            ? `<button onclick="window.accionCola('quitar', '${h.Nombre}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR HECHIZO</button>`
-            : `<button onclick="window.accionCola('agregar', '${h.Nombre}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
+            ? `<button onclick="window.accionCola('quitar', '${safeStr(h.Nombre)}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR HECHIZO</button>`
+            : `<button onclick="window.accionCola('agregar', '${safeStr(h.Nombre)}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
 
-        const btnVis = `<button onclick="window.accionCola('toggle_conocido', '${h.Nombre}', '', 0, '${currentlyPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${currentlyPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
+        const btnVis = `<button onclick="window.accionCola('toggle_conocido', '${safeStr(h.Nombre)}', '', 0, '${currentlyPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${currentlyPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
 
         html += `<div class="spell-card" style="border-left:4px solid ${col.b}; ${isOwned ? 'box-shadow: inset 0 0 15px rgba(0,255,0,0.1);' : ''}">
                     <h3 style="color:${col.t}; margin-bottom:2px;">${h.Nombre}</h3>
