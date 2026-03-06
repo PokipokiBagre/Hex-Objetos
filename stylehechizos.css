@@ -67,6 +67,31 @@ details[open].spell-details summary::after { content: ' ▲'; }
 .btn-sync-float:hover { background: #ff0000; transform: scale(1.05); }
 .req-header { text-align: left; border-bottom: 1px solid var(--gold); margin: 30px 0 10px 0; padding-bottom: 5px; color: var(--gold); font-size: 1.1em; max-width: 1300px; margin-left: auto; margin-right: auto; }
 
+/* --- DISEÑO DE CASTEO DE HECHIZOS --- */
+.casteo-row {
+    display: flex; gap: 15px; align-items: stretch;
+    background: rgba(10, 0, 20, 0.8); border: 1px solid #333;
+    border-radius: 8px; padding: 15px; margin-bottom: 10px;
+    flex-wrap: wrap; transition: border-color 0.3s;
+}
+.casteo-input-group {
+    display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px;
+}
+.casteo-result {
+    flex: 3; min-width: 250px; background: rgba(0,0,0,0.6);
+    border-radius: 6px; border-left: 4px solid #555; padding: 10px;
+    font-size: 0.9em; min-height: 50px; display: flex; flex-direction: column; justify-content: center;
+}
+.dice-btn {
+    background: #111; color: var(--gold); border: 1px solid var(--gold);
+    cursor: pointer; padding: 8px; border-radius: 4px; font-size: 1.2em; font-weight: bold;
+}
+.dice-btn:hover { background: var(--gold); color: black; }
+.input-casteo {
+    background: #000; color: #fff; border: 1px solid var(--cyan-magic);
+    padding: 10px; border-radius: 4px; width: 100%; box-sizing: border-box; font-size: 1em;
+}
+
 /* =======================================================
    📱 ADAPTACIÓN PARA TELÉFONOS (HECHIZOS)
    ======================================================= */
