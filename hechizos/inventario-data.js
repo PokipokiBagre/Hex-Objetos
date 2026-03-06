@@ -1,18 +1,21 @@
 import { db } from './inventario-state.js';
 
-const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbwNDwCKT9P25UaDQQXP2yAT1ZnvnZ8uDOFRFiGgp6i9eLwgnpUNYRpY-2MdExFmZqil9g/exec';
+// ¡NUEVA URL ACTUALIZADA!
+const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbyp-hLbZnjh2_r_0X7diffLulJvh38yMr1DjRLu-Kf43NAarRhTfITMeeSAiluM1Nalmg/exec';
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 
 export async function inicializarDatos() {
     try {
-        // 1. Obtener Personajes
+        // 1. Obtener Personajes desde el CSV
         const resPj = await fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime());
         const txtPj = await resPj.text();
         parsearCSVPersonajes(txtPj);
 
-        // 2. Obtener Hechizos (Cifrados)
+        // 2. Obtener Hechizos (Cifrados) desde la nueva API
         const resHz = await fetch(API_HECHIZOS);
         const txtCifrado = await resHz.text();
+        
+        // Desciframos la data Base64 a JSON
         const jsonStr = decodeURIComponent(escape(window.atob(txtCifrado)));
         db.hechizos = JSON.parse(jsonStr);
         
@@ -43,8 +46,21 @@ function parsearCSVPersonajes(texto) {
     });
 }
 
+// ESCRITURA (POST) - ENVÍA LA COLA A GOOGLE SHEETS
 export async function sincronizarColaBD(cola) {
-    // Aquí iría el fetch POST a Google Script. Por ahora lo simulamos.
-    console.log("Enviando a BD:", cola);
-    return new Promise(resolve => setTimeout(() => resolve(true), 1000));
+    try {
+        const response = await fetch(API_HECHIZOS, {
+            method: 'POST',
+            body: JSON.stringify({
+                accion: 'sincronizar_inventario',
+                datos: cola.agregar // Por ahora solo enviaremos los agregados
+            })
+        });
+        
+        const result = await response.json();
+        return result.status === 'success';
+    } catch (error) {
+        console.error("Error al sincronizar con Sheets:", error);
+        return false;
+    }
 }
