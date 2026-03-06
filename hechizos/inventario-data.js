@@ -1,6 +1,7 @@
 import { db } from './inventario-state.js';
 
-const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbxGljbIDdn-q7v6QeRr4tMsCmW_EHwuTvxTkZ92KRCm0C80UOANRAc_UdByPTwJDw8_bw/exec';
+// URL de tu nueva API
+const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbzpHXvNc5NLVOl9Y9eU8KkwFPa5Zd0EcvXB0C7blSSDqGNZ1aTxeZpgbpyAgpBeaB5X/exec';
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 
 export async function inicializarDatos() {
@@ -41,7 +42,10 @@ function parsearCSVPersonajes(texto) {
 
 export async function sincronizarColaBD(cola) {
     try {
-        const response = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify({ accion: 'sincronizar_inventario', agregar: cola.agregar, quitar: cola.quitar }) });
+        const response = await fetch(API_HECHIZOS, { 
+            method: 'POST', 
+            body: JSON.stringify({ accion: 'sincronizar_inventario', agregar: cola.agregar, quitar: cola.quitar, toggleConocido: cola.toggleConocido }) 
+        });
         return (await response.json()).status === 'success';
     } catch (e) { return false; }
 }
@@ -52,5 +56,5 @@ export function exportarCSVPersonajes() {
         csv += db.personajes[n].rawRow.map((v, i) => (i===0||i===1||i===2||i===9) ? String(v) : `"${v}"`).join(",") + "\n";
     });
     const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }));
-    link.download = "HEX_PERSONAJES_AFINIDAD_MOD.csv"; link.click();
+    link.download = "HEX_PERSONAJES_MODIFICADO.csv"; link.click();
 }
