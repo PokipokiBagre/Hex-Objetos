@@ -18,22 +18,28 @@ const getSortValue = (p) => {
     if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
 };
 
-// Extractor tolerante a mayúsculas para las columnas F a J
-function getVal(info, key1, key2) {
-    const val = info[key1] || info[key2] || null;
-    if (!val || val === '0' || val === 0 || val === 'Desconocido' || val === 'null') return null;
-    return val;
+// Extractor robusto F a J (Inmune a espacios y mayúsculas)
+function getValInfo(info, keywords) {
+    if(!info) return null;
+    const keys = Object.keys(info);
+    for(let kw of keywords) {
+        const k = keys.find(x => x.trim().toLowerCase() === kw.toLowerCase());
+        if(k && info[k] && info[k] !== '0' && info[k] !== 0 && info[k] !== 'Desconocido' && info[k] !== 'null') {
+            return info[k];
+        }
+    }
+    return null;
 }
 
 function generarDetalles(info) {
-    const ov = getVal(info, 'overcast 100%', 'Overcast 100%');
-    const un = getVal(info, 'undercast 50%', 'Undercast 50%');
-    const es = getVal(info, 'especial', 'Especial');
+    const ov = getValInfo(info, ['overcast 100%', 'overcast']);
+    const un = getValInfo(info, ['undercast 50%', 'undercast']);
+    const es = getValInfo(info, ['especial', 'especiales']);
     
     if (!ov && !un && !es) return '';
     return `
     <details class="spell-details">
-        <summary>Ver Detalles</summary>
+        <summary>Ver Detalles Adicionales</summary>
         <div class="details-content">
             ${ov ? `<div class="spell-extra"><strong>Overcast:</strong> ${ov}</div>` : ''}
             ${un ? `<div class="spell-extra"><strong>Undercast:</strong> ${un}</div>` : ''}
@@ -97,19 +103,29 @@ export function renderHeaders() {
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                 <div><h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Actual: <strong>${char.hex}</strong></p></div>
             </div>
-            <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (Afinidades y HEX)</button>
+            <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (Afinidades/HEX)</button>
         </div>
+        
         <label class="toggle-hex">
             <input type="checkbox" onchange="window.toggleRestarHex(this.checked)" ${estadoUI.restarHexAsignacion ? 'checked' : ''}>
             RESTAR HEX Y SUBIR AFINIDAD (+1) AL ASIGNAR HECHIZO
         </label>
-        <div style="margin-bottom:20px; text-align:center;">
-            <label style="color:var(--gold); font-weight:bold; margin-right:10px;">Fuente del Hechizo (Origen):</label>
-            <select id="slicer-origen" class="search-bar" style="margin:0; width:auto;">
-                <option value="Mapa Hex">Mapa Hex</option>
-                <option value="OP Admin">OP Admin</option>
-                ${Object.keys(db.personajes).sort().map(n => `<option value="${n}">${n}</option>`).join('')}
-            </select>
+        
+        <div style="margin-bottom:20px; text-align:center; background:#1a0033; padding:15px; border:1px solid var(--gold); border-radius:8px; max-width:800px; margin:0 auto 30px auto;">
+            <div style="margin-bottom:15px;">
+                <label style="color:var(--gold); font-weight:bold; margin-right:10px;">FUENTE DEL HECHIZO (ORIGEN):</label>
+                <select id="slicer-origen" class="search-bar" style="margin:0; width:auto; display:inline-block;">
+                    <option value="Mapa Hex">Mapa Hex</option>
+                    <option value="OP Admin">OP Admin</option>
+                    ${Object.keys(db.personajes).sort().map(n => `<option value="${n}">${n}</option>`).join('')}
+                </select>
+            </div>
+            <h4 style="color:#00ffff; margin:0 0 5px 0; text-align:left;">📋 Bitácora de Aprendizaje</h4>
+            <textarea id="op-log-textarea" readonly style="width:100%; height:80px; background:#000; color:#fff; border:1px dashed var(--gold); padding:10px; font-family:monospace; box-sizing:border-box; margin-bottom:10px;"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button onclick="window.copiarLogOP()" style="flex:3; background:var(--gold); color:black; font-weight:bold; padding:8px; border:none; cursor:pointer; border-radius:4px;">COPIAR AL PORTAPAPELES</button>
+                <button onclick="window.limpiarLogOP()" style="flex:1; background:#8b0000; color:white; padding:8px; border:none; cursor:pointer; border-radius:4px;">LIMPIAR LOG</button>
+            </div>
         </div>`;
 }
 
@@ -123,8 +139,8 @@ export function dibujarGrimorioGrid() {
        .forEach(item => {
         const info = todosNodos.find(n => n.Nombre.trim().toLowerCase() === item.Hechizo.trim().toLowerCase()) || {};
         const col = getColorAfinidad(item["Hechizo Afinidad"] || info.Afinidad);
-        const res = getVal(info, 'resumen', 'Resumen');
-        const efe = getVal(info, 'efecto', 'Efecto');
+        const res = getValInfo(info, ['resumen', 'Resumen']);
+        const efe = getValInfo(info, ['efecto', 'Efecto']);
         const clase = info.Clase || 'Clase -';
         const isTemporal = item.Tipo && item.Tipo !== 'Normal' ? `<br><i>Hechizo ${item.Tipo}</i>` : '';
 
@@ -141,7 +157,7 @@ export function dibujarGrimorioGrid() {
                     <div class="tag-origen">Origen: ${item.Origen || 'Desconocido'}${isTemporal}</div>
                  </div>`;
     });
-    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">Vacio.</p>`;
+    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">El grimorio está vacío.</p>`;
 }
 
 export function dibujarGestionGrid() {
@@ -157,16 +173,27 @@ export function dibujarGestionGrid() {
     let html = ``;
     nodos.sort((a,b) => a.Nombre.localeCompare(b.Nombre)).forEach(h => {
         const isOwned = invNombres.includes(h.Nombre.toLowerCase().trim());
+        // En OP siempre mostramos la info completa, y el ID chiquito
+        const isPublic = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
+        
+        // Chequeo en la cola (por si tocaste ocultar/mostrar sin guardar)
+        const checkColaVis = estadoUI.colaCambios.toggleConocido.find(c => c.Hechizo === h.Nombre);
+        const currentlyPublic = checkColaVis ? (checkColaVis.Estado === 'si') : isPublic;
+
         const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
         
         const btn = isOwned 
             ? `<button onclick="window.accionCola('quitar', '${h.Nombre}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR</button>`
             : `<button onclick="window.accionCola('agregar', '${h.Nombre}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
 
+        const btnVis = `<button onclick="window.accionCola('toggle_conocido', '${h.Nombre}', '', 0, '${currentlyPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${currentlyPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
+
         html += `<div class="spell-card" style="border-left:4px solid ${col.b}; ${isOwned ? 'box-shadow: inset 0 0 15px rgba(0,255,0,0.1);' : ''}">
-                    <h3 style="color:${col.t}; font-size:1.1em;">${h.Nombre}</h3>
+                    <h3 style="color:${col.t}; margin-bottom:2px;">${h.Nombre}</h3>
+                    <span style="display:block; color:#888; font-size:0.7em; font-style:italic; margin-bottom:10px;">ID: ${h.ID}</span>
                     <div class="spell-tags"><span class="spell-tag tag-hex">HEX: ${costo}</span><span class="spell-tag tag-clase">${h.Clase || '-'}</span></div>
                     ${btn}
+                    ${btnVis}
                  </div>`;
     });
     document.getElementById('grid-gestion').innerHTML = html;
@@ -178,30 +205,31 @@ export function dibujarAprendizajeGrid() {
     let html = ``;
     
     if(Object.keys(grupos).length === 0) {
-        document.getElementById('grid-aprendizaje').innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#ff4444; font-size:1.2em;">No hay ramas disponibles.</p>`;
+        document.getElementById('grid-aprendizaje').innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#ff4444; font-size:1.2em;">No hay hechizos que cumplan con los precedentes actuales.</p>`;
         return;
     }
 
     Object.keys(grupos).forEach(reqStr => {
-        html += `<h3 class="req-header">Requiere: ${reqStr.toUpperCase()}</h3><div class="grid-inventario">`;
+        html += `<h3 class="req-header">Precedentes: <span style="color:#aaa;">${reqStr}</span></h3><div class="grid-inventario">`;
         
         grupos[reqStr].forEach(h => {
             const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
             const isKnown = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
             
-            // LÓGICA DE ENMASCARAMIENTO PARA HECHIZOS OCULTOS
+            // LÓGICA DE ENMASCARAMIENTO PARA HECHIZOS NO DESCUBIERTOS
             const titulo = isKnown ? h.Nombre : h.ID;
-            const res = isKnown ? getVal(h, 'resumen', 'Resumen') : 'Info. Bloqueada (Hechizo Oculto)';
-            const efe = isKnown ? getVal(h, 'efecto', 'Efecto') : '';
+            const res = isKnown ? getValInfo(h, ['resumen', 'Resumen']) : '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto).</i>';
+            const efe = isKnown ? getValInfo(h, ['efecto', 'Efecto']) : '';
             const details = isKnown ? generarDetalles(h) : '';
 
             html += `<div class="spell-card" style="border: 2px dashed ${col.b}; background:rgba(10,20,30,0.5);">
-                        <h3 style="color:${col.t};">${titulo}</h3>
+                        <h3 style="color:${isKnown ? col.t : '#666'};">${titulo}</h3>
                         <div class="spell-tags">
                             <span class="spell-tag tag-hex">Coste: ${costo}</span>
                             <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${h.Afinidad}</span>
+                            <span class="spell-tag tag-clase">${h.Clase || '-'}</span>
                         </div>
-                        <div class="spell-desc">${res}</div>
+                        <div class="spell-desc" style="${!isKnown ? 'background:#000; border-left-color:#333;' : ''}">${res}</div>
                         ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
                         ${details}
                      </div>`;
