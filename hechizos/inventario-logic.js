@@ -10,45 +10,6 @@ export function getInventarioCombinado(nombrePj) {
     return [...invReal, ...enColaAdd].filter(item => !nQuitar.includes(item.Hechizo));
 }
 
-// Devuelve el SET de hechizos que tienen TODOS los Jugadores
-export function getHechizosDeJugadores() {
-    const jugadores = Object.keys(db.personajes).filter(k => db.personajes[k].isPlayer);
-    const descubiertos = new Set();
-    const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
-    
-    jugadores.forEach(pj => {
-        getInventarioCombinado(pj).forEach(item => {
-            const invNorm = norm(item.Hechizo);
-            descubiertos.add(invNorm);
-            
-            // Registramos también el ID o el Nombre asociado para que haga "Match" con los NPCs
-            const info = todosNodos.find(n => norm(n.Nombre) === invNorm || norm(n.ID) === invNorm);
-            if (info) {
-                if (info.Nombre) descubiertos.add(norm(info.Nombre));
-                if (info.ID) descubiertos.add(norm(info.ID));
-            }
-        });
-    });
-    return descubiertos;
-}
-
-// ¡ESTA ES LA FUNCIÓN QUE FALTABA! Filtra lo que un NPC puede mostrar públicamente
-export function getInventarioVisible(nombrePj) {
-    const inv = getInventarioCombinado(nombrePj);
-    const isPjPlayer = db.personajes[nombrePj]?.isPlayer;
-
-    if (isPjPlayer || estadoUI.esAdmin) return inv;
-
-    const hechizosPlayers = getHechizosDeJugadores();
-    return inv.filter(item => {
-        const hNorm = norm(item.Hechizo);
-        const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
-        const info = todosNodos.find(n => norm(n.Nombre) === hNorm || norm(n.ID) === hNorm);
-
-        return hechizosPlayers.has(hNorm) || (info && info.ID && hechizosPlayers.has(norm(info.ID))) || (info && info.Nombre && hechizosPlayers.has(norm(info.Nombre)));
-    });
-}
-
 export function obtenerHechizosAprendibles(nombrePj) {
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const nameToId = {}; 
