@@ -1,6 +1,6 @@
 import { db } from './inventario-state.js';
 
-const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbywU0AFv09xMGJAul8MmBciROfmsSastYJalMzWps0bPV3jfGi9aMr8kWVKsNy3ho43/exec';
+const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 
 export async function inicializarDatos(barraProgreso) {
