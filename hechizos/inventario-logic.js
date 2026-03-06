@@ -12,31 +12,38 @@ export function getInventarioCombinado(nombrePj) {
 export function obtenerHechizosAprendibles(nombrePj) {
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     
-    // 1. Mapear Nombre <-> ID
-    const nameToId = {};
-    todosNodos.forEach(n => { if(n.Nombre && n.ID) nameToId[norm(n.Nombre)] = norm(n.ID); });
+    const nameToId = {}; const idToName = {};
+    todosNodos.forEach(n => { 
+        if(n.Nombre && n.ID) {
+            nameToId[norm(n.Nombre)] = norm(n.ID);
+            idToName[norm(n.ID)] = n.Nombre;
+        } 
+    });
 
-    // 2. Traducir Inventario a IDs
     const invNombres = getInventarioCombinado(nombrePj).map(i => norm(i.Hechizo));
     const invIDs = new Set(invNombres.map(n => nameToId[n]).filter(Boolean));
     
-    // 3. Mapear Árbol de Strings (TargetID -> [SourceID, SourceID])
     const reqs = {};
     db.hechizos.string.forEach(rel => {
         const src = norm(rel.Source); const tgt = norm(rel.Target);
         if(!src || !tgt) return; 
-        if(!reqs[tgt]) reqs[tgt] = []; 
-        reqs[tgt].push(src);
+        if(!reqs[tgt]) reqs[tgt] = []; reqs[tgt].push(src);
     });
 
-    // 4. Evaluar cuáles cumplen TODAS las ramas
-    const aprendibles = [];
+    // Grupos: { "Transmutar + Mercurio": [hechizo1, hechizo2] }
+    const grupos = {};
+    
     for (const [tgtID, sources] of Object.entries(reqs)) {
         if (invIDs.has(tgtID)) continue; 
+        
         if (sources.every(s => invIDs.has(s))) {
             const info = todosNodos.find(n => norm(n.ID) === tgtID);
-            if(info) aprendibles.push(info);
+            if(info) {
+                const reqNames = sources.map(s => idToName[s] || s).join(" + ");
+                if(!grupos[reqNames]) grupos[reqNames] = [];
+                grupos[reqNames].push(info);
+            }
         }
     }
-    return aprendibles.sort((a, b) => a.Nombre.localeCompare(b.Nombre));
+    return grupos;
 }
