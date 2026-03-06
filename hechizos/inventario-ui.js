@@ -1,5 +1,5 @@
 import { db, estadoUI } from './inventario-state.js';
-import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario-logic.js';
+import { getInventarioCombinado, obtenerHechizosAprendibles, getInventarioVisible } from './inventario-logic.js';
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
@@ -64,7 +64,7 @@ export function dibujarCatalogo() {
                     <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <h3>${nombre}</h3>
                     <p class="char-stats"><strong style="color:var(--gold)">HEX:</strong> ${p.hex}</p>
-                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioCombinado(nombre).length} Hechizos</p>
+                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioVisible(nombre).length} Hechizos</p>
                     <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
                  </div>`;
     });
@@ -75,7 +75,7 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
-    const inv = getInventarioCombinado(pj);
+    const inv = getInventarioVisible(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
     
@@ -97,23 +97,33 @@ export function renderHeaders() {
     const btnArbol = char.isPlayer ? `<button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>` : '';
     const btnCastear = `<button onclick="window.cambiarVista('casteo')" class="btn-nav" style="background:#3a005a; border-color:#ff00ff; color:white;">🎲 Castear Hechizo</button>`;
 
-    // --- PANEL OP EXCLUSIVO DE CASTEO ---
-    let opCasteoHTML = '';
+    // --- CÁLCULO DE VEX PARA LA CABECERA ---
+    const afOscura = char.rawRow ? (parseInt((char.rawRow[8] || '0').split('_')[0]) || 0) : 0;
+    const maxVex = Math.round(((afOscura * 300) / 4) / 50) * 50;
+
+    // --- PANEL OP DE CONSUMO DE CASTEO ---
+    let checkboxConsumoHTML = '';
     if (estadoUI.esAdmin) {
-        opCasteoHTML = `
-        <div style="background:#1a0033; border:1px solid var(--gold); border-radius:8px; padding:15px; margin-top:15px;">
-            <label class="toggle-hex">
+        checkboxConsumoHTML = `
+        <div style="margin-top:10px; border-top: 1px dashed #555; padding-top:10px;">
+            <label class="toggle-hex" style="margin-bottom:0; display:inline-flex;">
                 <input type="checkbox" id="toggle-cast-consumo" checked>
-                CONSUMIR VEX/HEX AL CONJURAR Y REGISTRAR EN PORTAPAPELES
+                MODO OP: CONSUMIR VEX/HEX AL CALCULAR
             </label>
-            <h4 style="color:#00ffff; margin:10px 0 5px 0;">📋 Log de Conjuros</h4>
+        </div>`;
+    }
+
+    // CAJA DE LOG DISPONIBLE PARA TODOS
+    const logCasteoGlobalHTML = `
+        <div style="background:#1a0033; border:1px solid var(--gold); border-radius:8px; padding:15px; margin-top:15px;">
+            <h4 style="color:#00ffff; margin:0 0 5px 0;">📋 Log de Conjuros (Para copiar al foro)</h4>
             <textarea id="log-casteo-textarea" readonly style="width:100%; height:100px; background:#000; color:#fff; border:1px dashed var(--gold); padding:10px; font-family:monospace; box-sizing:border-box;"></textarea>
             <div style="display:flex; gap:10px; margin-top:10px;">
                 <button onclick="window.copiarLogCasteo()" style="flex:3; background:var(--gold); color:black; font-weight:bold; padding:8px; border:none; cursor:pointer; border-radius:4px;">COPIAR LOG</button>
                 <button onclick="window.limpiarLogCasteo()" style="flex:1; background:#8b0000; color:white; padding:8px; border:none; cursor:pointer; border-radius:4px;">LIMPIAR LOG</button>
             </div>
+            ${checkboxConsumoHTML}
         </div>`;
-    }
 
     document.getElementById('header-grimorio').innerHTML = `
         <div class="player-header">
@@ -142,9 +152,14 @@ export function renderHeaders() {
         <div class="player-header" style="flex-direction:column; align-items:stretch;">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div><h2 style="margin:0;">ZONA DE CONJURO: ${pj.toUpperCase()}</h2></div>
+                <div>
+                    <h2 style="margin:0;">ZONA DE CONJURO: ${pj.toUpperCase()}</h2>
+                    <p style="margin:5px 0 0 0; font-size:1.1em; color:var(--gold); font-weight:bold;">
+                        HEX: <span style="color:white;">${char.hex}</span> &nbsp;|&nbsp; VEX MAX: <span style="color:#dcb1f0;">${maxVex}</span>
+                    </p>
+                </div>
             </div>
-            ${opCasteoHTML}
+            ${logCasteoGlobalHTML}
         </div>`;
 
     document.getElementById('header-gestion').innerHTML = `
@@ -180,7 +195,7 @@ export function renderHeaders() {
 
 export function dibujarGrimorioGrid() {
     const pj = estadoUI.personajeSeleccionado; 
-    const inv = getInventarioCombinado(pj); 
+    const inv = getInventarioVisible(pj); 
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const fAf = estadoUI.filtrosGrimorio.afinidad; const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
 
