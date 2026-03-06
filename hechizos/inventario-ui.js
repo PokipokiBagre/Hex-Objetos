@@ -307,5 +307,3 @@ export function dibujarAprendizajeGrid() {
     });
     document.getElementById('grid-aprendizaje').innerHTML = html;
 }
-    document.getElementById('grid-aprendizaje').innerHTML = html;
-}
