@@ -11,14 +11,14 @@
     <div class="container-hex">
         <div class="nav-bar">
             <div>
-                <button class="btn-nav" onclick="window.location.href='../index.html'">⬅ Volver al Inicio</button>
-                <button class="btn-nav" style="border-color:#00ff00; color:#00ff00;" disabled id="estado-conexion">🟢 CONECTADO</button>
+                <button class="btn-nav btn-volver" onclick="window.location.href='../index.html'">⬅ Volver al Inicio</button>
+                <button class="btn-nav" style="border-color:#00ff00; color:#00ff00; background:#001a00; cursor:default;" disabled>🟢 CONECTADO</button>
             </div>
             <button class="btn-nav btn-op" onclick="window.abrirMenuOP()">⚙️ Acceso OP</button>
         </div>
 
-        <h1 id="main-title">Directorio de Grimorios</h1>
-        <div id="loader" class="loading">Sincronizando Hechizos y Personajes...</div>
+        <h1 id="main-title">SISTEMA DE HECHIZOS</h1>
+        <div id="loader" class="loading">Obteniendo Base de Datos Maestra...</div>
 
         <div id="c-catalogo" class="vista-seccion oculto">
             <div class="filter-group">
@@ -26,26 +26,37 @@
                 <button onclick="window.setFiltro('rol', 'Jugador')" id="btn-rol-Jugador">Jugadores</button>
                 <button onclick="window.setFiltro('rol', 'NPC')" id="btn-rol-NPC">NPCs</button>
             </div>
-            <div class="filter-group">
+            <div class="filter-group" style="margin-bottom: 30px;">
                 <button onclick="window.setFiltro('act', 'Todos')" id="btn-act-Todos" class="btn-active">Ambos</button>
                 <button onclick="window.setFiltro('act', 'Activo')" id="btn-act-Activo">Vivos / Activos</button>
                 <button onclick="window.setFiltro('act', 'Inactivo')" id="btn-act-Inactivo">Muertos / Inactivos</button>
             </div>
-            <div id="vista-catalogo"></div>
+            <div id="grid-catalogo"></div>
         </div>
 
         <div id="c-grimorio" class="vista-seccion oculto">
-            <div id="vista-grimorio"></div>
-        </div>
-
-        <div id="c-aprendizaje" class="vista-seccion oculto">
-            <div id="vista-aprendizaje"></div>
+            <div id="header-grimorio"></div>
+            <div class="filter-group">
+                <select id="f-grim-afinidad" class="search-bar" onchange="window.aplicarFiltrosGrimorio()"><option value="Todos">Todas las Afinidades</option><option>Física</option><option>Energética</option><option>Espiritual</option><option>Mando</option><option>Psíquica</option><option>Oscura</option></select>
+                <input type="text" id="f-grim-texto" class="search-bar" placeholder="Buscar en grimorio..." oninput="window.aplicarFiltrosGrimorio()">
+            </div>
+            <div id="grid-grimorio" class="grid-inventario"></div>
         </div>
 
         <div id="c-gestion" class="vista-seccion oculto">
-            <div id="vista-gestion"></div>
+            <div id="header-gestion"></div>
+            <div class="filter-group" style="gap:20px;">
+                <select id="op-f-afinidad" class="search-bar" onchange="window.aplicarFiltrosGestion()"><option value="Todos">Todas Afinidades</option><option>Física</option><option>Energética</option><option>Espiritual</option><option>Mando</option><option>Psíquica</option><option>Oscura</option></select>
+                <select id="op-f-clase" class="search-bar" onchange="window.aplicarFiltrosGestion()"><option value="Todos">Todas Clases</option><option value="Clase 1">Clase 1</option><option value="Clase 2">Clase 2</option><option value="Clase 3">Clase 3</option></select>
+                <input type="text" id="op-f-texto" class="search-bar" placeholder="Buscar hechizo..." oninput="window.aplicarFiltrosGestion()">
+            </div>
+            <div id="grid-gestion" class="grid-inventario"></div>
         </div>
 
+        <div id="c-aprendizaje" class="vista-seccion oculto">
+            <div id="header-aprendizaje"></div>
+            <div id="grid-aprendizaje" class="grid-inventario"></div>
+        </div>
     </div>
 
     <button id="btn-sync-global" class="btn-sync-float oculto" onclick="window.ejecutarSincronizacion()"></button>
