@@ -21,8 +21,13 @@
         </div>
 
         <h1 id="main-title">SISTEMA DE HECHIZOS</h1>
-        <div id="loader" class="loading">Sincronizando Base de Datos...</div>
-
+       <div id="loader" class="loading" style="margin-bottom: 20px;">
+            <div style="margin-bottom: 10px; color:var(--gold);">Decodificando Arcanos desde el Servidor...</div>
+            <div style="width: 80%; max-width: 400px; height: 10px; background: #111; border: 1px solid var(--gold); border-radius: 5px; margin: 0 auto; overflow: hidden;">
+                <div id="carga-progreso" style="width: 0%; height: 100%; background: var(--cyan-magic); transition: width 0.4s ease-out; box-shadow: 0 0 10px var(--cyan-magic);"></div>
+            </div>
+        </div>
+        
         <div id="c-catalogo" class="vista-seccion oculto">
             <div class="filter-group">
                 <button onclick="window.setFiltro('rol', 'Todos')" id="btn-rol-Todos" class="btn-active">Todos</button>
