@@ -1,5 +1,5 @@
 import { db, estadoUI } from './inventario-state.js';
-import { getInventarioCombinado, getInventarioVisible, obtenerHechizosAprendibles } from './inventario-logic.js';
+import { getInventarioCombinado, obtenerHechizosAprendibles, getHechizosDeJugadores } from './inventario-logic.js';
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 
@@ -59,12 +59,11 @@ export function dibujarCatalogo() {
 
         const style = p.isPlayer && p.isActive ? 'player-active' : (p.isPlayer ? 'player-card' : '');
         
-        // Usamos el Inventario Visible para que el conteo de hechizos del NPC sea exacto a lo que el jugador puede ver
         html += `<div class="char-card ${style} ${p.isActive ? '' : 'inactive-card'}" onclick="window.abrirGrimorio('${nombre}')">
                     <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <h3>${nombre}</h3>
                     <p class="char-stats"><strong style="color:var(--gold)">HEX:</strong> ${p.hex}</p>
-                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioVisible(nombre).length} Hechizos</p>
+                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioCombinado(nombre).length} Hechizos</p>
                     <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
                  </div>`;
     });
@@ -130,35 +129,47 @@ export function renderHeaders() {
 
 export function dibujarGrimorioGrid() {
     const pj = estadoUI.personajeSeleccionado; 
-    // Usamos el inventario censurado (Visible) en lugar del Combinado total
-    const inv = getInventarioVisible(pj);
+    const inv = getInventarioCombinado(pj); 
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
-    const fAf = estadoUI.filtrosGrimorio.afinidad; const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
+    const fAf = estadoUI.filtrosGrimorio.afinidad; 
+    const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
     
+    const isNPC = !db.personajes[pj]?.isPlayer;
+    const descubiertosPlayers = getHechizosDeJugadores();
+
     let html = ``;
     inv.filter(item => (fAf === 'Todos' || item["Hechizo Afinidad"] === fAf) && (!fTx || item.Hechizo.toLowerCase().includes(fTx)))
        .forEach(item => {
         const info = todosNodos.find(n => n.Nombre.trim().toLowerCase() === item.Hechizo.trim().toLowerCase()) || {};
+        
+        // LÓGICA DE ENMASCARAMIENTO PARA NPCs:
+        // Si es NPC, NO soy OP, y ningún jugador tiene el hechizo, enmascaramos la info en lugar de borrar la tarjeta.
+        const isHidden = isNPC && !estadoUI.esAdmin && !descubiertosPlayers.has(normalizar(item.Hechizo));
+
         const col = getColorAfinidad(item["Hechizo Afinidad"] || info.Afinidad);
-        const res = getValInfo(info, ['resumen', 'Resumen']);
-        const efe = getValInfo(info, ['efecto', 'Efecto']);
         const clase = info.Clase || 'Clase -';
         const isTemporal = item.Tipo && item.Tipo !== 'Normal' ? `<br><i>Hechizo ${item.Tipo}</i>` : '';
 
+        // Textos Dinámicos
+        const titulo = isHidden ? (info.ID || 'Desconocido') : item.Hechizo;
+        const res = isHidden ? '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto por jugadores).</i>' : getValInfo(info, ['resumen', 'Resumen']);
+        const efe = isHidden ? '' : getValInfo(info, ['efecto', 'Efecto']);
+        const detailsHTML = isHidden ? '' : generarDetalles(info);
+
         html += `<div class="spell-card" style="border-top-color: ${col.b};">
-                    <h3 style="color:${col.t}">${item.Hechizo}</h3>
+                    <h3 style="color:${isHidden ? '#666' : col.t}">${titulo}</h3>
                     <div class="spell-tags">
                         <span class="spell-tag tag-hex">HEX: ${item["Hechizo Hex"] || info.HEX || 0}</span>
                         <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${item["Hechizo Afinidad"] || info.Afinidad}</span>
                         <span class="spell-tag tag-clase">${clase}</span>
                     </div>
-                    ${res ? `<div class="spell-desc">${res}</div>` : ''}
+                    ${res ? `<div class="spell-desc" style="${isHidden ? 'background:#000; border-left-color:#333;' : ''}">${res}</div>` : ''}
                     ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
-                    ${generarDetalles(info)}
+                    ${detailsHTML}
                     <div class="tag-origen">Origen: ${item.Origen || 'Desconocido'}${isTemporal}</div>
                  </div>`;
     });
-    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">El grimorio está vacío u oculto.</p>`;
+    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">El grimorio está vacío.</p>`;
 }
 
 export function dibujarGestionGrid() {
