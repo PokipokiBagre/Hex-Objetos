@@ -73,33 +73,41 @@ details[open].spell-details summary::after { content: ' ▲'; }
 @media (max-width: 768px) {
     body { padding-bottom: 90px !important; padding-left: 10px !important; padding-right: 10px !important; }
     
+    /* Arreglo vital: Asegurar que los elementos ocultos desaparezcan de verdad */
+    .oculto { display: none !important; }
+    
     .nav-bar {
         position: fixed !important; bottom: 0 !important; left: 0 !important; width: 100vw !important;
         background: rgba(10, 0, 20, 0.98) !important; border-top: 2px solid var(--gold) !important;
-        border-bottom: none !important; padding: 10px !important; margin: 0 !important;
-        display: flex !important; align-items: stretch !important; gap: 5px !important;
+        padding: 10px !important; margin: 0 !important;
+        display: flex !important; gap: 8px !important;
         box-sizing: border-box !important; z-index: 9999 !important; box-shadow: 0 -5px 20px rgba(0,0,0,0.9);
     }
     
-    /* El contenedor izquierdo toma el doble de espacio (para alojar 2 botones) */
-    .nav-bar > div { display: flex !important; flex: 2 !important; gap: 5px !important; }
+    .nav-bar > div { display: flex !important; flex: 1 !important; gap: 8px !important; }
     
-    /* El botón OP toma un espacio */
-    .nav-bar > button.btn-op { flex: 1 !important; margin: 0 !important; }
-    
-    /* Todos los botones adentro se igualan */
+    /* Botones grandes para dedos humanos */
     .btn-nav { 
-        flex: 1 !important; font-size: 0.65em !important; padding: 0 !important; 
-        display: flex !important; align-items: center !important; justify-content: center !important;
-        text-align: center; line-height: 1.2; box-sizing: border-box;
+        font-size: 0.9em !important; 
+        padding: 12px 5px !important; 
+        flex: 1; 
+        text-align: center; 
+        border-radius: 6px !important;
+        white-space: nowrap !important;
     }
+
+    /* Ajuste de ancho del Botón OP */
+    .nav-bar > button.btn-op { flex: 0.6 !important; margin: 0 !important; }
+
+    /* Hacer el botón Verde (Conectado) un cuadradito fijo de 45px para no estorbar */
+    .nav-bar > div > button:nth-child(3) { flex: 0 0 45px !important; padding: 12px 0 !important; min-width: 45px !important; }
 
     .player-header { flex-direction: column !important; text-align: center !important; gap: 15px !important; }
     .player-header > div { flex-direction: column !important; text-align: center !important; }
     
-    .filter-group { flex-direction: column !important; align-items: stretch !important; gap: 5px !important; }
-    .filter-group button { width: 100%; padding: 12px !important; }
-    .search-bar { max-width: 100% !important; width: 100% !important; box-sizing: border-box; }
+    .filter-group { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+    .filter-group button { width: 100%; padding: 12px !important; font-size: 0.9em !important; }
+    .search-bar { max-width: 100% !important; width: 100% !important; box-sizing: border-box; padding: 12px !important; font-size: 0.9em !important;}
 
     .catalogo-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
     .char-card img { width: 70px !important; height: 70px !important; }
@@ -107,5 +115,7 @@ details[open].spell-details summary::after { content: ' ▲'; }
     .char-stats { font-size: 0.75em !important; }
     
     .grid-inventario { grid-template-columns: 1fr !important; gap: 15px !important; margin-bottom: 20px !important;}
-    .btn-sync-float { bottom: 85px !important; padding: 10px 20px !important; font-size: 0.9em !important; width: calc(100% - 40px); left: 20px; text-align: center; box-sizing: border-box;}
+    
+    /* Botón gigante de Guardar Sincronización */
+    .btn-sync-float { bottom: 85px !important; padding: 14px 20px !important; font-size: 1em !important; width: calc(100% - 40px); left: 20px; text-align: center; box-sizing: border-box; border-radius: 8px !important;}
 }
