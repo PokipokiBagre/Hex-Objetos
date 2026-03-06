@@ -31,7 +31,6 @@ function parsearCSVPersonajes(texto) {
         const nombre = f[0]; const idenParts = (f[17] || '0_1').split('_');
         const getBase = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
         
-        // Extracción pasiva de afinidades reales para el Casteo
         const afis = { 'Física': getBase(3), 'Energética': getBase(4), 'Espiritual': getBase(5), 'Mando': getBase(6), 'Psíquica': getBase(7), 'Oscura': getBase(8) };
         
         let mayorAfinidad = 'Ninguna'; let maxVal = -1;
@@ -42,7 +41,7 @@ function parsearCSVPersonajes(texto) {
             iconoOverride: f[18] !== '' ? f[18] : nombre,
             hex: f[1] ? parseInt(f[1].split('_')[0]) || 0 : 0,
             mayorAfinidad: mayorAfinidad, 
-            afinidades: afis, // Guardado para usar en la calculadora
+            afinidades: afis, 
             rawRow: f 
         };
     });
@@ -50,9 +49,37 @@ function parsearCSVPersonajes(texto) {
 
 export async function sincronizarColaBD(cola) {
     try {
-        const response = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify({ accion: 'sincronizar_inventario', agregar: cola.agregar, quitar: cola.quitar, toggleConocido: cola.toggleConocido }) });
-        return (await response.json()).status === 'success';
-    } catch (e) { return false; }
+        console.log("Enviando datos al servidor:", cola);
+        
+        // El 'text/plain' es obligatorio para que Google Apps Script no bloquee el POST
+        const response = await fetch(API_HECHIZOS, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ 
+                accion: 'sincronizar_inventario', 
+                agregar: cola.agregar, 
+                quitar: cola.quitar, 
+                toggleConocido: cola.toggleConocido 
+            }) 
+        });
+        
+        const resText = await response.text(); 
+        
+        try {
+            const result = JSON.parse(resText);
+            if(result.status === 'success') return true;
+            
+            alert("Error interno en Apps Script:\n" + result.message);
+            return false;
+        } catch(e) {
+            console.error("El servidor devolvió algo que no es JSON:", resText);
+            alert("Google bloqueó la solicitud o el código Script crashó. Revisa la consola.");
+            return false;
+        }
+    } catch (e) { 
+        alert("Fallo crítico de Red (Verifica que el link de API_HECHIZOS corresponda a tu último despliegue).");
+        return false; 
+    }
 }
 
 export function exportarCSVPersonajes() {
