@@ -1,5 +1,6 @@
 import { db, estadoUI } from './inventario-state.js';
-import { getInventarioCombinado, obtenerHechizosAprendibles, getHechizosDeJugadores, getInventarioVisible } from './inventario-logic.js';
+// IMPORTACIÓN CORREGIDA: Ya no llama a las funciones eliminadas
+import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario-logic.js';
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
@@ -65,7 +66,7 @@ export function dibujarCatalogo() {
                     <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <h3>${nombre}</h3>
                     <p class="char-stats"><strong style="color:var(--gold)">HEX:</strong> ${p.hex}</p>
-                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioVisible(nombre).length} Hechizos</p>
+                    <p class="char-stats"><strong>Grimorio:</strong> ${getInventarioCombinado(nombre).length} Hechizos</p>
                     <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
                  </div>`;
     });
@@ -76,7 +77,8 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
-    const inv = getInventarioVisible(pj);
+    // Contadores arreglados para usar getInventarioCombinado
+    const inv = getInventarioCombinado(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
     
@@ -173,6 +175,7 @@ export function dibujarGrimorioGrid() {
         const itemNorm = textNorm(item.Hechizo);
         const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         
+        // LÓGICA DE ENMASCARAMIENTO BASADA EN COLUMNA O (Pura, sin revisar Jugadores)
         const isPublicBase = info.Conocido && info.Conocido.toString().trim().toLowerCase() === 'si';
         const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === (info.Nombre || item.Hechizo));
         const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
