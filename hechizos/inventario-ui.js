@@ -18,6 +18,30 @@ const getSortValue = (p) => {
     if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
 };
 
+// Extractor tolerante a mayúsculas para las columnas F a J
+function getVal(info, key1, key2) {
+    const val = info[key1] || info[key2] || null;
+    if (!val || val === '0' || val === 0 || val === 'Desconocido' || val === 'null') return null;
+    return val;
+}
+
+function generarDetalles(info) {
+    const ov = getVal(info, 'overcast 100%', 'Overcast 100%');
+    const un = getVal(info, 'undercast 50%', 'Undercast 50%');
+    const es = getVal(info, 'especial', 'Especial');
+    
+    if (!ov && !un && !es) return '';
+    return `
+    <details class="spell-details">
+        <summary>Ver Detalles</summary>
+        <div class="details-content">
+            ${ov ? `<div class="spell-extra"><strong>Overcast:</strong> ${ov}</div>` : ''}
+            ${un ? `<div class="spell-extra"><strong>Undercast:</strong> ${un}</div>` : ''}
+            ${es ? `<div class="spell-extra"><strong>Especial:</strong> ${es}</div>` : ''}
+        </div>
+    </details>`;
+}
+
 export function dibujarCatalogo() {
     let html = `<div class="catalogo-grid">`;
     Object.keys(db.personajes).sort((a, b) => {
@@ -28,7 +52,7 @@ export function dibujarCatalogo() {
         if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return; if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
         if (estadoUI.filtroAct === 'Activo' && !p.isActive) return; if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
 
-        const style = p.isPlayer ? 'player-active' : 'border: 1px solid #555; background: rgba(10,10,10,0.8);';
+        const style = p.isPlayer ? 'player-card' : '';
         html += `<div class="char-card ${style} ${p.isActive ? '' : 'inactive-card'}" onclick="window.abrirGrimorio('${nombre}')">
                     <img src="../img/imgpersonajes/${normalizar(p.iconoOverride)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                     <h3>${nombre}</h3>
@@ -59,10 +83,10 @@ export function renderHeaders() {
         
     document.getElementById('header-aprendizaje').innerHTML = `
         <button onclick="window.cambiarVista('grimorio')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Grimorio</button>
-        <div class="player-header">
+        <div class="player-header" style="justify-content:center;">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div><h2 style="margin:0;">ÁRBOL DE APRENDIZAJE</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p></div>
+                <div><h2 style="margin:0;">ÁRBOL DE APRENDIZAJE</h2></div>
             </div>
         </div>`;
 
@@ -73,34 +97,20 @@ export function renderHeaders() {
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                 <div><h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Actual: <strong>${char.hex}</strong></p></div>
             </div>
-            <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (Afinidades Modificadas)</button>
+            <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (Afinidades y HEX)</button>
         </div>
         <label class="toggle-hex">
             <input type="checkbox" onchange="window.toggleRestarHex(this.checked)" ${estadoUI.restarHexAsignacion ? 'checked' : ''}>
-            RESTAR COSTE DE HEX Y SUBIR AFINIDAD AL ASIGNAR HECHIZO
+            RESTAR HEX Y SUBIR AFINIDAD (+1) AL ASIGNAR HECHIZO
         </label>
         <div style="margin-bottom:20px; text-align:center;">
-            <label style="color:var(--gold); font-weight:bold; margin-right:10px;">Fuente (Origen):</label>
-            <select id="slicer-origen" class="search-bar" style="margin:0; width:250px;">
+            <label style="color:var(--gold); font-weight:bold; margin-right:10px;">Fuente del Hechizo (Origen):</label>
+            <select id="slicer-origen" class="search-bar" style="margin:0; width:auto;">
                 <option value="Mapa Hex">Mapa Hex</option>
                 <option value="OP Admin">OP Admin</option>
                 ${Object.keys(db.personajes).sort().map(n => `<option value="${n}">${n}</option>`).join('')}
             </select>
         </div>`;
-}
-
-function generarAcordeon(info) {
-    const isV = (v) => v && v !== '0' && v !== 0 && v !== 'Desconocido' && v !== 'null';
-    if (!isV(info['overcast 100%']) && !isV(info['undercast 50%']) && !isV(info.especial)) return '';
-    return `
-    <details style="margin-top:10px; cursor:pointer;">
-        <summary style="color:var(--gold); font-size:0.85em; font-weight:bold; border-top:1px dashed #444; padding-top:8px;">Ver Detalles Ocultos</summary>
-        <div style="padding-top:10px; background:rgba(0,0,0,0.5); padding:10px; border-radius:4px; margin-top:5px;">
-            ${isV(info['overcast 100%']) ? `<div class="spell-extra"><strong>Overcast:</strong> ${info['overcast 100%']}</div>` : ''}
-            ${isV(info['undercast 50%']) ? `<div class="spell-extra"><strong>Undercast:</strong> ${info['undercast 50%']}</div>` : ''}
-            ${isV(info.especial) ? `<div class="spell-extra"><strong>Especial:</strong> ${info.especial}</div>` : ''}
-        </div>
-    </details>`;
 }
 
 export function dibujarGrimorioGrid() {
@@ -109,28 +119,29 @@ export function dibujarGrimorioGrid() {
     const fAf = estadoUI.filtrosGrimorio.afinidad; const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
     
     let html = ``;
-    const filtrados = inv.filter(item => {
-        const matchAf = fAf === 'Todos' || item["Hechizo Afinidad"] === fAf;
-        const matchTx = !fTx || item.Hechizo.toLowerCase().includes(fTx);
-        return matchAf && matchTx;
-    });
-
-    filtrados.forEach(item => {
+    inv.filter(item => (fAf === 'Todos' || item["Hechizo Afinidad"] === fAf) && (!fTx || item.Hechizo.toLowerCase().includes(fTx)))
+       .forEach(item => {
         const info = todosNodos.find(n => n.Nombre.trim().toLowerCase() === item.Hechizo.trim().toLowerCase()) || {};
         const col = getColorAfinidad(item["Hechizo Afinidad"] || info.Afinidad);
-        const isValid = (v) => v && v !== '0' && v !== 0 && v !== 'Desconocido' && v !== 'null';
-        const tipoMini = item.Tipo && item.Tipo !== 'Normal' ? ` | ${item.Tipo}` : '';
+        const res = getVal(info, 'resumen', 'Resumen');
+        const efe = getVal(info, 'efecto', 'Efecto');
+        const clase = info.Clase || 'Clase -';
+        const isTemporal = item.Tipo && item.Tipo !== 'Normal' ? `<br><i>Hechizo ${item.Tipo}</i>` : '';
 
         html += `<div class="spell-card" style="border-top-color: ${col.b};">
                     <h3 style="color:${col.t}">${item.Hechizo}</h3>
-                    <div class="spell-tags"><span class="spell-tag tag-hex">HEX: ${item["Hechizo Hex"] || info.HEX || 0}</span><span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${item["Hechizo Afinidad"] || info.Afinidad}</span></div>
-                    ${isValid(info.resumen) ? `<div class="spell-desc">${info.resumen}</div>` : ''}
-                    ${isValid(info.efecto) ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${info.efecto}</span></div>` : ''}
-                    ${generarAcordeon(info)}
-                    <div class="tag-origen">Origen: ${item.Origen || 'Desconocido'}${tipoMini}</div>
+                    <div class="spell-tags">
+                        <span class="spell-tag tag-hex">HEX: ${item["Hechizo Hex"] || info.HEX || 0}</span>
+                        <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${item["Hechizo Afinidad"] || info.Afinidad}</span>
+                        <span class="spell-tag tag-clase">${clase}</span>
+                    </div>
+                    ${res ? `<div class="spell-desc">${res}</div>` : ''}
+                    ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
+                    ${generarDetalles(info)}
+                    <div class="tag-origen">Origen: ${item.Origen || 'Desconocido'}${isTemporal}</div>
                  </div>`;
     });
-    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">El grimorio está vacío.</p>`;
+    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">Vacio.</p>`;
 }
 
 export function dibujarGestionGrid() {
@@ -146,43 +157,56 @@ export function dibujarGestionGrid() {
     let html = ``;
     nodos.sort((a,b) => a.Nombre.localeCompare(b.Nombre)).forEach(h => {
         const isOwned = invNombres.includes(h.Nombre.toLowerCase().trim());
-        const isPublic = h.Conocido === 'si' || h.Conocido === true;
-        const col = getColorAfinidad(h.Afinidad);
-        const costo = parseInt(h.HEX) || 0;
+        const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
         
         const btn = isOwned 
             ? `<button onclick="window.accionCola('quitar', '${h.Nombre}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR</button>`
             : `<button onclick="window.accionCola('agregar', '${h.Nombre}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
 
-        const btnVis = `<button onclick="window.accionCola('toggle_conocido', '${h.Nombre}', '', 0, '', '${isPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${isPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
-
         html += `<div class="spell-card" style="border-left:4px solid ${col.b}; ${isOwned ? 'box-shadow: inset 0 0 15px rgba(0,255,0,0.1);' : ''}">
                     <h3 style="color:${col.t}; font-size:1.1em;">${h.Nombre}</h3>
-                    <div class="spell-tags"><span class="spell-tag tag-hex">HEX: ${costo}</span><span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${h.Afinidad}</span></div>
+                    <div class="spell-tags"><span class="spell-tag tag-hex">HEX: ${costo}</span><span class="spell-tag tag-clase">${h.Clase || '-'}</span></div>
                     ${btn}
-                    ${btnVis}
                  </div>`;
     });
     document.getElementById('grid-gestion').innerHTML = html;
 }
 
 export function dibujarAprendizajeGrid() {
-    const pj = estadoUI.personajeSeleccionado; const aprendibles = obtenerHechizosAprendibles(pj);
+    const pj = estadoUI.personajeSeleccionado; 
+    const grupos = obtenerHechizosAprendibles(pj);
     let html = ``;
-    aprendibles.forEach(h => {
-        const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
-        const canAfford = db.personajes[pj].hex >= costo;
-        const btn = canAfford 
-            ? `<button onclick="window.aprenderDelArbol('${h.Nombre}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:15px;">Aprender Hechizo</button>`
-            : `<button disabled class="btn-nav" style="background:#333; color:#777; width:100%; margin-top:15px;">Falta HEX</button>`;
+    
+    if(Object.keys(grupos).length === 0) {
+        document.getElementById('grid-aprendizaje').innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#ff4444; font-size:1.2em;">No hay ramas disponibles.</p>`;
+        return;
+    }
 
-        html += `<div class="spell-card" style="border: 2px dashed ${col.b}; background:rgba(10,20,30,0.8);">
-                    <h3 style="color:${col.t};">${h.Nombre}</h3>
-                    <div class="spell-tags"><span class="spell-tag tag-hex">Coste: ${costo}</span><span class="spell-tag">${h.Afinidad}</span></div>
-                    ${h.resumen && h.resumen !== 'Desconocido' ? `<div class="spell-desc">${h.resumen}</div>` : ''}
-                    ${generarAcordeon(h)}
-                    ${btn}
-                 </div>`;
+    Object.keys(grupos).forEach(reqStr => {
+        html += `<h3 class="req-header">Requiere: ${reqStr.toUpperCase()}</h3><div class="grid-inventario">`;
+        
+        grupos[reqStr].forEach(h => {
+            const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
+            const isKnown = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
+            
+            // LÓGICA DE ENMASCARAMIENTO PARA HECHIZOS OCULTOS
+            const titulo = isKnown ? h.Nombre : h.ID;
+            const res = isKnown ? getVal(h, 'resumen', 'Resumen') : 'Info. Bloqueada (Hechizo Oculto)';
+            const efe = isKnown ? getVal(h, 'efecto', 'Efecto') : '';
+            const details = isKnown ? generarDetalles(h) : '';
+
+            html += `<div class="spell-card" style="border: 2px dashed ${col.b}; background:rgba(10,20,30,0.5);">
+                        <h3 style="color:${col.t};">${titulo}</h3>
+                        <div class="spell-tags">
+                            <span class="spell-tag tag-hex">Coste: ${costo}</span>
+                            <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${h.Afinidad}</span>
+                        </div>
+                        <div class="spell-desc">${res}</div>
+                        ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
+                        ${details}
+                     </div>`;
+        });
+        html += `</div>`;
     });
-    document.getElementById('grid-aprendizaje').innerHTML = html || `<p style="grid-column:1/-1; text-align:center; color:#ff4444;">No hay ramas disponibles.</p>`;
+    document.getElementById('grid-aprendizaje').innerHTML = html;
 }
