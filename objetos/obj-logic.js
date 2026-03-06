@@ -1,9 +1,34 @@
-import { invGlobal, objGlobal, historial, guardar } from './obj-state.js';
+import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
+
+// Prepara la info del objeto modificado para enviarla al servidor
+export function encolarCambioObjeto(nombreObj) {
+    let duenos = [];
+    let cants = [];
+    
+    // Recorre todos los jugadores para ver quién tiene este objeto
+    Object.keys(invGlobal).forEach(j => {
+        if (invGlobal[j][nombreObj] > 0) {
+            duenos.push(j);
+            cants.push(invGlobal[j][nombreObj]);
+        }
+    });
+
+    const info = objGlobal[nombreObj] || {};
+    estadoUI.colaCambios[nombreObj] = {
+        objeto: nombreObj,
+        tipo: info.tipo || '-', mat: info.mat || '-',
+        eff: info.eff || 'Sin descripción', rar: info.rar || 'Común',
+        duenos: duenos.join(", "), // Formato que tu Excel necesita: "Reize, Linda"
+        cantidades: cants.join(", ") // Formato que tu Excel necesita: "2, 5"
+    };
+}
 
 export function modificar(j, o, c, callback) {
     if (!invGlobal[j]) invGlobal[j] = {};
     invGlobal[j][o] = Math.max(0, (invGlobal[j][o] || 0) + c);
     historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: o, cambio: c, total: invGlobal[j][o] });
+    
+    encolarCambioObjeto(o); // Encola para la nube
     guardar(); if(callback) callback(); 
 }
 
@@ -13,6 +38,8 @@ export function modificarMulti(jugadores, obj, cant, callback) {
         invGlobal[j][obj] = Math.max(0, (invGlobal[j][obj] || 0) + cant);
         historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: obj, cambio: cant, total: invGlobal[j][obj] });
     });
+    
+    encolarCambioObjeto(obj); // Encola para la nube
     guardar(); if(callback) callback();
 }
 
@@ -28,6 +55,7 @@ export function transferir(origen, destino, obj, cant, callback) {
     historial.push({ fecha: new Date().toLocaleString(), jugador: origen, objeto: obj, cambio: -aMover, total: invGlobal[origen][obj] });
     historial.push({ fecha: new Date().toLocaleString(), jugador: destino, objeto: obj, cambio: aMover, total: invGlobal[destino][obj] });
     
+    encolarCambioObjeto(obj); // Encola para la nube
     guardar(); if(callback) callback();
 }
 
@@ -43,40 +71,31 @@ export function agregarObjetoManual(datos, reparticion, callback) {
             historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: nombre, cambio: cant, total: invGlobal[j][nombre] });
         }
     });
+    
+    encolarCambioObjeto(nombre); // Encola para la nube
     guardar(); callback();
 }
 
-// Descargar CSV de Estado Actual (Celdas Vacías si no hay dueños)
 export function descargarEstadoCSV() {
     let csv = "\uFEFFObjeto,Tipo,Material,Efecto,Rareza,Dueños,Cantidades\n"; 
     Object.keys(objGlobal).sort().forEach(o => {
         const info = objGlobal[o]; let d = [], c = [];
         Object.keys(invGlobal).forEach(jug => { if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); } });
-        if(d.length > 0) {
-            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`;
-        } else {
-            // Se dejan vacías las últimas dos celdas
-            csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","",""\n`;
-        }
+        if(d.length > 0) { csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","${d.join(',')}","${c.join(',')}"\n`; } 
+        else { csv += `"${o}","${info.tipo}","${info.mat}","${info.eff}","${info.rar}","",""\n`; }
     });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     link.download = `HEX_OBJ_ESTADO.csv`; link.click();
 }
 
-// Descargar Excel de Estado Actual (Celdas Vacías si no hay dueños)
 export function descargarEstadoExcel() {
     let data = [["Objeto", "Tipo", "Material", "Efecto", "Rareza", "Dueños", "Cantidades"]];
     Object.keys(objGlobal).sort().forEach(o => {
         const info = objGlobal[o]; let d = [], c = [];
         Object.keys(invGlobal).forEach(jug => { if (invGlobal[jug][o] > 0) { d.push(jug); c.push(invGlobal[jug][o]); } });
-        
-        if(d.length > 0) {
-            data.push([o, info.tipo, info.mat, info.eff, info.rar, d.join(', '), c.join(', ')]);
-        } else {
-            // Se añaden strings vacíos en Dueños y Cantidades
-            data.push([o, info.tipo, info.mat, info.eff, info.rar, "", ""]);
-        }
+        if(d.length > 0) { data.push([o, info.tipo, info.mat, info.eff, info.rar, d.join(', '), c.join(', ')]); } 
+        else { data.push([o, info.tipo, info.mat, info.eff, info.rar, "", ""]); }
     });
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
@@ -84,7 +103,6 @@ export function descargarEstadoExcel() {
     XLSX.writeFile(wb, "HEX_OBJ_ESTADO.xlsx");
 }
 
-// Descargar Excel de Log Histórico
 export function descargarLogExcel() {
     let data = [["Fecha", "Jugador", "Objeto", "Cambio", "Total"]];
     historial.forEach(h => data.push([h.fecha, h.jugador, h.objeto, h.cambio, h.total]));
