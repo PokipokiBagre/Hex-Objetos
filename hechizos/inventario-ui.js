@@ -3,7 +3,7 @@ import { getInventarioCombinado, obtenerHechizosAprendibles } from './inventario
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
-const safeStr = (str) => str ? str.toString().replace(/'/g, "\\'") : ''; // Seguro contra apóstrofes
+const safeStr = (str) => str ? str.toString().replace(/'/g, "\\'") : '';
 
 function getColorAfinidad(af) {
     if(af === 'Física') return { b: '#8b4513', t: '#e2a673' };
@@ -212,8 +212,9 @@ export function dibujarGrimorioGrid() {
         const itemNorm = textNorm(item.Hechizo);
         const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         
+        // Verifica si el hechizo está en la cola de cambios ANTES de consultar el Excel
+        const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.ID === info.ID || c.Nombre === info.Nombre);
         const isPublicBase = info.Conocido && info.Conocido.toString().trim().toLowerCase() === 'si';
-        const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === (info.Nombre || item.Hechizo));
         const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
         
         const isHidden = !estadoUI.esAdmin && !isKnown;
@@ -229,8 +230,8 @@ export function dibujarGrimorioGrid() {
         const efe = isHidden ? '' : getValInfo(info, ['efecto', 'Efecto']);
         const detailsHTML = isHidden ? '' : generarDetalles(info);
         
-        // Uso de safeStr para evitar que nombres con ' rompan el HTML
-        const btnVis = (estadoUI.esAdmin && info.Nombre) ? `<button onclick="window.accionCola('toggle_conocido', '${safeStr(info.Nombre)}', '', 0, '${isKnown ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:10px; font-size:0.8em; padding:5px;">${isKnown ? '👁️ Ocultar Hechizo Globalmente' : '🙈 Hacer Público'}</button>` : '';
+        // El botón llama directamente a la función toggleVisibilidad enviando ID y Nombre
+        const btnVis = (estadoUI.esAdmin && info.Nombre) ? `<button onclick="window.toggleVisibilidad('${info.ID}', '${safeStr(info.Nombre)}', '${isKnown ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:10px; font-size:0.8em; padding:5px;">${isKnown ? '👁️ Ocultar Hechizo Globalmente' : '🙈 Hacer Público'}</button>` : '';
 
         html += `<div class="spell-card" style="border-top-color: ${col.b};">
                     <h3 style="color:${isHidden ? '#666' : col.t}">${titulo}</h3>
@@ -262,10 +263,11 @@ export function dibujarGestionGrid() {
     let html = ``;
     nodos.sort((a,b) => a.Nombre.localeCompare(b.Nombre)).forEach(h => {
         const isOwned = invNombres.includes(textNorm(h.Nombre)) || invNombres.includes(textNorm(h.ID));
-        const isPublic = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
         
-        const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === h.Nombre);
-        const currentlyPublic = checkColaVis ? (checkColaVis.Estado === 'si') : isPublic;
+        // Verifica cola local primero
+        const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.ID === h.ID || c.Nombre === h.Nombre);
+        const isPublicBase = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
+        const currentlyPublic = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
 
         const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
         
@@ -273,7 +275,7 @@ export function dibujarGestionGrid() {
             ? `<button onclick="window.accionCola('quitar', '${safeStr(h.Nombre)}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR HECHIZO</button>`
             : `<button onclick="window.accionCola('agregar', '${safeStr(h.Nombre)}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
 
-        const btnVis = `<button onclick="window.accionCola('toggle_conocido', '${safeStr(h.Nombre)}', '', 0, '${currentlyPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${currentlyPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
+        const btnVis = `<button onclick="window.toggleVisibilidad('${h.ID}', '${safeStr(h.Nombre)}', '${currentlyPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${currentlyPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
 
         html += `<div class="spell-card" style="border-left:4px solid ${col.b}; ${isOwned ? 'box-shadow: inset 0 0 15px rgba(0,255,0,0.1);' : ''}">
                     <h3 style="color:${col.t}; margin-bottom:2px;">${h.Nombre}</h3>
@@ -305,8 +307,8 @@ export function dibujarAprendizajeGrid() {
         grupos[reqStr].forEach(h => {
             const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
             
+            const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.ID === h.ID || c.Nombre === h.Nombre);
             const isPublicBase = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
-            const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === h.Nombre);
             const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
             
             const titulo = isKnown ? h.Nombre : h.ID;
