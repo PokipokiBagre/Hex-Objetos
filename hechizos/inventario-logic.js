@@ -10,7 +10,7 @@ export function getInventarioCombinado(nombrePj) {
     return [...invReal, ...enColaAdd].filter(item => !nQuitar.includes(item.Hechizo));
 }
 
-// NUEVO: Obtiene set de todos los hechizos que poseen los JUGADORES activos o inactivos
+// Devuelve el SET de todos los hechizos que tienen en posesión TODOS los Jugadores
 export function getHechizosDeJugadores() {
     const jugadores = Object.keys(db.personajes).filter(k => db.personajes[k].isPlayer);
     const hechizosJugadores = new Set();
@@ -19,19 +19,6 @@ export function getHechizosDeJugadores() {
         inv.forEach(item => hechizosJugadores.add(norm(item.Hechizo)));
     });
     return hechizosJugadores;
-}
-
-// NUEVO: Filtra el inventario de un NPC para que NO muestre hechizos que ningún jugador tiene.
-export function getInventarioVisible(nombrePj) {
-    const inv = getInventarioCombinado(nombrePj);
-    const isPjPlayer = db.personajes[nombrePj]?.isPlayer;
-
-    // Si es jugador o si tienes Modo OP activo, ves todo.
-    if (isPjPlayer || estadoUI.esAdmin) return inv;
-
-    // Si es NPC y no eres OP, censuramos lo que los jugadores no hayan descubierto.
-    const hechizosPlayers = getHechizosDeJugadores();
-    return inv.filter(item => hechizosPlayers.has(norm(item.Hechizo)));
 }
 
 export function obtenerHechizosAprendibles(nombrePj) {
@@ -48,7 +35,6 @@ export function obtenerHechizosAprendibles(nombrePj) {
             nameToId[nomNorm] = idNorm;
             
             // BLINDAJE: Solo mapea el Nombre Real si no empieza por "hechizo"
-            // Esto evita que "Hechizo 1" de la tabla oculta sobrescriba a "HEX (50)"
             if (!nom.toLowerCase().startsWith('hechizo')) {
                 idToName[idNorm] = nom;
             }
@@ -73,7 +59,6 @@ export function obtenerHechizosAprendibles(nombrePj) {
     for (const [tgtID, sources] of Object.entries(reqs)) {
         if (invIDs.has(tgtID)) continue; 
         
-        // Si posee AL MENOS UNO de los precedentes
         if (sources.some(s => invIDs.has(s))) {
             const info = todosNodos.find(n => norm(n.ID) === tgtID);
             if(info) {
@@ -83,9 +68,7 @@ export function obtenerHechizosAprendibles(nombrePj) {
 
                 const reqStrArray = sources.map(s => {
                     const isOwned = invIDs.has(s);
-                    // Saca el nombre real ("HEX (50)") o el ID base si no lo encuentra.
                     const realName = idToName[s] || formatearID(s);
-                    
                     return isOwned ? `${realName.toUpperCase()} (EN POSESIÓN)` : formatearID(s).toUpperCase();
                 });
                 
