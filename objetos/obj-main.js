@@ -1,16 +1,34 @@
 import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
-import { cargarTodoDesdeCSV } from './obj-data.js';
+import { cargarTodoDesdeCSV, sincronizarObjetosBD } from './obj-data.js';
 import { modificar, modificarMulti, transferir, descargarLogExcel, descargarEstadoExcel, agregarObjetoManual } from './obj-logic.js';
 import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
 
-setInterval(async () => {
-    if (estadoUI.modoSincronizado) {
-        console.log("Sincronizando inventarios con la nube...");
-        await cargarTodoDesdeCSV();
-        refrescarUI();
+// El botón se actualiza cada vez que se hace un cambio
+window.actualizarBotonSyncObj = () => {
+    const btn = document.getElementById('btn-sync-global');
+    if(!btn) return;
+    const cambios = Object.keys(estadoUI.colaCambios || {}).length;
+    if (cambios > 0) {
+        btn.classList.remove('oculto');
+        btn.innerText = `🔥 GUARDAR CAMBIOS AL SERVIDOR (${cambios}) 🔥`;
+    } else {
+        btn.classList.add('oculto');
     }
-}, 10000);
+};
 
+window.ejecutarSincronizacion = async () => {
+    const btn = document.getElementById('btn-sync-global');
+    btn.innerText = "Sincronizando..."; btn.disabled = true;
+    if(await sincronizarObjetosBD(estadoUI.colaCambios)) {
+        estadoUI.colaCambios = {}; // Limpia la cola tras el éxito
+        guardar();
+        alert("¡Base de datos actualizada con éxito!");
+        window.actualizarBotonSyncObj();
+    }
+    btn.disabled = false;
+};
+
+// Quitamos el SetInterval para no interrumpir el guardado manual del usuario
 window.toggleSync = () => {
     estadoUI.modoSincronizado = !estadoUI.modoSincronizado;
     const btn = document.getElementById('btn-sync');
@@ -36,8 +54,14 @@ window.descargarInventariosJPG = async () => {
 async function iniciar() {
     if (performance.getEntriesByType("navigation")[0]?.type === "reload") { localStorage.removeItem('hex_obj_v4'); }
     const cache = localStorage.getItem('hex_obj_v4');
-    if (!cache) await cargarTodoDesdeCSV();
-    else { const p = JSON.parse(cache); Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); if(p.modoSync !== undefined) estadoUI.modoSincronizado = p.modoSync; }
+    if (!cache) { 
+        await cargarTodoDesdeCSV(); 
+    } else { 
+        const p = JSON.parse(cache); 
+        Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); 
+        if(p.modoSync !== undefined) estadoUI.modoSincronizado = p.modoSync;
+        if(p.colaCambios) estadoUI.colaCambios = p.colaCambios;
+    }
     
     estadoUI.cambiosSesion = {};
     estadoUI.vistaActual = 'grilla';
@@ -89,13 +113,14 @@ async function iniciar() {
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Copiado al portapapeles."); };
     
-    // NAVEGACIÓN Y MENÚS
+    // Al cambiar la página también actualiza el botón flotante por si se quedó colgado
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
         document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa')); 
         const target = document.getElementById('pag-' + id);
         if(target) target.classList.add('activa'); 
         refrescarUI(); 
+        window.actualizarBotonSyncObj();
     };
 
     const _session = 'Y2FuZXk=';
@@ -112,17 +137,15 @@ async function iniciar() {
     window.abrirInventario = (j) => { estadoUI.jugadorInv = j; window.mostrarPagina('inventario'); };
     window.volverAGrilla = () => { estadoUI.jugadorInv = null; window.mostrarPagina('grilla'); };
 
-    // CONTROL Y MULTIPLICADORES
     window.setEditMult = (val) => { estadoUI.editMult = val; refrescarUI(); };
     window.setEditModo = (val) => { estadoUI.editModo = val; refrescarUI(); };
     window.hexMod = (j, o, c) => {
         if (!estadoUI.cambiosSesion[j]) estadoUI.cambiosSesion[j] = {};
         estadoUI.cambiosSesion[j][o] = (estadoUI.cambiosSesion[j][o] || 0) + c;
         actualizarLogSesion();
-        modificar(j, o, c, refrescarUI);
+        modificar(j, o, c, () => { refrescarUI(); window.actualizarBotonSyncObj(); });
     };
 
-    // PARTY LOOT MASIVO
     window.togglePartyLoot = (player, isChecked) => {
         if (isChecked && !estadoUI.partyLoot.includes(player)) estadoUI.partyLoot.push(player);
         if (!isChecked) estadoUI.partyLoot = estadoUI.partyLoot.filter(p => p !== player);
@@ -137,10 +160,9 @@ async function iniciar() {
             estadoUI.cambiosSesion[j][item] = (estadoUI.cambiosSesion[j][item] || 0) + cant;
         });
         actualizarLogSesion();
-        modificarMulti(estadoUI.partyLoot, item, cant, refrescarUI);
+        modificarMulti(estadoUI.partyLoot, item, cant, () => { refrescarUI(); window.actualizarBotonSyncObj(); });
     };
 
-    // TRANSFERENCIAS
     window.setTransOrigen = (val) => { estadoUI.transOrigen = val; refrescarUI(); };
     window.setTransDestino = (val) => { estadoUI.transDestino = val; refrescarUI(); };
     window.setTransMult = (val) => { estadoUI.transMult = val; refrescarUI(); };
@@ -156,7 +178,7 @@ async function iniciar() {
         estadoUI.cambiosSesion[dest][item] = (estadoUI.cambiosSesion[dest][item] || 0) + cantToPass;
         
         actualizarLogSesion();
-        transferir(origen, dest, item, cantToPass, refrescarUI);
+        transferir(origen, dest, item, cantToPass, () => { refrescarUI(); window.actualizarBotonSyncObj(); });
     };
 
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
@@ -178,13 +200,13 @@ async function iniciar() {
         const d = { nombre: document.getElementById('new-obj-name').value.trim(), tipo: document.getElementById('new-obj-tipo').value, mat: document.getElementById('new-obj-mat').value, eff: document.getElementById('new-obj-eff').value.trim(), rar: document.getElementById('new-obj-rar').value };
         const rep = {}; document.querySelectorAll('.cant-input').forEach(i => rep[i.dataset.player] = i.value);
         if(!d.nombre) return alert("Nombre vacío");
-        agregarObjetoManual(d, rep, () => { alert("Objeto Creado"); window.mostrarPagina('op-menu'); });
+        agregarObjetoManual(d, rep, () => { alert("Objeto Creado Localmente. ¡Recuerda Guardar los cambios!"); window.mostrarPagina('op-menu'); window.actualizarBotonSyncObj(); });
     };
 
-    // EXPORTS MÁGICOS DE EXCEL
     window.descargarEstadoExcel = descargarEstadoExcel; 
     window.descargarLogExcel = descargarLogExcel;
     
     window.mostrarPagina('grilla'); 
+    window.actualizarBotonSyncObj();
 }
 iniciar();
