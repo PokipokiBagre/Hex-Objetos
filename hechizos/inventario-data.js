@@ -1,7 +1,6 @@
 import { db } from './inventario-state.js';
 
-// URL de tu nueva API
-const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbzpHXvNc5NLVOl9Y9eU8KkwFPa5Zd0EcvXB0C7blSSDqGNZ1aTxeZpgbpyAgpBeaB5X/exec';
+const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycbx-v0BEMVBw4r0p7mY9m0eyBcA75prv2Ru1XEcixIeKnw9DviBCmCA9mHLuybb-skamCw/exec';
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 
 export async function inicializarDatos() {
@@ -11,7 +10,7 @@ export async function inicializarDatos() {
         const resHz = await fetch(API_HECHIZOS);
         db.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
         return true;
-    } catch (e) { console.error("Error:", e); return false; }
+    } catch (e) { return false; }
 }
 
 function parsearCSVPersonajes(texto) {
@@ -25,7 +24,6 @@ function parsearCSVPersonajes(texto) {
     filas.slice(1).forEach(f => {
         if(!f[0]) return;
         const nombre = f[0]; const idenParts = (f[17] || '0_1').split('_');
-        
         const getBase = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
         const afis = { 'Física': getBase(3), 'Energética': getBase(4), 'Espiritual': getBase(5), 'Mando': getBase(6), 'Psíquica': getBase(7), 'Oscura': getBase(8) };
         let mayorAfinidad = 'Ninguna'; let maxVal = -1;
@@ -42,10 +40,7 @@ function parsearCSVPersonajes(texto) {
 
 export async function sincronizarColaBD(cola) {
     try {
-        const response = await fetch(API_HECHIZOS, { 
-            method: 'POST', 
-            body: JSON.stringify({ accion: 'sincronizar_inventario', agregar: cola.agregar, quitar: cola.quitar, toggleConocido: cola.toggleConocido }) 
-        });
+        const response = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify({ accion: 'sincronizar_inventario', agregar: cola.agregar, quitar: cola.quitar }) });
         return (await response.json()).status === 'success';
     } catch (e) { return false; }
 }
