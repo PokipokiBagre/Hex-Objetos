@@ -16,13 +16,12 @@ window.cambiarVista = (vista) => {
     
     if (vista === 'catalogo') dibujarCatalogo(); 
     else {
-        renderHeaders(); // Pinta la cabecera (Imágenes, Selectors) solo una vez
+        renderHeaders(); 
         if (vista === 'grimorio') dibujarGrimorioGrid();
         if (vista === 'gestion') dibujarGestionGrid();
         if (vista === 'aprendizaje') dibujarAprendizajeGrid();
     }
     actualizarBotonSync();
-    window.scrollTo(0,0);
 };
 
 window.abrirGrimorio = (pj) => { estadoUI.personajeSeleccionado = pj; estadoUI.filtrosGrimorio = { afinidad: 'Todos', busqueda: '' }; window.cambiarVista('grimorio'); };
@@ -42,23 +41,23 @@ window.aplicarFiltrosGestion = () => { estadoUI.filtrosGestion.afinidad = docume
 window.toggleRestarHex = (c) => { estadoUI.restarHexAsignacion = c; };
 window.descargarCSVHex = () => { exportarCSVPersonajes(); };
 
-// --- LA LÓGICA DE AFINIDAD Y HEX ---
+// --- MAGIA: SUMA AFINIDADES (+1 Total y +1 Conteo) ---
 function aplicarCambiosPersonaje(pj, hex, afinidad) {
     const charObj = db.personajes[pj];
-    charObj.hex = Math.max(0, charObj.hex - hex); // Resta HEX
+    charObj.hex = Math.max(0, charObj.hex - hex); 
     
-    // Modificar Afinidad (Sumar al Total [0] y al Conteo [2])
     const colMap = { 'Física': 3, 'Energética': 4, 'Espiritual': 5, 'Mando': 6, 'Psíquica': 7, 'Oscura': 8 };
     if (colMap[afinidad]) {
         const idx = colMap[afinidad];
         let cell = charObj.rawRow[idx];
         if (!cell || !cell.includes('_')) cell = `${cell || 0}_0_0_0_0`;
         let parts = cell.split('_');
-        parts[0] = (parseInt(parts[0]) + 1).toString();
-        if(parts.length > 2) parts[2] = (parseInt(parts[2]) + 1).toString();
+        
+        parts[0] = (parseInt(parts[0]) + 1).toString(); // +1 al Total
+        if(parts.length > 2) parts[2] = (parseInt(parts[2]) + 1).toString(); // +1 al Conteo (Spells)
+        
         charObj.rawRow[idx] = parts.join('_');
     }
-    // Reempaquetar el HEX en la Fila cruda
     const hexParts = charObj.rawRow[1].split('_'); hexParts[0] = charObj.hex.toString(); charObj.rawRow[1] = hexParts.join('_');
 }
 
@@ -67,35 +66,38 @@ window.aprenderDelArbol = (nombreHechizo, afinidad, hex) => {
     window.cambiarVista('grimorio');
 };
 
-window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, origenAuto = null, forceSub = false) => {
+window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, origenAuto = null, estadoConocido = null) => {
     const pj = estadoUI.personajeSeleccionado;
     
     if(accion === 'agregar') {
         const origen = origenAuto || document.getElementById('slicer-origen')?.value || 'OP Admin';
         estadoUI.colaCambios.agregar.push([pj, nombreHechizo, afinidad, hex, "Normal", origen]);
-        if(estadoUI.restarHexAsignacion || forceSub) aplicarCambiosPersonaje(pj, hex, afinidad);
+        if(estadoUI.restarHexAsignacion || origenAuto === 'Mapa Hex') aplicarCambiosPersonaje(pj, hex, afinidad);
     } else if (accion === 'quitar') {
         estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
+    } else if (accion === 'toggle_conocido') {
+        estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: estadoConocido });
     }
-    if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); }
+    
+    if(estadoUI.vistaActual === 'gestion') { dibujarGestionGrid(); }
     actualizarBotonSync();
 };
 
 function actualizarBotonSync() {
     const btn = document.getElementById('btn-sync-global');
-    const h = estadoUI.colaCambios.agregar.length + estadoUI.colaCambios.quitar.length;
-    if (h > 0) { btn.classList.remove('oculto'); btn.innerText = `🔥 GUARDAR CAMBIOS (${h}) 🔥`; } 
+    const h = estadoUI.colaCambios.agregar.length + estadoUI.colaCambios.quitar.length + estadoUI.colaCambios.toggleConocido.length;
+    if (h > 0) { btn.classList.remove('oculto'); btn.innerText = `🔥 GUARDAR CAMBIOS AL SERVIDOR (${h}) 🔥`; } 
     else btn.classList.add('oculto');
 }
 
 window.ejecutarSincronizacion = async () => {
     const btn = document.getElementById('btn-sync-global'); btn.innerText = "Sincronizando..."; btn.disabled = true;
     if(await sincronizarColaBD(estadoUI.colaCambios)) {
-        alert("¡Base de datos actualizada!"); estadoUI.colaCambios = { agregar: [], quitar: [] };
+        alert("¡Base de datos actualizada con éxito!"); estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [] };
         if(estadoUI.restarHexAsignacion && estadoUI.esAdmin) {
-            if(confirm("El HEX y las Afinidades han mutado. ¿Descargar CSV de Personajes actualizado?")) exportarCSVPersonajes();
+            if(confirm("Se actualizaron Afinidades y HEX en la memoria local. ¿Descargar CSV de Estadísticas para subirlo a tu drive?")) exportarCSVPersonajes();
         }
-        window.cambiarVista('catalogo');
-    } else alert("Error de conexión.");
+        window.location.reload(); // Forzar recarga limpia
+    } else alert("Error de conexión. Reintenta.");
     btn.disabled = false;
 };
