@@ -6,16 +6,13 @@ const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENp
 
 export async function inicializarDatos() {
     try {
-        // 1. Obtener Personajes desde el CSV
         const resPj = await fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime());
         const txtPj = await resPj.text();
         parsearCSVPersonajes(txtPj);
 
-        // 2. Obtener Hechizos (Cifrados) desde la nueva API
         const resHz = await fetch(API_HECHIZOS);
         const txtCifrado = await resHz.text();
         
-        // Desciframos la data Base64 a JSON
         const jsonStr = decodeURIComponent(escape(window.atob(txtCifrado)));
         db.hechizos = JSON.parse(jsonStr);
         
