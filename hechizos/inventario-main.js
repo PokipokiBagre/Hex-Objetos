@@ -4,10 +4,43 @@ import { dibujarCatalogo, renderHeaders, dibujarGrimorioGrid, dibujarGestionGrid
 
 window.onload = async () => {
     const loader = document.getElementById('loader');
-    const ok = await inicializarDatos();
+    const barra = document.getElementById('carga-progreso');
+
+// 1. INTENTO DE CARGA INSTANTÁNEA POR CACHÉ
+    const cacheData = localStorage.getItem('hex_hechizos_cache');
+    if(cacheData) {
+        try {
+            const parsed = JSON.parse(cacheData);
+            db.personajes = parsed.personajes;
+            db.hechizos = parsed.hechizos;
+            db.csvHeadersPersonajes = parsed.headers;
+            
+            if(loader) loader.style.display = 'none'; 
+            window.cambiarVista('catalogo'); 
+            
+            // Seguimos cargando de fondo silenciosamente...
+            await inicializarDatos(null);
+            
+            // Actualizamos la memoria para la próxima
+            localStorage.setItem('hex_hechizos_cache', JSON.stringify({ personajes: db.personajes, hechizos: db.hechizos, headers: db.csvHeadersPersonajes }));
+            
+            window.cambiarVista(estadoUI.vistaActual); // Redibuja la pantalla silenciosamente con los datos 100% reales
+            
+            return; 
+        } catch(e) { console.warn("Caché obsoleto, recargando..."); }
+    }
+
+    // 2. CARGA LENTA (Primera vez o si se borró la caché)
+    const ok = await inicializarDatos(barra);
     if(!ok) { if(loader) loader.innerHTML = "<span style='color:red'>Fallo Crítico al cargar Servidores.</span>"; return; }
-    if(loader) loader.style.display = 'none';
-    window.cambiarVista('catalogo');
+    
+    // Guardamos para que la próxima vez sea instantáneo
+    localStorage.setItem('hex_hechizos_cache', JSON.stringify({ personajes: db.personajes, hechizos: db.hechizos, headers: db.csvHeadersPersonajes }));
+    
+    setTimeout(() => {
+        if(loader) loader.style.display = 'none';
+        window.cambiarVista('catalogo');
+    }, 400); // Pequeña pausa para ver la barra llena
 };
 
 window.cambiarVista = (vista) => {
@@ -136,10 +169,13 @@ function actualizarBotonSync() {
 window.ejecutarSincronizacion = async () => {
     const btn = document.getElementById('btn-sync-global'); btn.innerText = "Sincronizando..."; btn.disabled = true;
     if(await sincronizarColaBD(estadoUI.colaCambios)) {
-        alert("¡Base de datos actualizada con éxito!"); estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [] };
+        alert("¡Base de datos actualizada con éxito!"); 
+        estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [] };
         if(estadoUI.restarHexAsignacion && estadoUI.esAdmin && estadoUI.logOP.aprendidos.length > 0) {
             if(confirm("El personaje ha modificado su HEX y Afinidad. ¿Descargar el nuevo CSV de estadísticas?")) exportarCSVPersonajes();
         }
+        // VACIAR CACHÉ PARA FORZAR QUE VEAN LOS CAMBIOS
+        localStorage.removeItem('hex_hechizos_cache');
         window.location.reload(); 
     } else alert("Error de conexión. Reintenta.");
     btn.disabled = false;
