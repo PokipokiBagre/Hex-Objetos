@@ -16,6 +16,12 @@ window.cambiarVista = (vista) => {
     const sec = document.getElementById(`c-${vista}`);
     if(sec) sec.classList.remove('oculto');
     
+    const btnCat = document.getElementById('btn-nav-catalogo');
+    if(btnCat) {
+        if(vista === 'catalogo') btnCat.classList.add('oculto');
+        else btnCat.classList.remove('oculto');
+    }
+
     if (vista === 'catalogo') { dibujarCatalogo(); } 
     else {
         renderHeaders(); 
@@ -28,16 +34,8 @@ window.cambiarVista = (vista) => {
 
 window.abrirGrimorio = (pj) => { estadoUI.personajeSeleccionado = pj; estadoUI.filtrosGrimorio = { afinidad: 'Todos', busqueda: '' }; window.cambiarVista('grimorio'); window.scrollTo(0,0); };
 window.abrirMenuOP = () => {
-    if(estadoUI.esAdmin) { 
-        estadoUI.esAdmin = false; 
-        alert("Modo OP Desactivado."); 
-        window.cambiarVista('catalogo'); 
-        return; 
-    }
-    if (prompt("Contraseña:") === atob('Y2FuZXk=')) { 
-        estadoUI.esAdmin = true; 
-        window.cambiarVista(estadoUI.vistaActual); 
-    }
+    if(estadoUI.esAdmin) { estadoUI.esAdmin = false; alert("Modo OP Desactivado."); window.cambiarVista('catalogo'); return; }
+    if (prompt("Contraseña:") === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; window.cambiarVista(estadoUI.vistaActual); }
 };
 
 window.setFiltro = (tipo, valor) => {
@@ -64,14 +62,13 @@ function aplicarCambiosPersonaje(pj, hex, afinidad) {
         let cell = charObj.rawRow[idx];
         if (!cell || !cell.includes('_')) cell = `${cell || 0}_0_0_0_0`;
         let parts = cell.split('_');
-        parts[0] = (parseInt(parts[0]) + 1).toString(); // +1 al Total
-        if(parts.length > 2) parts[2] = (parseInt(parts[2]) + 1).toString(); // +1 al Conteo
+        parts[0] = (parseInt(parts[0]) + 1).toString(); 
+        if(parts.length > 2) parts[2] = (parseInt(parts[2]) + 1).toString(); 
         charObj.rawRow[idx] = parts.join('_');
     }
     const hexParts = charObj.rawRow[1].split('_'); hexParts[0] = charObj.hex.toString(); charObj.rawRow[1] = hexParts.join('_');
 }
 
-// --- ACTUALIZADOR DEL TEXTAREA OP ---
 function actualizarTextoLogOP() {
     const textarea = document.getElementById('op-log-textarea');
     if(!textarea) return;
@@ -111,7 +108,6 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, targetVisibi
             estadoUI.logOP.aprendidos.push(nombreHechizo);
             estadoUI.logOP.hexGastado += hex;
             
-            // Auto-descubrir si estaba oculto
             if(info && (!info.Conocido || info.Conocido.toString().trim().toLowerCase() !== 'si')) {
                 estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: 'si' });
                 estadoUI.logOP.descubiertos.push(`${info.ID} - ${info.Nombre}`);
@@ -124,6 +120,8 @@ window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, targetVisibi
     }
     
     if(estadoUI.vistaActual === 'gestion') { renderHeaders(); dibujarGestionGrid(); actualizarTextoLogOP(); }
+    else if(estadoUI.vistaActual === 'grimorio') { dibujarGrimorioGrid(); } // Refresca si pulsas mostrar/ocultar en el Grimorio
+    
     actualizarBotonSync();
 };
 
