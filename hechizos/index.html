@@ -3,57 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grimorio de Personajes | HEX ROL</title>
+    <title>Sistema de Hechizos | HEX RPG</title>
     <link rel="stylesheet" href="../stylehechizos.css">
+    <style>
+        /* Botones de navegación base */
+        .btn-nav { background: #1a0033; border: 1px solid var(--gold); color: var(--gold); padding: 10px; cursor: pointer; }
+        .btn-nav:hover { background: var(--gold); color: #000; }
+        .btn-sync-float { position: fixed; bottom: 20px; right: 20px; background: #800000; color: #fff; padding: 15px 30px; border: 2px solid #ff0000; border-radius: 30px; font-weight: bold; font-size: 1.2em; box-shadow: 0 0 20px rgba(255,0,0,0.5); z-index: 1000; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-    <button onclick="window.abrirMenuOP()" class="btn-op">ACCESO OP</button>
+    <div style="display:flex; justify-content:space-between; margin-bottom: 20px;">
+        <button class="btn-nav" onclick="window.cambiarVista('catalogo')">🏠 Volver al Catálogo</button>
+        <button class="btn-nav" onclick="window.abrirMenuOP()">⚙️ Modo OP</button>
+    </div>
 
     <div class="container-hex">
-        <h1>Grimorio de Hechizos</h1>
+        <h1 id="main-title">Sistema de Hechizos</h1>
+        <div id="loader" class="loading">Sincronizando con Servidores Centrales...</div>
 
-        <div id="vista-catalogo">
+        <div id="c-catalogo" class="vista-seccion oculto">
             <div class="top-bar">
-                <label style="color: #aaa; font-size: 1.1em; font-weight: bold;">Identidad:</label>
-                <select id="selector-personaje" class="main-select" disabled>
-                    <option value="">Obteniendo registros...</option>
-                </select>
+                <button onclick="window.setFiltro('rol', 'Todos')">Todos</button>
+                <button onclick="window.setFiltro('rol', 'Jugador')">Jugadores</button>
+                <button onclick="window.setFiltro('rol', 'NPC')">NPCs</button>
             </div>
-            <div id="grid-inventario" class="grid-inventario">
-                <div class="loading" id="loader">Extrayendo datos del servidor...</div>
-            </div>
+            <div id="vista-catalogo"></div>
         </div>
 
-        <div id="vista-op" class="oculto">
-            <div class="op-panel">
-                <h2>PANEL DE GESTIÓN (OP)</h2>
-                <button type="button" onclick="window.mostrarCatalogo()" style="background:#333; margin-bottom:20px; color:white; border:none; padding:10px 20px; font-family:'Cinzel', serif; cursor:pointer;">⬅ Volver al Grimorio</button>
-                
-                <h3 style="color:#00ffff; border-bottom:1px solid #00ffff; padding-bottom:5px;">Añadir Hechizo a Personaje</h3>
-                <div class="op-form">
-                    <div><label>Personaje:</label><input type="text" id="op-personaje" placeholder="Ej. Linda"></div>
-                    <div>
-                        <label>Hechizo Existente:</label>
-                        <select id="op-hechizo"><option value="">Cargando lista...</option></select>
-                    </div>
-                    <div>
-                        <label>Tipo (Normal/Temporal):</label>
-                        <select id="op-tipo"><option value="Normal">Normal</option><option value="Temporal">Temporal</option></select>
-                    </div>
-                    <div><label>Origen (Quién se lo enseñó):</label><input type="text" id="op-origen" placeholder="Ej. Mapa Hex, Yuko..."></div>
-                </div>
-                
-                <button type="button" onclick="window.agregarACola()" style="background:#004a4a; color:#fff; border:1px solid #00ffff; padding:15px; width:100%; font-size:1.1em; font-weight:bold; font-family:'Cinzel', serif; cursor:pointer;">➕ AÑADIR A LA COLA DE CAMBIOS</button>
-
-                <h3 style="margin-top:30px; color:var(--gold);">Filtro: Cambios Pendientes</h3>
-                <div class="queue-box" id="cola-cambios">No hay cambios pendientes.</div>
-
-                <button type="button" onclick="window.sincronizarBD()" id="btn-sync" style="background:#4a0000; color:#fff; border:1px solid #ff4444; padding:20px; width:100%; font-size:1.2em; font-weight:bold; cursor:not-allowed; font-family:'Cinzel', serif;" disabled>🔥 SINCRONIZAR CON BASE DE DATOS 🔥</button>
-            </div>
+        <div id="c-grimorio" class="vista-seccion oculto">
+            <div id="vista-grimorio"></div>
         </div>
 
+        <div id="c-gestion" class="vista-seccion oculto">
+            <div id="vista-gestion"></div>
+        </div>
+
+        <div id="c-aprendizaje" class="vista-seccion oculto">
+            <div id="vista-aprendizaje"></div>
+        </div>
     </div>
+
+    <button id="btn-sync-global" class="btn-sync-float oculto" onclick="window.ejecutarSincronizacion()"></button>
 
     <script type="module" src="inventario-main.js"></script>
 </body>
