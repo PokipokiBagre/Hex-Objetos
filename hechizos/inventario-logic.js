@@ -12,12 +12,22 @@ export function getInventarioCombinado(nombrePj) {
 
 export function obtenerHechizosAprendibles(nombrePj) {
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
-    const nameToId = {}; const idToName = {};
+    const nameToId = {}; 
+    const idToName = {};
     
     todosNodos.forEach(n => { 
         if(n.Nombre && n.ID) {
-            nameToId[norm(n.Nombre)] = norm(n.ID);
-            idToName[norm(n.ID)] = n.Nombre;
+            const idNorm = norm(n.ID);
+            const nombreNorm = norm(n.Nombre);
+            const isPlaceholder = n.Nombre.trim().toLowerCase().startsWith("hechizo");
+            
+            nameToId[nombreNorm] = idNorm;
+            
+            // LA MAGIA AQUÍ: Solo guarda el nombre en idToName si no existe, 
+            // o si el que estaba guardado era "Hechizo X" y el nuevo es un nombre real "HEX (50)".
+            if (!idToName[idNorm] || (!isPlaceholder && idToName[idNorm].toLowerCase().startsWith("hechizo"))) {
+                idToName[idNorm] = n.Nombre.trim();
+            }
         } 
     });
 
@@ -47,11 +57,13 @@ export function obtenerHechizosAprendibles(nombrePj) {
                 if(fCl !== 'Todos' && (!info.Clase || !info.Clase.includes(fCl))) continue;
                 if(fTx && !info.Nombre.toLowerCase().includes(fTx) && !info.ID.toLowerCase().includes(fTx)) continue;
 
-                // Formateo del título del grupo: Ej: "MENTALISMO (EN POSESIÓN) + HECHIZO 143"
                 const reqStrArray = sources.map(s => {
                     const isOwned = invIDs.has(s);
-                    const displayName = isOwned ? (idToName[s] || formatearID(s)) : formatearID(s);
-                    return isOwned ? `${displayName.toUpperCase()} (EN POSESIÓN)` : displayName.toUpperCase();
+                    // Busca el nombre real (ej. "HEX (50)"), si no lo encuentra usa "Hechizo 1"
+                    const realName = idToName[s] || formatearID(s);
+                    
+                    // Si lo tiene, muestra su nombre real + EN POSESIÓN. Si no, muestra su ID/Placeholder.
+                    return isOwned ? `${realName.toUpperCase()} (EN POSESIÓN)` : formatearID(s).toUpperCase();
                 });
                 
                 const reqStr = reqStrArray.join(" + ");
