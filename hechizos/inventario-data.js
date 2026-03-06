@@ -6,10 +6,10 @@ export async function cargarDataHechizos() {
     try {
         const respuesta = await fetch(API_URL);
         dbHechizos = await respuesta.json();
-        console.log("Data de hechizos obtenida:", dbHechizos);
+        console.log("Registros obtenidos con éxito:", dbHechizos);
         return true;
     } catch (error) {
-        console.error("Error al obtener la data de la API:", error);
+        console.error("Fallo de conexión con la base de datos:", error);
         return false;
     }
 }
