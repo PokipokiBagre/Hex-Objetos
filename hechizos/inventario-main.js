@@ -14,7 +14,7 @@ window.cambiarVista = (vista) => {
     document.querySelectorAll('.vista-seccion').forEach(el => el.classList.add('oculto'));
     document.getElementById(`c-${vista}`).classList.remove('oculto');
     
-    if (vista === 'catalogo') dibujarCatalogo(); 
+    if (vista === 'catalogo') { dibujarCatalogo(); } 
     else {
         renderHeaders(); 
         if (vista === 'grimorio') dibujarGrimorioGrid();
@@ -24,7 +24,7 @@ window.cambiarVista = (vista) => {
     actualizarBotonSync();
 };
 
-window.abrirGrimorio = (pj) => { estadoUI.personajeSeleccionado = pj; estadoUI.filtrosGrimorio = { afinidad: 'Todos', busqueda: '' }; window.cambiarVista('grimorio'); };
+window.abrirGrimorio = (pj) => { estadoUI.personajeSeleccionado = pj; estadoUI.filtrosGrimorio = { afinidad: 'Todos', busqueda: '' }; window.cambiarVista('grimorio'); window.scrollTo(0,0); };
 window.abrirMenuOP = () => {
     if(estadoUI.esAdmin) { estadoUI.esAdmin = false; alert("Modo OP Desactivado."); window.cambiarVista('catalogo'); return; }
     if (prompt("Contraseña:") === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; alert("Modo OP Activado."); window.cambiarVista(estadoUI.vistaActual); }
@@ -41,7 +41,7 @@ window.aplicarFiltrosGestion = () => { estadoUI.filtrosGestion.afinidad = docume
 window.toggleRestarHex = (c) => { estadoUI.restarHexAsignacion = c; };
 window.descargarCSVHex = () => { exportarCSVPersonajes(); };
 
-// --- MAGIA: SUMA AFINIDADES (+1 Total y +1 Conteo) ---
+// --- SUMA DE AFINIDADES ---
 function aplicarCambiosPersonaje(pj, hex, afinidad) {
     const charObj = db.personajes[pj];
     charObj.hex = Math.max(0, charObj.hex - hex); 
@@ -53,39 +53,32 @@ function aplicarCambiosPersonaje(pj, hex, afinidad) {
         if (!cell || !cell.includes('_')) cell = `${cell || 0}_0_0_0_0`;
         let parts = cell.split('_');
         
-        parts[0] = (parseInt(parts[0]) + 1).toString(); // +1 al Total
-        if(parts.length > 2) parts[2] = (parseInt(parts[2]) + 1).toString(); // +1 al Conteo (Spells)
+        parts[0] = (parseInt(parts[0]) + 1).toString(); // Suma 1 al Total antes del primer _
+        if(parts.length > 2) parts[2] = (parseInt(parts[2]) + 1).toString(); // Suma 1 al Conteo (el 3er número)
         
         charObj.rawRow[idx] = parts.join('_');
     }
     const hexParts = charObj.rawRow[1].split('_'); hexParts[0] = charObj.hex.toString(); charObj.rawRow[1] = hexParts.join('_');
 }
 
-window.aprenderDelArbol = (nombreHechizo, afinidad, hex) => {
-    window.accionCola('agregar', nombreHechizo, afinidad, hex, 'Mapa Hex', true);
-    window.cambiarVista('grimorio');
-};
-
-window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0, origenAuto = null, estadoConocido = null) => {
+window.accionCola = (accion, nombreHechizo, afinidad = '', hex = 0) => {
     const pj = estadoUI.personajeSeleccionado;
     
     if(accion === 'agregar') {
-        const origen = origenAuto || document.getElementById('slicer-origen')?.value || 'OP Admin';
+        const origen = document.getElementById('slicer-origen')?.value || 'OP Admin';
         estadoUI.colaCambios.agregar.push([pj, nombreHechizo, afinidad, hex, "Normal", origen]);
-        if(estadoUI.restarHexAsignacion || origenAuto === 'Mapa Hex') aplicarCambiosPersonaje(pj, hex, afinidad);
+        if(estadoUI.restarHexAsignacion) aplicarCambiosPersonaje(pj, hex, afinidad);
     } else if (accion === 'quitar') {
         estadoUI.colaCambios.quitar.push({ Personaje: pj, Hechizo: nombreHechizo });
-    } else if (accion === 'toggle_conocido') {
-        estadoUI.colaCambios.toggleConocido.push({ Hechizo: nombreHechizo, Estado: estadoConocido });
     }
     
-    if(estadoUI.vistaActual === 'gestion') { dibujarGestionGrid(); }
+    dibujarGestionGrid();
     actualizarBotonSync();
 };
 
 function actualizarBotonSync() {
     const btn = document.getElementById('btn-sync-global');
-    const h = estadoUI.colaCambios.agregar.length + estadoUI.colaCambios.quitar.length + estadoUI.colaCambios.toggleConocido.length;
+    const h = estadoUI.colaCambios.agregar.length + estadoUI.colaCambios.quitar.length;
     if (h > 0) { btn.classList.remove('oculto'); btn.innerText = `🔥 GUARDAR CAMBIOS AL SERVIDOR (${h}) 🔥`; } 
     else btn.classList.add('oculto');
 }
@@ -93,11 +86,11 @@ function actualizarBotonSync() {
 window.ejecutarSincronizacion = async () => {
     const btn = document.getElementById('btn-sync-global'); btn.innerText = "Sincronizando..."; btn.disabled = true;
     if(await sincronizarColaBD(estadoUI.colaCambios)) {
-        alert("¡Base de datos actualizada con éxito!"); estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [] };
+        alert("¡Base de datos actualizada con éxito!"); estadoUI.colaCambios = { agregar: [], quitar: [] };
         if(estadoUI.restarHexAsignacion && estadoUI.esAdmin) {
-            if(confirm("Se actualizaron Afinidades y HEX en la memoria local. ¿Descargar CSV de Estadísticas para subirlo a tu drive?")) exportarCSVPersonajes();
+            if(confirm("Se actualizaron Afinidades y HEX en la memoria local. ¿Descargar CSV de Estadísticas?")) exportarCSVPersonajes();
         }
-        window.location.reload(); // Forzar recarga limpia
+        window.location.reload(); 
     } else alert("Error de conexión. Reintenta.");
     btn.disabled = false;
 };
