@@ -8,8 +8,6 @@
     <link rel="stylesheet" href="../stylehechizos.css">
 </head>
 
-<body>
-
     <div class="container-hex">
         <div class="nav-bar">
             <div style="display:flex; gap:10px;">
@@ -22,13 +20,13 @@
 
         <h1 id="main-title">SISTEMA DE HECHIZOS</h1>
         
-<div id="loader" class="loading" style="margin-bottom: 20px;">
-            <div style="margin-bottom: 10px; color:var(--gold);">Sincronizando datos desde el servidor...</div>
+        <div id="loader" class="loading" style="margin-bottom: 20px;">
+            <div style="margin-bottom: 10px; color:var(--gold);">Decodificando Arcanos desde el Servidor...</div>
             <div style="width: 80%; max-width: 400px; height: 10px; background: #111; border: 1px solid var(--gold); border-radius: 5px; margin: 0 auto; overflow: hidden;">
                 <div id="carga-progreso" style="width: 0%; height: 100%; background: var(--cyan-magic); transition: width 0.4s ease-out; box-shadow: 0 0 10px var(--cyan-magic);"></div>
             </div>
         </div>
-        
+
         <div id="c-catalogo" class="vista-seccion oculto">
             <div class="filter-group">
                 <button onclick="window.setFiltro('rol', 'Todos')" id="btn-rol-Todos" class="btn-active">Todos</button>
@@ -71,6 +69,24 @@
             </div>
             <div id="grid-aprendizaje"></div>
         </div>
+
+        <div id="c-casteo" class="vista-seccion oculto">
+            <div id="header-casteo"></div>
+            <div style="background:#111; border:1px solid var(--gold); border-radius:8px; padding:15px; margin-bottom:20px;">
+                <div style="display:flex; flex-wrap:wrap; gap:15px; align-items:center; justify-content:space-between;">
+                    <label style="color:var(--gold); font-weight:bold; font-size: 1.1em;">
+                        CANT. DE HECHIZOS SIMULTÁNEOS: 
+                        <input type="number" id="cast-num" value="3" min="1" max="50" class="input-casteo" style="width:80px; display:inline-block; margin-left:10px;" onchange="window.generarFilasCasteo()">
+                    </label>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button onclick="window.copiarPrimerHechizo()" class="btn-nav" style="background:#333; border-color:#888;">📋 Copiar Hechizo 1 a todos</button>
+                        <button onclick="window.conjurarHechizos()" class="btn-nav" style="background:#4a004a; border-color:#ff00ff; color:white; font-size:1.1em;">⚡ CALCULAR CONJUROS ⚡</button>
+                    </div>
+                </div>
+            </div>
+            <div id="casteo-filas"></div>
+        </div>
+
     </div>
 
     <button id="btn-sync-global" class="btn-sync-float oculto" onclick="window.ejecutarSincronizacion()"></button>
