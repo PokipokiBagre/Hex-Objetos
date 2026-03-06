@@ -86,12 +86,17 @@ export function renderHeaders() {
         if(conteo[af] !== undefined) conteo[af]++;
     });
 
-    let statsHTML = `<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:0.75em; margin-top:8px; background:rgba(0,0,0,0.5); padding:6px 12px; border-radius:4px; border:1px solid #333;">`;
+    // Se añadió el texto "CANTIDAD DE HECHIZOS:" antes de las afinidades
+    let statsHTML = `<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:0.75em; margin-top:8px; background:rgba(0,0,0,0.5); padding:6px 12px; border-radius:4px; border:1px solid #333; align-items:center;">`;
+    statsHTML += `<span style="color:#aaa; font-weight:bold; letter-spacing:1px; margin-right:5px;">CANTIDAD DE HECHIZOS:</span>`;
     Object.keys(conteo).forEach(af => {
         const c = conteo[af]; const color = getColorAfinidad(af).t;
         statsHTML += `<span style="color:${color}; ${c === 0 ? 'opacity:0.3;' : `font-weight:bold; text-shadow: 0 0 5px ${color};`}">${af.toUpperCase()}: ${c}</span>`;
     });
     statsHTML += `</div>`;
+
+    // Lógica para mostrar el botón del Árbol SOLO si el personaje es un Jugador
+    const btnArbol = char.isPlayer ? `<button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>` : '';
 
     document.getElementById('header-grimorio').innerHTML = `
         <button onclick="window.cambiarVista('catalogo')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Catálogo</button>
@@ -101,7 +106,7 @@ export function renderHeaders() {
                 <div><h2 style="margin:0;">${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p>${statsHTML}</div>
             </div>
             <div style="display:flex; gap:10px;">
-                <button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>
+                ${btnArbol}
                 ${estadoUI.esAdmin ? `<button onclick="window.cambiarVista('gestion')" class="btn-nav" style="background:#4a004a; border-color:var(--purple-magic);">⚙️ Asignar/Quitar (OP)</button>` : ''}
             </div>
         </div>`;
