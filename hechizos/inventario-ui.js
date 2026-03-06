@@ -13,9 +13,17 @@ function getColorAfinidad(af) {
     return { b: '#555', t: '#fff' };
 }
 
+const getSortValue = (p) => {
+    if (p.isPlayer && p.isActive) return 1; if (!p.isPlayer && p.isActive) return 2; 
+    if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5;
+};
+
 export function dibujarCatalogo() {
-    let html = ``;
-    Object.keys(db.personajes).sort().forEach(nombre => {
+    let html = `<div class="catalogo-grid">`;
+    Object.keys(db.personajes).sort((a, b) => {
+        const valA = getSortValue(db.personajes[a]); const valB = getSortValue(db.personajes[b]);
+        if (valA !== valB) return valA - valB; return a.localeCompare(b); 
+    }).forEach(nombre => {
         const p = db.personajes[nombre];
         if (estadoUI.filtroRol === 'Jugador' && !p.isPlayer) return; if (estadoUI.filtroRol === 'NPC' && p.isPlayer) return;
         if (estadoUI.filtroAct === 'Activo' && !p.isActive) return; if (estadoUI.filtroAct === 'Inactivo' && p.isActive) return;
@@ -29,7 +37,7 @@ export function dibujarCatalogo() {
                     <p class="char-stats"><strong>Af. Primaria:</strong> <span style="color:${getColorAfinidad(p.mayorAfinidad).t}">${p.mayorAfinidad}</span></p>
                  </div>`;
     });
-    document.getElementById('grid-catalogo').innerHTML = html;
+    document.getElementById('grid-catalogo').innerHTML = html + `</div>`;
 }
 
 export function renderHeaders() {
@@ -65,20 +73,34 @@ export function renderHeaders() {
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                 <div><h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Actual: <strong>${char.hex}</strong></p></div>
             </div>
-            <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (HEX/Afinidad)</button>
+            <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (Afinidades Modificadas)</button>
         </div>
         <label class="toggle-hex">
             <input type="checkbox" onchange="window.toggleRestarHex(this.checked)" ${estadoUI.restarHexAsignacion ? 'checked' : ''}>
             RESTAR COSTE DE HEX Y SUBIR AFINIDAD AL ASIGNAR HECHIZO
         </label>
         <div style="margin-bottom:20px; text-align:center;">
-            <label style="color:var(--gold); font-weight:bold; margin-right:10px;">Fuente del Hechizo (Origen):</label>
+            <label style="color:var(--gold); font-weight:bold; margin-right:10px;">Fuente (Origen):</label>
             <select id="slicer-origen" class="search-bar" style="margin:0; width:250px;">
                 <option value="Mapa Hex">Mapa Hex</option>
                 <option value="OP Admin">OP Admin</option>
                 ${Object.keys(db.personajes).sort().map(n => `<option value="${n}">${n}</option>`).join('')}
             </select>
         </div>`;
+}
+
+function generarAcordeon(info) {
+    const isV = (v) => v && v !== '0' && v !== 0 && v !== 'Desconocido' && v !== 'null';
+    if (!isV(info['overcast 100%']) && !isV(info['undercast 50%']) && !isV(info.especial)) return '';
+    return `
+    <details style="margin-top:10px; cursor:pointer;">
+        <summary style="color:var(--gold); font-size:0.85em; font-weight:bold; border-top:1px dashed #444; padding-top:8px;">Ver Detalles Ocultos</summary>
+        <div style="padding-top:10px; background:rgba(0,0,0,0.5); padding:10px; border-radius:4px; margin-top:5px;">
+            ${isV(info['overcast 100%']) ? `<div class="spell-extra"><strong>Overcast:</strong> ${info['overcast 100%']}</div>` : ''}
+            ${isV(info['undercast 50%']) ? `<div class="spell-extra"><strong>Undercast:</strong> ${info['undercast 50%']}</div>` : ''}
+            ${isV(info.especial) ? `<div class="spell-extra"><strong>Especial:</strong> ${info.especial}</div>` : ''}
+        </div>
+    </details>`;
 }
 
 export function dibujarGrimorioGrid() {
@@ -97,17 +119,18 @@ export function dibujarGrimorioGrid() {
         const info = todosNodos.find(n => n.Nombre.trim().toLowerCase() === item.Hechizo.trim().toLowerCase()) || {};
         const col = getColorAfinidad(item["Hechizo Afinidad"] || info.Afinidad);
         const isValid = (v) => v && v !== '0' && v !== 0 && v !== 'Desconocido' && v !== 'null';
-        const tipoCursive = item.Tipo && item.Tipo !== 'Normal' ? ` | <i>Hechizo ${item.Tipo}</i>` : '';
+        const tipoMini = item.Tipo && item.Tipo !== 'Normal' ? ` | ${item.Tipo}` : '';
 
         html += `<div class="spell-card" style="border-top-color: ${col.b};">
                     <h3 style="color:${col.t}">${item.Hechizo}</h3>
                     <div class="spell-tags"><span class="spell-tag tag-hex">HEX: ${item["Hechizo Hex"] || info.HEX || 0}</span><span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${item["Hechizo Afinidad"] || info.Afinidad}</span></div>
                     ${isValid(info.resumen) ? `<div class="spell-desc">${info.resumen}</div>` : ''}
-                    ${isValid(info.efecto) ? `<div class="spell-efecto">Efecto: <span style="color:var(--gold); font-weight:normal;">${info.efecto}</span></div>` : ''}
-                    <div class="tag-origen">Origen: ${item.Origen || 'Desconocido'}${tipoCursive}</div>
+                    ${isValid(info.efecto) ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${info.efecto}</span></div>` : ''}
+                    ${generarAcordeon(info)}
+                    <div class="tag-origen">Origen: ${item.Origen || 'Desconocido'}${tipoMini}</div>
                  </div>`;
     });
-    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">Vacio.</p>`;
+    document.getElementById('grid-grimorio').innerHTML = html || `<p style="grid-column:1/-1; color:#aaa; text-align:center;">El grimorio está vacío.</p>`;
 }
 
 export function dibujarGestionGrid() {
@@ -123,6 +146,7 @@ export function dibujarGestionGrid() {
     let html = ``;
     nodos.sort((a,b) => a.Nombre.localeCompare(b.Nombre)).forEach(h => {
         const isOwned = invNombres.includes(h.Nombre.toLowerCase().trim());
+        const isPublic = h.Conocido === 'si' || h.Conocido === true;
         const col = getColorAfinidad(h.Afinidad);
         const costo = parseInt(h.HEX) || 0;
         
@@ -130,10 +154,13 @@ export function dibujarGestionGrid() {
             ? `<button onclick="window.accionCola('quitar', '${h.Nombre}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR</button>`
             : `<button onclick="window.accionCola('agregar', '${h.Nombre}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
 
+        const btnVis = `<button onclick="window.accionCola('toggle_conocido', '${h.Nombre}', '', 0, '', '${isPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${isPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
+
         html += `<div class="spell-card" style="border-left:4px solid ${col.b}; ${isOwned ? 'box-shadow: inset 0 0 15px rgba(0,255,0,0.1);' : ''}">
                     <h3 style="color:${col.t}; font-size:1.1em;">${h.Nombre}</h3>
                     <div class="spell-tags"><span class="spell-tag tag-hex">HEX: ${costo}</span><span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${h.Afinidad}</span></div>
                     ${btn}
+                    ${btnVis}
                  </div>`;
     });
     document.getElementById('grid-gestion').innerHTML = html;
@@ -153,6 +180,7 @@ export function dibujarAprendizajeGrid() {
                     <h3 style="color:${col.t};">${h.Nombre}</h3>
                     <div class="spell-tags"><span class="spell-tag tag-hex">Coste: ${costo}</span><span class="spell-tag">${h.Afinidad}</span></div>
                     ${h.resumen && h.resumen !== 'Desconocido' ? `<div class="spell-desc">${h.resumen}</div>` : ''}
+                    ${generarAcordeon(h)}
                     ${btn}
                  </div>`;
     });
