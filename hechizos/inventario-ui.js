@@ -75,7 +75,6 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
-    // Aquí se reemplazó el getInventarioVisible erróneo por getInventarioCombinado
     const inv = getInventarioCombinado(pj);
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
@@ -101,27 +100,25 @@ export function renderHeaders() {
     const afOscura = char.rawRow ? (parseInt((char.rawRow[8] || '0').split('_')[0]) || 0) : 0;
     const maxVex = Math.round(((afOscura * 300) / 4) / 50) * 50;
 
-    let checkboxConsumoHTML = '';
+    // --- RESTRICCIÓN OP PARA EL LOG DE CONJUROS ---
+    let logCasteoGlobalHTML = '';
     if (estadoUI.esAdmin) {
-        checkboxConsumoHTML = `
-        <div style="margin-top:10px; border-top: 1px dashed #555; padding-top:10px;">
-            <label class="toggle-hex" style="margin-bottom:0; display:inline-flex;">
-                <input type="checkbox" id="toggle-cast-consumo" checked>
-                MODO OP: CONSUMIR VEX/HEX AL CALCULAR
-            </label>
-        </div>`;
-    }
-
-    const logCasteoGlobalHTML = `
+        logCasteoGlobalHTML = `
         <div style="background:#1a0033; border:1px solid var(--gold); border-radius:8px; padding:15px; margin-top:15px;">
-            <h4 style="color:#00ffff; margin:0 0 5px 0;">📋 Log de Conjuros (Para copiar al foro)</h4>
+            <h4 style="color:#00ffff; margin:0 0 5px 0;">📋 Log de Conjuros (OP)</h4>
             <textarea id="log-casteo-textarea" readonly style="width:100%; height:100px; background:#000; color:#fff; border:1px dashed var(--gold); padding:10px; font-family:monospace; box-sizing:border-box;"></textarea>
             <div style="display:flex; gap:10px; margin-top:10px;">
                 <button onclick="window.copiarLogCasteo()" style="flex:3; background:var(--gold); color:black; font-weight:bold; padding:8px; border:none; cursor:pointer; border-radius:4px;">COPIAR LOG</button>
                 <button onclick="window.limpiarLogCasteo()" style="flex:1; background:#8b0000; color:white; padding:8px; border:none; cursor:pointer; border-radius:4px;">LIMPIAR LOG</button>
             </div>
-            ${checkboxConsumoHTML}
+            <div style="margin-top:10px; border-top: 1px dashed #555; padding-top:10px;">
+                <label class="toggle-hex" style="margin-bottom:0; display:inline-flex;">
+                    <input type="checkbox" id="toggle-cast-consumo" checked>
+                    MODO OP: CONSUMIR VEX/HEX AL CALCULAR
+                </label>
+            </div>
         </div>`;
+    }
 
     document.getElementById('header-grimorio').innerHTML = `
         <div class="player-header">
@@ -193,8 +190,6 @@ export function renderHeaders() {
 
 export function dibujarGrimorioGrid() {
     const pj = estadoUI.personajeSeleccionado; 
-    
-    // También se corrigió aquí para usar el inventario completo y aplicar máscara nativa
     const inv = getInventarioCombinado(pj); 
     const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     const fAf = estadoUI.filtrosGrimorio.afinidad; const fTx = estadoUI.filtrosGrimorio.busqueda.toLowerCase();
@@ -205,7 +200,6 @@ export function dibujarGrimorioGrid() {
         const itemNorm = textNorm(item.Hechizo);
         const info = todosNodos.find(n => textNorm(n.Nombre) === itemNorm || textNorm(n.ID) === itemNorm) || {};
         
-        // Enmascaramiento regido exclusivamente por la Columna O y el panel de Admin
         const isPublicBase = info.Conocido && info.Conocido.toString().trim().toLowerCase() === 'si';
         const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.Hechizo === (info.Nombre || item.Hechizo));
         const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
