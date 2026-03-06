@@ -9,5 +9,5 @@ export let estadoUI = {
     filtrosGrimorio: { afinidad: 'Todos', busqueda: '' },
     filtrosGestion: { afinidad: 'Todos', clase: 'Todos', busqueda: '' },
     restarHexAsignacion: true,
-    colaCambios: { agregar: [], quitar: [], toggleConocido: [] }
+    colaCambios: { agregar: [], quitar: [] }
 };
