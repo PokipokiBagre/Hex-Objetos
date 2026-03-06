@@ -1,5 +1,5 @@
 import { db, estadoUI } from './inventario-state.js';
-import { getInventarioCombinado, obtenerHechizosAprendibles, getHechizosDeJugadores } from './inventario-logic.js';
+import { getInventarioCombinado, obtenerHechizosAprendibles, getHechizosDeJugadores, getInventarioVisible } from './inventario-logic.js';
 
 const normalizar = (str) => str ? str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') : '';
 
@@ -74,12 +74,37 @@ export function renderHeaders() {
     const pj = estadoUI.personajeSeleccionado; if(!pj) return;
     const char = db.personajes[pj];
     
+    // --- CÁLCULO DEL CONTADOR DE HECHIZOS POR AFINIDAD ---
+    const inv = getInventarioVisible(pj);
+    const todosNodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+    const conteo = { 'Física': 0, 'Energética': 0, 'Espiritual': 0, 'Mando': 0, 'Psíquica': 0, 'Oscura': 0 };
+    
+    inv.forEach(item => {
+        const info = todosNodos.find(n => n.Nombre.trim().toLowerCase() === item.Hechizo.trim().toLowerCase()) || {};
+        const af = item["Hechizo Afinidad"] || info.Afinidad;
+        if(conteo[af] !== undefined) conteo[af]++;
+    });
+
+    // Diseño del contador (Gris oscuro si es 0, Brillante si tiene hechizos)
+    let statsHTML = `<div style="display:flex; gap:10px; flex-wrap:wrap; font-size:0.75em; margin-top:8px; background:rgba(0,0,0,0.5); padding:6px 12px; border-radius:4px; border:1px solid #333;">`;
+    Object.keys(conteo).forEach(af => {
+        const c = conteo[af];
+        const color = getColorAfinidad(af).t;
+        statsHTML += `<span style="color:${color}; ${c === 0 ? 'opacity:0.3;' : `font-weight:bold; text-shadow: 0 0 5px ${color};`}">${af.toUpperCase()}: ${c}</span>`;
+    });
+    statsHTML += `</div>`;
+    // ------------------------------------------------------
+
     document.getElementById('header-grimorio').innerHTML = `
         <button onclick="window.cambiarVista('catalogo')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Catálogo</button>
         <div class="player-header">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div><h2 style="margin:0;">${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p></div>
+                <div>
+                    <h2 style="margin:0;">${pj.toUpperCase()}</h2>
+                    <p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p>
+                    ${statsHTML}
+                </div>
             </div>
             <div style="display:flex; gap:10px;">
                 <button onclick="window.cambiarVista('aprendizaje')" class="btn-nav" style="background:#004a4a; border-color:var(--cyan-magic);">✨ Árbol de Aprendizaje</button>
@@ -92,7 +117,10 @@ export function renderHeaders() {
         <div class="player-header" style="justify-content:center;">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div><h2 style="margin:0;">ÁRBOL DE APRENDIZAJE</h2></div>
+                <div>
+                    <h2 style="margin:0;">ÁRBOL DE APRENDIZAJE: ${pj.toUpperCase()}</h2>
+                    <p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p>
+                </div>
             </div>
         </div>`;
 
@@ -101,14 +129,20 @@ export function renderHeaders() {
         <div class="player-header">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div><h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Actual: <strong>${char.hex}</strong></p></div>
+                <div>
+                    <h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2>
+                    <p style="margin:5px 0 0 0; color:var(--gold);">HEX Actual: <strong>${char.hex}</strong></p>
+                    ${statsHTML}
+                </div>
             </div>
             <button onclick="window.descargarCSVHex()" class="btn-nav" style="background:#8b0000; color:white;">📥 DESCARGAR CSV (Afinidades/HEX)</button>
         </div>
+        
         <label class="toggle-hex">
             <input type="checkbox" onchange="window.toggleRestarHex(this.checked)" ${estadoUI.restarHexAsignacion ? 'checked' : ''}>
-            RESTAR HEX Y SUBIR AFINIDAD (+1) AL ASIGNAR HECHIZO
+            RESTAR COSTE DE HEX Y SUBIR AFINIDAD (+1) AL ASIGNAR HECHIZO
         </label>
+        
         <div style="margin-bottom:20px; text-align:center; background:#1a0033; padding:15px; border:1px solid var(--gold); border-radius:8px; max-width:800px; margin:0 auto 30px auto;">
             <div style="margin-bottom:15px;">
                 <label style="color:var(--gold); font-weight:bold; margin-right:10px;">FUENTE DEL HECHIZO (ORIGEN):</label>
