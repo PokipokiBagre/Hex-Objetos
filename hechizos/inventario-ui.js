@@ -120,11 +120,17 @@ export function renderHeaders() {
         </div>`;
     }
 
-    document.getElementById('header-grimorio').innerHTML = `
+document.getElementById('header-grimorio').innerHTML = `
         <div class="player-header">
             <div style="display:flex; align-items:center; gap:20px;">
                 <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div><h2 style="margin:0;">${pj.toUpperCase()}</h2><p style="margin:5px 0 0 0; color:var(--gold);">HEX Disponible: <strong>${char.hex}</strong></p>${statsHTML}</div>
+                <div>
+                    <h2 style="margin:0;">${pj.toUpperCase()}</h2>
+                    <p style="margin:5px 0 0 0; color:var(--gold); font-weight:bold;">
+                        HEX: <span style="color:white;">${char.hex}</span> &nbsp;|&nbsp; VEX MAX: <span style="color:#dcb1f0;">${maxVex}</span>
+                    </p>
+                    ${statsHTML}
+                </div>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
                 ${btnArbol}
