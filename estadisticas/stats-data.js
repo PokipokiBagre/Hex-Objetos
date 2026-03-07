@@ -1,6 +1,6 @@
 import { statsGlobal, listaEstados, estadoUI, dbExtra } from './stats-state.js';
 
-const CSV_ESTADOS = './estados.csv'; 
+const CSV_ESTADOS = 'estados.csv'; 
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
@@ -127,3 +127,4 @@ export async function cargarDiccionarioEstados() {
         console.warn("Fallo al cargar estados.csv. Verifica ruta local.");
     }
 }
+
