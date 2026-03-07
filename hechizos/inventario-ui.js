@@ -251,15 +251,51 @@ export function dibujarGrimorioGrid() {
 export function dibujarGestionGrid() {
     const pj = estadoUI.personajeSeleccionado;
     const invNombres = getInventarioCombinado(pj).map(i => textNorm(i.Hechizo));
-    let nodos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+    
+    // 1. Extraemos todos los nodos en bruto
+    let nodosBrutos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+    
+    // 2. FILTRO ANTI-DUPLICADOS (Prioriza el que tenga el Nombre real lleno)
+    let mapUnicos = new Map();
+    nodosBrutos.forEach(n => {
+        const idKey = (n.ID || "").toString().trim().toLowerCase();
+        if (!idKey) return;
+        
+        if (!mapUnicos.has(idKey)) {
+            mapUnicos.set(idKey, n);
+        } else {
+            const existente = mapUnicos.get(idKey);
+            const nombreNuevo = (n.Nombre || "").toString().trim();
+            const nombreViejo = (existente.Nombre || "").toString().trim();
+            
+            // Si el repetido tiene un nombre real y el guardado estaba vacío, lo reemplaza
+            if (nombreNuevo !== "" && nombreViejo === "") {
+                mapUnicos.set(idKey, n);
+            }
+        }
+    });
+    
+    // Convertimos el mapa de vuelta a un array limpio sin clones
+    let nodos = Array.from(mapUnicos.values());
+    
     const fAf = estadoUI.filtrosGestion.afinidad; const fCl = estadoUI.filtrosGestion.clase; const fTx = estadoUI.filtrosGestion.busqueda.toLowerCase();
     
     if (fAf !== 'Todos') nodos = nodos.filter(n => n.Afinidad === fAf);
     if (fCl !== 'Todos') nodos = nodos.filter(n => n.Clase && n.Clase.includes(fCl));
-    if (fTx) nodos = nodos.filter(n => n.Nombre.toLowerCase().includes(fTx) || n.ID.toLowerCase().includes(fTx));
+    if (fTx) nodos = nodos.filter(n => (n.Nombre && n.Nombre.toLowerCase().includes(fTx)) || (n.ID && n.ID.toLowerCase().includes(fTx)));
     
     let html = ``;
-    nodos.sort((a,b) => a.Nombre.localeCompare(b.Nombre)).forEach(h => {
+    nodos.sort((a,b) => {
+        // Ordenamiento seguro usando el Título Real
+        const tituloA = a.Nombre && a.Nombre.trim() !== "" ? a.Nombre : a.ID;
+        const tituloB = b.Nombre && b.Nombre.trim() !== "" ? b.Nombre : b.ID;
+        return tituloA.localeCompare(tituloB);
+    }).forEach(h => {
+        // Definición de Títulos
+        const tituloPrincipal = h.Nombre && h.Nombre.trim() !== "" ? h.Nombre : h.ID;
+        const subTitulo = h.ID ? `ID: ${h.ID}` : "Sin ID";
+        const nombreSafeForButtons = safeStr(tituloPrincipal);
+
         const isOwned = invNombres.includes(textNorm(h.Nombre)) || invNombres.includes(textNorm(h.ID));
         
         const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.ID === h.ID || c.Nombre === h.Nombre);
@@ -268,15 +304,11 @@ export function dibujarGestionGrid() {
 
         const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
         
-        // Título principal con el Nombre, Subtítulo con el ID
-        const tituloPrincipal = h.Nombre && h.Nombre.trim() !== "" ? h.Nombre : h.ID;
-        const subTitulo = h.Nombre && h.Nombre.trim() !== "" ? `ID: ${h.ID}` : "Sin ID";
-
         const btn = isOwned 
-            ? `<button onclick="window.accionCola('quitar', '${safeStr(h.Nombre)}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR HECHIZO</button>`
-            : `<button onclick="window.accionCola('agregar', '${safeStr(h.Nombre)}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
+            ? `<button onclick="window.accionCola('quitar', '${nombreSafeForButtons}')" class="btn-nav" style="background:#4a0000; border-color:#ff0000; color:white; width:100%; margin-top:10px;">❌ QUITAR HECHIZO</button>`
+            : `<button onclick="window.accionCola('agregar', '${nombreSafeForButtons}', '${h.Afinidad}', ${costo})" class="btn-nav" style="background:#004a00; border-color:#00ff00; color:white; width:100%; margin-top:10px;">➕ ASIGNAR</button>`;
 
-        const btnVis = `<button onclick="window.toggleVisibilidad('${h.ID}', '${safeStr(h.Nombre)}', '${currentlyPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${currentlyPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
+        const btnVis = `<button onclick="window.toggleVisibilidad('${h.ID}', '${nombreSafeForButtons}', '${currentlyPublic ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:5px; font-size:0.8em; padding:5px;">${currentlyPublic ? '👁️ Ocultar Hechizo' : '🙈 Hacer Público'}</button>`;
 
         html += `<div class="spell-card" style="border-left:4px solid ${col.b}; ${isOwned ? 'box-shadow: inset 0 0 15px rgba(0,255,0,0.1);' : ''}">
                     <h3 style="color:${col.t}; margin-bottom:2px;">${tituloPrincipal}</h3>
@@ -290,46 +322,4 @@ export function dibujarGestionGrid() {
                  </div>`;
     });
     document.getElementById('grid-gestion').innerHTML = html;
-}
-
-export function dibujarAprendizajeGrid() {
-    const pj = estadoUI.personajeSeleccionado; 
-    const grupos = obtenerHechizosAprendibles(pj);
-    let html = ``;
-    
-    if(Object.keys(grupos).length === 0) {
-        document.getElementById('grid-aprendizaje').innerHTML = `<p style="grid-column:1/-1; text-align:center; color:#ff4444; font-size:1.2em;">No hay hechizos que cumplan con los precedentes actuales.</p>`;
-        return;
-    }
-
-    Object.keys(grupos).forEach(reqStr => {
-        html += `<h3 class="req-header">PRECEDENTES: <span style="color:#ccc;">${reqStr}</span></h3><div class="grid-inventario">`;
-        
-        grupos[reqStr].forEach(h => {
-            const col = getColorAfinidad(h.Afinidad); const costo = parseInt(h.HEX) || 0;
-            
-            const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.ID === h.ID || c.Nombre === h.Nombre);
-            const isPublicBase = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
-            const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
-            
-            const titulo = isKnown ? h.Nombre : h.ID;
-            const res = isKnown ? getValInfo(h, ['resumen', 'Resumen']) : '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto).</i>';
-            const efe = isKnown ? getValInfo(h, ['efecto', 'Efecto']) : '';
-            const details = isKnown ? generarDetalles(h) : '';
-
-            html += `<div class="spell-card" style="border: 2px dashed ${col.b}; background:rgba(10,20,30,0.5);">
-                        <h3 style="color:${isKnown ? col.t : '#666'};">${titulo}</h3>
-                        <div class="spell-tags">
-                            <span class="spell-tag tag-hex">COSTE: ${costo}</span>
-                            <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${h.Afinidad}</span>
-                            <span class="spell-tag tag-clase">${h.Clase || '-'}</span>
-                        </div>
-                        <div class="spell-desc" style="${!isKnown ? 'background:#000; border-left-color:#333;' : ''}">${res}</div>
-                        ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
-                        ${details}
-                     </div>`;
-        });
-        html += `</div>`;
-    });
-    document.getElementById('grid-aprendizaje').innerHTML = html;
 }
