@@ -1,6 +1,9 @@
 import { db } from './inventario-state.js';
 
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
+
+const API_ESTADISTICAS = 'https://script.google.com/macros/s/AKfycbwW4AXM9QSrPYR4vjXPdwSEhV1Q-t9S0exoskZQGoerVRJOsEMzReN1piMWzCfzW_RLmQ/exec'; 
+
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 
 export async function inicializarDatos(barraProgreso) {
@@ -47,37 +50,66 @@ function parsearCSVPersonajes(texto) {
     });
 }
 
+// Nueva función de guardado dual
 export async function sincronizarColaBD(cola) {
     try {
-        console.log("Enviando datos al servidor:", cola);
-        
-        // El 'text/plain' es obligatorio para que Google Apps Script no bloquee el POST
-        const response = await fetch(API_HECHIZOS, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ 
-                accion: 'sincronizar_inventario', 
-                agregar: cola.agregar, 
-                quitar: cola.quitar, 
-                toggleConocido: cola.toggleConocido 
-            }) 
-        });
-        
-        const resText = await response.text(); 
-        
-        try {
-            const result = JSON.parse(resText);
-            if(result.status === 'success') return true;
-            
-            alert("Error interno en Apps Script:\n" + result.message);
-            return false;
-        } catch(e) {
-            console.error("El servidor devolvió algo que no es JSON:", resText);
-            alert("Google bloqueó la solicitud o el código Script crashó. Revisa la consola.");
-            return false;
+        let successHechizos = true;
+        let successStats = true;
+
+        // 1. Enviar datos de Inventario a API Hechizos (Si hay cambios)
+        if (cola.agregar.length > 0 || cola.quitar.length > 0 || cola.toggleConocido.length > 0) {
+            console.log("Enviando Inventario a API Hechizos...");
+            const resHechizos = await fetch(API_HECHIZOS, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ 
+                    accion: 'sincronizar_inventario', 
+                    agregar: cola.agregar, 
+                    quitar: cola.quitar, 
+                    toggleConocido: cola.toggleConocido 
+                }) 
+            });
+            const textHechizos = await resHechizos.text();
+            try {
+                const jsonHechizos = JSON.parse(textHechizos);
+                if (jsonHechizos.status !== 'success') {
+                    alert("Error en API Hechizos:\n" + jsonHechizos.message);
+                    successHechizos = false;
+                }
+            } catch(e) {
+                console.error("Error parseando resHechizos:", textHechizos);
+                successHechizos = false;
+            }
         }
+
+        // 2. Enviar datos de Estadísticas a API Estadísticas (Si hay cambios)
+        if (cola.stats && Object.keys(cola.stats).length > 0) {
+            console.log("Enviando Estadísticas (Z) a API Estadísticas...", cola.stats);
+            const resStats = await fetch(API_ESTADISTICAS, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ 
+                    accion: 'sincronizar_stats', 
+                    stats: cola.stats 
+                }) 
+            });
+            const textStats = await resStats.text();
+            try {
+                const jsonStats = JSON.parse(textStats);
+                if (jsonStats.status !== 'success') {
+                    alert("Error en API Estadísticas:\n" + jsonStats.message);
+                    successStats = false;
+                }
+            } catch(e) {
+                console.error("Error parseando resStats:", textStats);
+                successStats = false;
+            }
+        }
+
+        return successHechizos && successStats;
+
     } catch (e) { 
-        alert("Fallo crítico de Red (Verifica que el link de API_HECHIZOS corresponda a tu último despliegue).");
+        alert("Fallo crítico de Red al intentar contactar a los servidores.");
         return false; 
     }
 }
