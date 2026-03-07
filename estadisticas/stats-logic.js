@@ -1,14 +1,14 @@
 import { statsGlobal, listaEstados } from './stats-state.js';
 
 export function getMayorAfinidad(p) {
-    const afis = {
-        'Física': p.afinidades?.fisica || 0,
-        'Energética': p.afinidades?.energetica || 0,
-        'Espiritual': p.afinidades?.espiritual || 0,
-        'Mando': p.afinidades?.mando || 0,
-        'Psíquica': p.afinidades?.psiquica || 0,
-        'Oscura': p.afinidades?.oscura || 0
-    };
+    const calcFisT = (p.afinidadesBase?.fisica||0) + (p.hechizos?.fisica||0) + (p.hechizosEfecto?.fisica||0) + (p.buffs?.fisica||0);
+    const calcEneT = (p.afinidadesBase?.energetica||0) + (p.hechizos?.energetica||0) + (p.hechizosEfecto?.energetica||0) + (p.buffs?.energetica||0);
+    const calcEspT = (p.afinidadesBase?.espiritual||0) + (p.hechizos?.espiritual||0) + (p.hechizosEfecto?.espiritual||0) + (p.buffs?.espiritual||0);
+    const calcManT = (p.afinidadesBase?.mando||0) + (p.hechizos?.mando||0) + (p.hechizosEfecto?.mando||0) + (p.buffs?.mando||0);
+    const calcPsiT = (p.afinidadesBase?.psiquica||0) + (p.hechizos?.psiquica||0) + (p.hechizosEfecto?.psiquica||0) + (p.buffs?.psiquica||0);
+    const calcOscT = (p.afinidadesBase?.oscura||0) + (p.hechizos?.oscura||0) + (p.hechizosEfecto?.oscura||0) + (p.buffs?.oscura||0);
+
+    const afis = { 'Física': calcFisT, 'Energética': calcEneT, 'Espiritual': calcEspT, 'Mando': calcManT, 'Psíquica': calcPsiT, 'Oscura': calcOscT };
     let max = -1; let mayor = "Ninguna";
     for(let key in afis) { if(afis[key] > max && afis[key] > 0) { max = afis[key]; mayor = key; } }
     return mayor;
@@ -21,10 +21,9 @@ export function calcularVidaRojaMax(p) {
     const efectos = p.hechizosEfecto?.vidaRojaMaxExtra || 0;
     const buffs = p.buffs?.vidaRojaMaxExtra || 0;
     
-    // Cálculo Dinámico: (Base de Física + Alteraciones Físicas) / 2
+    // Cálculo Dinámico (Física Total / 2 - Física Base / 2)
     const fisBase = p.afinidadesBase?.fisica || 0;
     const fisTotal = fisBase + (p.hechizos?.fisica || 0) + (p.hechizosEfecto?.fisica || 0) + (p.buffs?.fisica || 0);
-    
     const bonusFisica = Math.floor(fisTotal / 2) - Math.floor(fisBase / 2);
 
     return base + hechizos + efectos + buffs + bonusFisica;
@@ -33,17 +32,10 @@ export function calcularVidaRojaMax(p) {
 export function calcularVexMax(p) {
     if (!p) return 0;
     if (p.isPlayer) {
-        const oscBase = p.afinidadesBase?.oscura || 0;
-        const oscSpell = p.hechizos?.oscura || 0;
-        const oscEff = p.hechizosEfecto?.oscura || 0;
-        const oscBuff = p.buffs?.oscura || 0;
-        
-        const totalOscura = oscBase + oscSpell + oscEff + oscBuff;
-        const vexCrudo = (totalOscura * 300) / 4;
-        
-        return Math.round(vexCrudo / 50) * 50;
+        const oscTotal = (p.afinidadesBase?.oscura||0) + (p.hechizos?.oscura||0) + (p.hechizosEfecto?.oscura||0) + (p.buffs?.oscura||0);
+        return Math.round((oscTotal * 300) / 4 / 50) * 50;
     }
-    return p.vex || 0; // NPCs respetan el VEX fijo del Excel
+    return p.vex || 0;
 }
 
 export function getMysticBonus(p) {
@@ -52,14 +44,12 @@ export function getMysticBonus(p) {
     const esp = p.afinidadesBase?.espiritual || 0;
     const man = p.afinidadesBase?.mando || 0;
     const psi = p.afinidadesBase?.psiquica || 0;
-    
     return Math.floor((ene + esp + man + psi) / 4);
 }
 
 export function generarCSVExportacion() {
     let csv = "Personaje,Hex,Vex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,Corazones Rojo,Corazones Rojos Max,Corazones Azules,Guarda Dorada,Daño Rojo,Daño Azul,Eliminacion Dorada,Estado,Jugador_Activo,Copia\n";
 
-    // Empaqueta los 5 valores en el formato exacto que pide el Excel
     const fStr = (b, s, se, bf) => {
         const bSafe = b || 0; const sSafe = s || 0; const seSafe = se || 0; const bfSafe = bf || 0;
         const tot = bSafe + sSafe + seSafe + bfSafe;
