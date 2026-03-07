@@ -143,8 +143,9 @@ function actualizarTextoLogOP() {
         out += `Hechizo aprendido: ${list} -${estadoUI.logOP.hexGastado} Hex (${char ? char.hex : 0})\n`;
     }
 
+    // Aquí está el cambio: quitamos el (${g.cost}) para que no se duplique
     gratuitos.forEach(g => {
-        out += `${pj} | Hechizo aprendido | ${g.spell} (${g.cost})\n`;
+        out += `${pj} | Hechizo aprendido | ${g.spell}\n`; 
     });
 
     textarea.value = out; textarea.scrollTop = textarea.scrollHeight;
