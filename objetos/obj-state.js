@@ -20,7 +20,12 @@ export let estadoUI = {
     transMult: 1,
     editMult: 1,
     editModo: 1,
-    colaCambios: {} // <--- GESTIONA LO QUE SE ENVIARÁ A LA NUBE
+    colaCambios: {}, 
+    
+    // Variables para congelar el orden visual
+    resetCacheOrder: true,
+    cachedSortKeys: null,
+    cachedInvKeys: null
 };
 
 export function guardar() { 
