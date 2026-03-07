@@ -6,13 +6,15 @@ export let estadoUI = {
     esAdmin: false,
     filtroRol: 'Todos',
     filtroAct: 'Todos',
-    party: [null, null, null, null, null, null], // Slots
-    hexLog: {} // Memoria del Log Agrupado
+    party: [null, null, null, null, null, null], 
+    hexLog: {},
+    colaCambios: { stats: {} } // Inicializado aquí para máxima seguridad
 };
 
-// Contenedor para las otras bases de datos cruzadas
 export let dbExtra = {
-    objetos: {}, // Guarda { "linda": 15, "corvin": 8 }
+    objetosCount: {},   
+    inventarios: {},    // Array de nombres de objetos por PJ
+    infoObjetos: {},    // Rarezas
     hechizos: { inventario: [], nodos: [], nodosOcultos: [] }
 };
 
