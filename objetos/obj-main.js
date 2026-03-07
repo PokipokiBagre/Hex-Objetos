@@ -1,9 +1,8 @@
 import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
 import { cargarTodoDesdeCSV, sincronizarObjetosBD } from './obj-data.js';
-import { modificar, modificarMulti, transferir, descargarLogExcel, descargarEstadoExcel, agregarObjetoManual } from './obj-logic.js';
-import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia } from './obj-ui.js';
+import { modificar, modificarMulti, transferir, descargarLogExcel, descargarEstadoExcel, agregarObjetosMulti } from './obj-logic.js';
+import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia, dibujarResumenVisual } from './obj-ui.js';
 
-// El botón se actualiza cada vez que se hace un cambio
 window.actualizarBotonSyncObj = () => {
     const btn = document.getElementById('btn-sync-global');
     if(!btn) return;
@@ -20,23 +19,12 @@ window.ejecutarSincronizacion = async () => {
     const btn = document.getElementById('btn-sync-global');
     btn.innerText = "Sincronizando..."; btn.disabled = true;
     if(await sincronizarObjetosBD(estadoUI.colaCambios)) {
-        estadoUI.colaCambios = {}; // Limpia la cola tras el éxito
+        estadoUI.colaCambios = {}; 
         guardar();
         alert("¡Base de datos actualizada con éxito!");
         window.actualizarBotonSyncObj();
     }
     btn.disabled = false;
-};
-
-// Quitamos el SetInterval para no interrumpir el guardado manual del usuario
-window.toggleSync = () => {
-    estadoUI.modoSincronizado = !estadoUI.modoSincronizado;
-    const btn = document.getElementById('btn-sync');
-    if (btn) {
-        btn.innerText = estadoUI.modoSincronizado ? "CONECTADO (AUTO)" : "MODO EDICIÓN LOCAL";
-        btn.style.background = estadoUI.modoSincronizado ? "#006400" : "#8b0000";
-    }
-    guardar();
 };
 
 window.descargarInventariosJPG = async () => {
@@ -65,12 +53,6 @@ async function iniciar() {
     
     estadoUI.cambiosSesion = {};
     estadoUI.vistaActual = 'grilla';
-
-    const btn = document.getElementById('btn-sync');
-    if(btn) {
-        btn.innerText = estadoUI.modoSincronizado ? "CONECTADO (AUTO)" : "MODO EDICIÓN LOCAL";
-        btn.style.background = estadoUI.modoSincronizado ? "#006400" : "#8b0000";
-    }
 
     const modal = document.createElement('div');
     modal.id = 'hex-modal-view'; modal.className = 'hex-modal';
@@ -113,25 +95,26 @@ async function iniciar() {
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Copiado al portapapeles."); };
     
-    // Al cambiar la página también actualiza el botón flotante por si se quedó colgado
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
+        estadoUI.resetCacheOrder = true; // Reinicia el congelador de orden
+        
         document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa')); 
         const target = document.getElementById('pag-' + id);
         if(target) target.classList.add('activa'); 
+        
         refrescarUI(); 
         window.actualizarBotonSyncObj();
     };
 
     const _session = 'Y2FuZXk=';
     window.ejecutarSyncLog = () => { 
-        const enrutarOP = () => {
-            if (estadoUI.vistaActual === 'inventario') window.mostrarPagina('control'); 
-            else window.mostrarPagina('op-menu');
-        };
-        if (estadoUI.esAdmin) { enrutarOP(); return; } 
-        const i = prompt("Acceso Restringido:"); 
-        if (i === atob(_session)) { estadoUI.esAdmin = true; enrutarOP(); } 
+        if (estadoUI.esAdmin) { window.mostrarPagina('op-menu'); return; } 
+        const i = prompt("Acceso Restringido OP:"); 
+        if (i === atob(_session)) { 
+            estadoUI.esAdmin = true; 
+            refrescarUI(); // Refresca para mostrar el botón OP sin cambiar de página
+        } 
     };
 
     window.abrirInventario = (j) => { estadoUI.jugadorInv = j; window.mostrarPagina('inventario'); };
@@ -187,26 +170,36 @@ async function iniciar() {
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; dibujarCatalogo(); };
     window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
     
-    window.updateCreationLog = () => {
-        const n = document.getElementById('new-obj-name').value || "Objeto"; const e = document.getElementById('new-obj-eff').value || "Efecto";
-        let l = []; document.querySelectorAll('.cant-input').forEach(i => {
-            const c = parseInt(i.value) || 0; if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}>`);
-        });
-        const out = document.getElementById('copy-log-crea'); if (out) out.value = l.join('\n');
-    };
+    window.mostrarCreacionObjeto = () => { window.mostrarPagina('crear'); };
+    
+    // NUEVA LÓGICA DE CREACIÓN MÚLTIPLE
+    window.ejecutarAgregarMulti = () => {
+        const destPlayer = document.getElementById('multi-player-dest').value;
+        let listaNuevos = [];
+        
+        for(let i=1; i<=5; i++) {
+            const nombre = document.getElementById(`new-obj-name-${i}`).value.trim();
+            if(!nombre) continue;
 
-    window.mostrarCreacionObjeto = () => { window.mostrarPagina('crear'); dibujarCreacionObjeto(); };
-    window.ejecutarAgregarObjeto = () => {
-        const d = { nombre: document.getElementById('new-obj-name').value.trim(), tipo: document.getElementById('new-obj-tipo').value, mat: document.getElementById('new-obj-mat').value, eff: document.getElementById('new-obj-eff').value.trim(), rar: document.getElementById('new-obj-rar').value };
-        const rep = {}; document.querySelectorAll('.cant-input').forEach(i => rep[i.dataset.player] = i.value);
-        if(!d.nombre) return alert("Nombre vacío");
-        agregarObjetoManual(d, rep, () => { alert("Objeto Creado Localmente. ¡Recuerda Guardar los cambios!"); window.mostrarPagina('op-menu'); window.actualizarBotonSyncObj(); });
+            const tipo = document.getElementById(`new-obj-tipo-${i}`).value;
+            const mat = document.getElementById(`new-obj-mat-${i}`).value;
+            const rar = document.getElementById(`new-obj-rar-${i}`).value;
+            const eff = document.getElementById(`new-obj-eff-${i}`).value.trim();
+            const cant = parseInt(document.getElementById(`new-obj-cant-${i}`).value) || 1;
+
+            listaNuevos.push({ nombre, tipo, mat, eff, rar, cant });
+        }
+        
+        agregarObjetosMulti(listaNuevos, destPlayer, (creados) => {
+            alert(`¡Forja terminada! Se prepararon ${creados} objeto(s). RECUERDA GUARDAR EN EL SERVIDOR.`);
+            window.mostrarPagina('op-menu');
+            window.actualizarBotonSyncObj();
+        });
     };
 
     window.descargarEstadoExcel = descargarEstadoExcel; 
     window.descargarLogExcel = descargarLogExcel;
     
     window.mostrarPagina('grilla'); 
-    window.actualizarBotonSyncObj();
 }
 iniciar();
