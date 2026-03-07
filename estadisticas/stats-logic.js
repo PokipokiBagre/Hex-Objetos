@@ -1,6 +1,5 @@
 import { statsGlobal, listaEstados } from './stats-state.js';
 
-// NUEVO: Calcula Mayor Afinidad
 export function getMayorAfinidad(p) {
     const afis = {
         'Física': p.afinidades?.fisica || 0,
@@ -17,16 +16,15 @@ export function getMayorAfinidad(p) {
 
 export function calcularVidaRojaMax(p) {
     if (!p) return 0;
-    const base = p.vidaRojaMax || 10;
+    const base = p.baseVidaRojaMax || 10;
     const hechizos = p.hechizos?.vidaRojaMaxExtra || 0;
     const efectos = p.hechizosEfecto?.vidaRojaMaxExtra || 0;
     const buffs = p.buffs?.vidaRojaMaxExtra || 0;
     
-    // FÍSICA DINÁMICA: Calculamos si tienes alteraciones temporales (buffs, spells)
-    const fisBase = p.afinidades?.fisica || 0;
+    // Cálculo Dinámico: (Base de Física + Alteraciones Físicas) / 2
+    const fisBase = p.afinidadesBase?.fisica || 0;
     const fisTotal = fisBase + (p.hechizos?.fisica || 0) + (p.hechizosEfecto?.fisica || 0) + (p.buffs?.fisica || 0);
     
-    // Solo sumará el bono que provenga de la diferencia temporal, ya que la base ya está guardada en p.vidaRojaMax
     const bonusFisica = Math.floor(fisTotal / 2) - Math.floor(fisBase / 2);
 
     return base + hechizos + efectos + buffs + bonusFisica;
@@ -35,7 +33,7 @@ export function calcularVidaRojaMax(p) {
 export function calcularVexMax(p) {
     if (!p) return 0;
     if (p.isPlayer) {
-        const oscBase = p.afinidades?.oscura || 0;
+        const oscBase = p.afinidadesBase?.oscura || 0;
         const oscSpell = p.hechizos?.oscura || 0;
         const oscEff = p.hechizosEfecto?.oscura || 0;
         const oscBuff = p.buffs?.oscura || 0;
@@ -45,15 +43,15 @@ export function calcularVexMax(p) {
         
         return Math.round(vexCrudo / 50) * 50;
     }
-    return p.vex || 0;
+    return p.vex || 0; // NPCs respetan el VEX fijo del Excel
 }
 
 export function getMysticBonus(p) {
     if (!p) return 0;
-    const ene = p.afinidades?.energetica || 0;
-    const esp = p.afinidades?.espiritual || 0;
-    const man = p.afinidades?.mando || 0;
-    const psi = p.afinidades?.psiquica || 0;
+    const ene = p.afinidadesBase?.energetica || 0;
+    const esp = p.afinidadesBase?.espiritual || 0;
+    const man = p.afinidadesBase?.mando || 0;
+    const psi = p.afinidadesBase?.psiquica || 0;
     
     return Math.floor((ene + esp + man + psi) / 4);
 }
@@ -61,14 +59,16 @@ export function getMysticBonus(p) {
 export function generarCSVExportacion() {
     let csv = "Personaje,Hex,Vex,Fisica,Energetica,Espiritual,Mando,Psiquica,Oscura,Corazones Rojo,Corazones Rojos Max,Corazones Azules,Guarda Dorada,Daño Rojo,Daño Azul,Eliminacion Dorada,Estado,Jugador_Activo,Copia\n";
 
-    const fStr = (base, spells, spellEff, buff) => {
-        const b = base || 0; const s = spells || 0; const se = spellEff || 0; const bf = buff || 0;
-        return `${b + s + se + bf}_${b}_${s}_${se}_${bf}`;
+    // Empaqueta los 5 valores en el formato exacto que pide el Excel
+    const fStr = (b, s, se, bf) => {
+        const bSafe = b || 0; const sSafe = s || 0; const seSafe = se || 0; const bfSafe = bf || 0;
+        const tot = bSafe + sSafe + seSafe + bfSafe;
+        return `${tot}_${bSafe}_${sSafe}_${seSafe}_${bfSafe}`;
     };
 
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        const af = p.afinidades || {};
+        const afB = p.afinidadesBase || {};
         const hz = p.hechizos || {};
         const he = p.hechizosEfecto || {};
         const bf = p.buffs || {};
@@ -88,19 +88,19 @@ export function generarCSVExportacion() {
             nombre,
             hexCompound, 
             vexExport, 
-            fStr(af.fisica, hz.fisica, he.fisica, bf.fisica), 
-            fStr(af.energetica, hz.energetica, he.energetica, bf.energetica), 
-            fStr(af.espiritual, hz.espiritual, he.espiritual, bf.espiritual), 
-            fStr(af.mando, hz.mando, he.mando, bf.mando), 
-            fStr(af.psiquica, hz.psiquica, he.psiquica, bf.psiquica), 
-            fStr(af.oscura, hz.oscura, he.oscura, bf.oscura), 
+            fStr(afB.fisica, hz.fisica, he.fisica, bf.fisica), 
+            fStr(afB.energetica, hz.energetica, he.energetica, bf.energetica), 
+            fStr(afB.espiritual, hz.espiritual, he.espiritual, bf.espiritual), 
+            fStr(afB.mando, hz.mando, he.mando, bf.mando), 
+            fStr(afB.psiquica, hz.psiquica, he.psiquica, bf.psiquica), 
+            fStr(afB.oscura, hz.oscura, he.oscura, bf.oscura), 
             p.vidaRojaActual !== undefined ? p.vidaRojaActual : 0, 
-            fStr(p.vidaRojaMax, hz.vidaRojaMaxExtra, he.vidaRojaMaxExtra, bf.vidaRojaMaxExtra), 
-            fStr(p.vidaAzul !== undefined ? p.vidaAzul : 0, hz.vidaAzulExtra, he.vidaAzulExtra, bf.vidaAzulExtra), 
-            fStr(p.guardaDorada !== undefined ? p.guardaDorada : 0, hz.guardaDoradaExtra, he.guardaDoradaExtra, bf.guardaDoradaExtra), 
-            fStr(p.danoRojo, hz.danoRojo, he.danoRojo, bf.danoRojo), 
-            fStr(p.danoAzul, hz.danoAzul, he.danoAzul, bf.danoAzul), 
-            fStr(p.elimDorada, hz.elimDorada, he.elimDorada, bf.elimDorada), 
+            fStr(p.baseVidaRojaMax, hz.vidaRojaMaxExtra, he.vidaRojaMaxExtra, bf.vidaRojaMaxExtra), 
+            fStr(p.baseVidaAzul, hz.vidaAzulExtra, he.vidaAzulExtra, bf.vidaAzulExtra), 
+            fStr(p.baseGuardaDorada, hz.guardaDoradaExtra, he.guardaDoradaExtra, bf.guardaDoradaExtra), 
+            fStr(p.baseDanoRojo, hz.danoRojo, he.danoRojo, bf.danoRojo), 
+            fStr(p.baseDanoAzul, hz.danoAzul, he.danoAzul, bf.danoAzul), 
+            fStr(p.baseElimDorada, hz.elimDorada, he.elimDorada, bf.elimDorada), 
             estadoStr, 
             identityStr, 
             p.iconoOverride || "" 
