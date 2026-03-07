@@ -180,7 +180,7 @@ export function renderHeaders() {
         </div>
         <label class="toggle-hex">
             <input type="checkbox" onchange="window.toggleRestarHex(this.checked)" ${estadoUI.restarHexAsignacion ? 'checked' : ''}>
-            RESTAR COSTE DE HEX Y SUBIR AFINIDAD (+1) AL ASIGNAR HECHIZO
+            RESTAR COSTE DE HEX AL ASIGNAR HECHIZO
         </label>
         <div style="margin-bottom:20px; text-align:center; background:#1a0033; padding:15px; border:1px solid var(--gold); border-radius:8px; max-width:800px; margin:0 auto 30px auto;">
             <div style="margin-bottom:15px;">
@@ -251,11 +251,8 @@ export function dibujarGrimorioGrid() {
 export function dibujarGestionGrid() {
     const pj = estadoUI.personajeSeleccionado;
     const invNombres = getInventarioCombinado(pj).map(i => textNorm(i.Hechizo));
-    
-    // 1. Extraemos todos los nodos en bruto
     let nodosBrutos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     
-    // 2. FILTRO ANTI-DUPLICADOS MEJORADO
     let mapUnicos = new Map();
     nodosBrutos.forEach(n => {
         const idKey = (n.ID || "").toString().trim().toLowerCase();
@@ -267,18 +264,13 @@ export function dibujarGestionGrid() {
             const existente = mapUnicos.get(idKey);
             const nombreNuevo = (n.Nombre || "").toString().trim();
             const nombreViejo = (existente.Nombre || "").toString().trim();
-            
-            // Si el nombre dice "Hechizo XXX" o está vacío, es un placeholder
             const esPlaceholder = (txt) => txt === "" || txt.toLowerCase().startsWith("hechizo");
-            
-            // Si el guardado es un placeholder y el nuevo es real (ej. CAMPO_MAGNETICO), lo pisamos
             if (esPlaceholder(nombreViejo) && !esPlaceholder(nombreNuevo)) {
                 mapUnicos.set(idKey, n);
             }
         }
     });
     
-    // Convertimos el mapa de vuelta a un array limpio sin clones
     let nodos = Array.from(mapUnicos.values());
     
     const fAf = estadoUI.filtrosGestion.afinidad; const fCl = estadoUI.filtrosGestion.clase; const fTx = estadoUI.filtrosGestion.busqueda.toLowerCase();
@@ -289,7 +281,6 @@ export function dibujarGestionGrid() {
     
     let html = ``;
     
-    // Ordenamiento (Primero por HEX, luego alfabético)
     nodos.sort((a,b) => {
         const hexA = parseInt(a.HEX) || 0;
         const hexB = parseInt(b.HEX) || 0;
@@ -299,7 +290,6 @@ export function dibujarGestionGrid() {
         const tituloB = b.Nombre && b.Nombre.trim() !== "" ? b.Nombre : b.ID;
         return (tituloA || "").localeCompare(tituloB || "");
     }).forEach(h => {
-        // Definición de Títulos
         const tituloPrincipal = h.Nombre && h.Nombre.trim() !== "" ? h.Nombre : h.ID;
         const subTitulo = h.ID ? `ID: ${h.ID}` : "Sin ID";
         const nombreSafeForButtons = safeStr(tituloPrincipal);
@@ -372,4 +362,81 @@ export function dibujarAprendizajeGrid() {
         html += `</div>`;
     });
     document.getElementById('grid-aprendizaje').innerHTML = html;
+}
+
+// NUEVA FUNCIÓN: Catálogo Enciclopédico de todos los Hechizos
+export function dibujarCatalogoHechizos() {
+    let nodosBrutos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
+    
+    let mapUnicos = new Map();
+    nodosBrutos.forEach(n => {
+        const idKey = (n.ID || "").toString().trim().toLowerCase();
+        if (!idKey) return;
+        if (!mapUnicos.has(idKey)) { mapUnicos.set(idKey, n); } 
+        else {
+            const existente = mapUnicos.get(idKey);
+            const esPlaceholder = (txt) => txt === "" || txt.toLowerCase().startsWith("hechizo");
+            if (esPlaceholder((existente.Nombre || "").toString().trim()) && !esPlaceholder((n.Nombre || "").toString().trim())) {
+                mapUnicos.set(idKey, n);
+            }
+        }
+    });
+    
+    let nodos = Array.from(mapUnicos.values());
+    
+    const fAf = estadoUI.filtrosAll.afinidad; const fCl = estadoUI.filtrosAll.clase; const fEs = estadoUI.filtrosAll.estado; const fTx = estadoUI.filtrosAll.busqueda.toLowerCase();
+    
+    if (fAf !== 'Todos') nodos = nodos.filter(n => n.Afinidad === fAf);
+    if (fCl !== 'Todos') nodos = nodos.filter(n => n.Clase && n.Clase.includes(fCl));
+    if (fTx) nodos = nodos.filter(n => (n.Nombre && n.Nombre.toLowerCase().includes(fTx)) || (n.ID && n.ID.toLowerCase().includes(fTx)));
+    
+    let html = ``;
+    
+    nodos.sort((a,b) => {
+        const hexA = parseInt(a.HEX) || 0;
+        const hexB = parseInt(b.HEX) || 0;
+        if (hexA !== hexB) return hexA - hexB; 
+        const tituloA = a.Nombre && a.Nombre.trim() !== "" ? a.Nombre : a.ID;
+        const tituloB = b.Nombre && b.Nombre.trim() !== "" ? b.Nombre : b.ID;
+        return (tituloA || "").localeCompare(tituloB || "");
+    }).forEach(h => {
+        const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.ID === h.ID || c.Nombre === h.Nombre);
+        const isPublicBase = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
+        const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
+        
+        // Filtro de Estado de Descubrimiento
+        if (fEs === 'Descubierto' && !isKnown) return;
+        if (fEs === 'Oculto' && isKnown) return;
+
+        const isHidden = !estadoUI.esAdmin && !isKnown;
+        const col = getColorAfinidad(h.Afinidad); 
+        const costo = parseInt(h.HEX) || 0;
+        
+        const tituloReal = h.Nombre && h.Nombre.trim() !== "" ? h.Nombre : h.ID;
+        const titulo = isHidden ? h.ID : tituloReal;
+        const subTitulo = (estadoUI.esAdmin && h.ID) ? `<span style="display:block; color:#888; font-size:0.7em; font-style:italic; margin-bottom:10px;">ID: ${h.ID}</span>` : '';
+
+        const res = isHidden ? '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto por el grupo).</i>' : getValInfo(h, ['resumen', 'Resumen']);
+        const efe = isHidden ? '' : getValInfo(h, ['efecto', 'Efecto']);
+        const detailsHTML = isHidden ? '' : generarDetalles(h);
+        
+        const btnVis = (estadoUI.esAdmin && h.Nombre) ? `<button onclick="window.toggleVisibilidad('${h.ID}', '${safeStr(h.Nombre)}', '${isKnown ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:10px; font-size:0.8em; padding:5px;">${isKnown ? '👁️ Ocultar Hechizo Globalmente' : '🙈 Hacer Público'}</button>` : '';
+
+        html += `<div class="spell-card" style="border-top-color: ${col.b};">
+                    <h3 style="color:${isHidden ? '#666' : col.t}; margin-bottom:2px;">${titulo}</h3>
+                    ${subTitulo}
+                    <div class="spell-tags">
+                        <span class="spell-tag tag-hex">HEX: ${costo}</span>
+                        <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${h.Afinidad}</span>
+                        <span class="spell-tag tag-clase">${h.Clase || '-'}</span>
+                    </div>
+                    ${res ? `<div class="spell-desc" style="${isHidden ? 'background:#000; border-left-color:#333;' : ''}">${res}</div>` : ''}
+                    ${efe ? `<div class="spell-efecto">Efecto: <span style="color:var(--cyan-magic); font-weight:normal;">${efe}</span></div>` : ''}
+                    ${detailsHTML}
+                    ${btnVis}
+                 </div>`;
+    });
+    
+    if (html === '') html = `<p style="grid-column:1/-1; color:#aaa; text-align:center;">No se encontraron hechizos con estos filtros.</p>`;
+    document.getElementById('grid-catalogo-hechizos').innerHTML = html;
 }
