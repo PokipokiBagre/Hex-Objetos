@@ -6,15 +6,19 @@ export let estadoUI = {
     esAdmin: false,
     filtroRol: 'Todos',
     filtroAct: 'Todos',
-    party: [null, null, null, null, null, null], // Slots
-    hexLog: {}, // Memoria del Log Agrupado
-    modoSincronizado: true // Sincronización Automática a 10s
+    party: [null, null, null, null, null, null], 
+    hexLog: {}
+};
+
+// Contenedor para las otras bases de datos
+export let dbExtra = {
+    objetos: {}, // Guarda { "linda": 15, "corvin": 8 }
+    hechizos: { inventario: [], nodos: [], nodosOcultos: [] }
 };
 
 export function guardar() {
     localStorage.setItem('hex_stats_v2', JSON.stringify({ 
         stats: statsGlobal,
-        party: estadoUI.party,
-        modoSync: estadoUI.modoSincronizado
+        party: estadoUI.party
     }));
 }
