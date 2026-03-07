@@ -214,7 +214,7 @@ window.ejecutarSincronizacion = async () => {
         // Espera 1.5 segundos exactos para que leas el mensaje y luego recarga sola
         setTimeout(() => { 
             window.location.reload(); 
-        }, 1500);
+        }, 500);
         
     } else {
         alert("Error de conexión. Reintenta.");
