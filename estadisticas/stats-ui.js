@@ -4,7 +4,7 @@ import { calcularVidaRojaMax, calcularVexMax, getMayorAfinidad } from './stats-l
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
 const calcTotal = (base, spells, spellEff, buff) => (base || 0) + (spells || 0) + (spellEff || 0) + (buff || 0);
 
-// Función visual ajustada para mostrar Hcz, Alt y Ext cuando no son 0.
+// Nomenclatura Exacta (Hcz, Alt, Ext)
 const bTextSplit = (spells, spellEff, buff) => {
     let parts = [];
     if (spells !== 0) parts.push(`<span style="color:var(--cyan-magic); font-weight:bold;">Hcz: ${spells > 0 ? '+' : ''}${spells}</span>`);
@@ -12,7 +12,7 @@ const bTextSplit = (spells, spellEff, buff) => {
     if (buff !== 0) parts.push(`<span style="color:${buff > 0 ? '#00ff00' : '#ff4444'}; font-weight:bold;">Ext: ${buff > 0 ? '+' : ''}${buff}</span>`);
     
     if (parts.length === 0) return '';
-    return `<div style="font-size:0.7em; display:flex; flex-direction:column; gap:2px; margin-top:5px; border-top:1px dashed #555; padding-top:5px;">${parts.join('')}</div>`;
+    return `<div style="font-size:0.75em; display:flex; flex-direction:column; gap:2px; margin-top:5px; border-top:1px dashed #555; padding-top:5px;">${parts.join('')}</div>`;
 };
 
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
@@ -28,7 +28,7 @@ function asegurarEstructuras(p) {
     if(p.isActive === undefined) p.isActive = true;
 }
 
-// Generador universal de contenedores de vida
+// Generador universal de vidas con símbolos visuales
 function generarVidasHTML(p) {
     const maxRojo = calcularVidaRojaMax(p);
     let normalRojo = Math.min(p.vidaRojaActual, maxRojo); let vaciosRojo = Math.max(0, maxRojo - normalRojo); let extraRojo = Math.max(0, p.vidaRojaActual - maxRojo);
@@ -83,10 +83,10 @@ export function dibujarCatalogo() {
     contenedor.innerHTML = html + `</div>`;
 }
 
-// RESUMEN VISUAL EN 2 COLUMNAS (GRID)
+// RESUMEN VISUAL (2 Columnas - Click Global para abrir ficha)
 export function dibujarResumenVisual() {
     const contenedor = document.getElementById('vista-resumen');
-    let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px;">Resumen Global del Grupo</h2>
+    let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px; text-shadow:0 0 10px rgba(212,175,55,0.8);">Resumen Global del Grupo</h2>
                 <div class="resumen-grid">`;
 
     const afiMap = { 'Física':'fisica', 'Energética':'energetica', 'Espiritual':'espiritual', 'Mando':'mando', 'Psíquica':'psiquica', 'Oscura':'oscura' };
@@ -109,8 +109,9 @@ export function dibujarResumenVisual() {
         const vidas = generarVidasHTML(p);
         const vexVisual = calcularVexMax(p);
 
+        // El fondo entero es clicleable para ir a la ficha
         html += `
-        <div class="resumen-row">
+        <div class="resumen-row" onclick="window.abrirDetalle('${nombre}')">
             <div class="resumen-left">
                 <img src="../img/imgpersonajes/${iconoGrande}icon.png" onerror="${imgError}">
                 <h3 style="margin:8px 0 0 0; font-size:1.1em; color:var(--gold); text-transform:uppercase;">${nombre}</h3>
@@ -125,7 +126,7 @@ export function dibujarResumenVisual() {
             <div class="resumen-right">
                 <div class="resumen-badges">
                     <span class="copy-wrap" style="background:#1a1a00; border:1px solid var(--gold);" onclick="window.copySilently('Afinidad: ${mayorAf} (${valMayorAf}) | Suma: ${sumAf}', event)">
-                        ✨ Afinidad: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b> | Suma: ${sumAf}
+                        ✨ Afinidad Primaria: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b> | Suma: ${sumAf}
                     </span>
                 </div>
                 
@@ -140,7 +141,6 @@ export function dibujarResumenVisual() {
                 <div class="resumen-badges" style="margin-top:5px; align-items:center;">
                     <span style="background:#0a1128; border:1px solid #00ffff;">🎒 Objetos: <b style="color:#00ffff">${objCount}</b></span>
                     <span style="background:#110022; border:1px solid var(--cyan-magic);">📖 Hechizos: <b style="color:var(--cyan-magic)">${mySpells.length}</b></span>
-                    <button onclick="window.abrirDetalle('${nombre}')" style="background:#111; border-color:#555; padding:5px 10px; margin-left:auto;">Ficha ➡</button>
                 </div>
             </div>
         </div>`;
@@ -164,8 +164,9 @@ export function dibujarDetalle() {
     
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
-        if (e.tipo === 'numero' && val > 0) estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})</div>`;
-        else if (e.tipo === 'booleano' && val) { let colorTexto = e.id === 'huesos' ? '#000' : '#fff'; let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid'; estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}</div>`; }
+        // Aquí usa la descripción (e.desc) traída limpiamente del CSV
+        if (e.tipo === 'numero' && val > 0) estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
+        else if (e.tipo === 'booleano' && val) { let colorTexto = e.id === 'huesos' ? '#000' : '#fff'; let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid'; estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`; }
     });
 
     const iconoGrande = normalizar(p.iconoOverride || nombre);
@@ -180,8 +181,7 @@ export function dibujarDetalle() {
     const mKey = afiMap[mayorAf] || 'fisica';
     const calcAfT = (k) => (p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0);
     const valMayorAf = calcAfT(mKey);
-    const sumAf = ['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcAfT(k),0);
-
+    
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'}; flex-wrap:wrap;">
         <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #d4af37; object-fit: cover;" onerror="${imgError}">
@@ -195,6 +195,7 @@ export function dibujarDetalle() {
                <span>✨ AFIN. PRIMARIA: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b></span>
             </div>
         </div>
+        ${estadoUI.esAdmin ? `<button onclick="window.abrirModalOP()" style="background:#4a004a; border-color:#ff00ff; padding:15px; font-size:1.1em; color:white; box-shadow:0 0 15px rgba(255,0,255,0.3);">⚙️ EDITAR FICHA MÁSTER</button>` : ''}
     </div>
 
     <div class="circle-wrap">
@@ -204,112 +205,8 @@ export function dibujarDetalle() {
         <div class="stat-circle vex-circle copy-wrap" onclick="window.copySilently('VEX: ${vexVisual}', event)" style="background: conic-gradient(var(--blue-life-dark) 0%, var(--blue-life-light) ${vexPercent / 2}%, var(--blue-life-dark) ${vexPercent}%, #111 ${vexPercent}%); box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);">
             <div class="inner"><strong>${vexVisual}</strong><span>VEX</span></div>
         </div>
-    </div>`;
+    </div>
 
-    // ===== SECCIÓN OP DENTRO DE DETALLE (COLOCADA ANTES PARA EVITAR SCROLLING EXCESIVO) =====
-    if (estadoUI.esAdmin) {
-        html += `
-        <div style="margin:30px 0; background:#05000a; border:2px solid #b8860b; padding:20px; border-radius:8px; box-shadow: 0 0 20px rgba(184, 134, 11, 0.2);">
-            <h2 style="color:var(--gold); margin-top:0; text-align:center;">🛠️ PANEL DE EDICIÓN (MÁSTER)</h2>
-            <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px;">
-                <button type="button" onclick="window.toggleIdentidad('isPlayer')" style="width:150px; background:${p.isPlayer ? '#004a00' : '#4a0000'}; border-color:${p.isPlayer ? '#00ff00' : '#ff0000'}; color:white;">${p.isPlayer ? 'ROL: JUGADOR' : 'ROL: NPC'}</button>
-                <button type="button" onclick="window.toggleIdentidad('isActive')" style="width:150px; background:${p.isActive ? '#004a00' : '#4a0000'}; border-color:${p.isActive ? '#00ff00' : '#ff0000'}; color:white;">${p.isActive ? 'ESTADO: ACTIVO' : 'ESTADO: INACTIVO'}</button>
-            </div>
-            
-            <h3 style="color:#fff; border-bottom:1px dashed var(--gold); padding-bottom:5px; text-align:left;">1. Acciones Rápidas (Vida y Energía)</h3>
-            <div class="edit-grid-3">
-                <div class="edit-card">
-                    <h4>Ganancia HEX</h4>
-                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modHexInd('${nombre}', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modHexInd('${nombre}', -1)">-1</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modHexInd('${nombre}', 10)">+10</button><button type="button" class="btn-minus" onclick="window.modHexInd('${nombre}', -10)">-10</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a4a;" onclick="window.modHexInd('${nombre}', 50)">+50</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modHexInd('${nombre}', -50)">-50</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00;" onclick="window.modHexInd('${nombre}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modHexInd('${nombre}', -100)">-100</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modHexInd('${nombre}', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0040;" onclick="window.modHexInd('${nombre}', -500)">-500</button></div>
-                </div>
-                <div class="edit-card">
-                    <h4>Vida Roja (Actual)</h4>
-                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button></div>
-                </div>
-                <div class="edit-card" style="background:#1a1a00; border-color:#b8860b;">
-                    <h4 style="color:#b8860b;">Restauración Teórica Óptima</h4>
-                    <button type="button" onclick="window.recalcularBases()" style="background:#b8860b; color:#000; font-weight:bold; width:100%; padding:15px; font-size:1em; border-radius:4px; transition:0.2s; margin-top:10px;">RECALCULAR CORAZONES</button>
-                    <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física/2], la Vida Azul a [Magia/4] y curará al personaje.</p>
-                </div>
-            </div>
-
-            <h3 style="color:#fff; border-bottom:1px dashed #ff4444; padding-bottom:5px; text-align:left; margin-top:20px;">2. Límites de Vitalidad y Defensa</h3>
-            <div class="edit-grid-3">
-                <div class="edit-card">
-                    <h4>Límite Rojo (BASE)</h4>
-                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('vidaRojaMax', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('vidaRojaMax', -1)">-1</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('vidaRojaMax', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('vidaRojaMax', -5)">-5</button></div>
-                </div>
-                <div class="edit-card">
-                    <h4>C. Azules (BASE)</h4>
-                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('vidaAzul', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('vidaAzul', -1)">-1</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('vidaAzul', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('vidaAzul', -5)">-5</button></div>
-                </div>
-                <div class="edit-card">
-                    <h4>Guarda Dorada (BASE)</h4>
-                    <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('guardaDorada', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('guardaDorada', -1)">-1</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('guardaDorada', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('guardaDorada', -5)">-5</button></div>
-                </div>
-                <div class="edit-card">
-                    <h4>Límite Rojo <span style="color:#00ff00">(EXTRA)</span></h4>
-                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaRojaMaxExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaRojaMaxExtra', -1)">-1</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaRojaMaxExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaRojaMaxExtra', -5)">-5</button></div>
-                </div>
-                <div class="edit-card">
-                    <h4>C. Azules <span style="color:#00ff00">(EXTRA)</span></h4>
-                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaAzulExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaAzulExtra', -1)">-1</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaAzulExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaAzulExtra', -5)">-5</button></div>
-                </div>
-                <div class="edit-card">
-                    <h4>G. Dorada <span style="color:#00ff00">(EXTRA)</span></h4>
-                    <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('guardaDoradaExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('guardaDoradaExtra', -1)">-1</button></div>
-                    <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('guardaDoradaExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('guardaDoradaExtra', -5)">-5</button></div>
-                </div>
-            </div>
-
-            <h3 style="color:#fff; border-bottom:1px dashed var(--gold); padding-bottom:5px; text-align:left; margin-top:30px;">3. Afinidades y Atributos BASE (Permanentes)</h3>
-            <div class="edit-grid-3">
-                ${[ { id: 'fisica', label: 'Física Base', val: p.afinidadesBase.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidadesBase.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidadesBase.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidadesBase.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidadesBase.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidadesBase.oscura }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.baseDanoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.baseDanoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.baseElimDorada } ].map(f => genCard(f, 'baseAfin')).join('')}
-            </div>
-
-            <h3 style="color:#fff; border-bottom:1px dashed #4a90e2; padding-bottom:5px; text-align:left; margin-top:30px;">4. Alteración por Efectos de Hechizos (Habilidades)</h3>
-            <div class="edit-grid-3">
-                ${[ { id: 'fisica', label: 'Física (Alteración)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (Alteración)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (Alteración)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (Alteración)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (Alteración)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (Alteración)', val: p.hechizosEfecto.oscura }, { id: 'danoRojo', label: 'Daño Rojo (Alteración)', val: p.hechizosEfecto.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (Alteración)', val: p.hechizosEfecto.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (Alteración)', val: p.hechizosEfecto.elimDorada } ].map(f => genCard(f, 'spellEffAfin')).join('')}
-            </div>
-
-            <h3 style="color:#fff; border-bottom:1px dashed #00ff00; padding-bottom:5px; text-align:left; margin-top:30px;">5. Extras Temporales (Buffs/Objetos)</h3>
-            <div class="edit-grid-3">
-                ${[ { id: 'fisica', label: 'Afin. Física (Extra)', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética (Extra)', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual (Extra)', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando (Extra)', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica (Extra)', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura (Extra)', val: p.buffs.oscura }, { id: 'danoRojo', label: 'Daño Rojo (Extra)', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (Extra)', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (Extra)', val: p.buffs.elimDorada } ].map(f => genCard(f, 'buff')).join('')}
-            </div>
-
-            <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top:30px;">6. Efectos de Estado</h3>
-            <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom:20px;">`;
-            listaEstados.forEach(e => {
-                let val = p.estados[e.id];
-                if (e.tipo === 'numero') { html += `<div class="edit-card"><h4>${e.nombre}</h4><span style="color:${e.border}; font-size:1.5em; font-weight:bold;">${val}</span><div class="btn-row"><button type="button" class="btn-plus" onclick="window.modEstado('${e.id}', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modEstado('${e.id}', -1)">-1</button></div></div>`; } 
-                else { let extraStyle = val ? `background:${e.bg}; color:${e.id==='huesos'?'#000':'#fff'}; border-color:${e.border};` : ''; html += `<button type="button" class="status-toggle ${val ? 'active' : ''}" style="${extraStyle}" onclick="window.toggleEstado('${e.id}')">${e.nombre}</button>`; }
-            });
-    html += `</div>
-            
-            <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
-                <h3 style="margin-top:0; color:var(--gold);">🛠️ Clonación e Importación</h3>
-                <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;"><option value="" disabled selected>-- Selecciona Origen --</option>${Object.keys(statsGlobal).filter(n => n !== nombre).map(n => `<option value="${n}">${n}</option>`).join('')}</select>
-                    <button type="button" onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados</button>
-                    <button type="button" onclick="window.ejecutarClonacion('efectosExtras')" style="background:#4a90e2; border:1px solid #00ffff; padding:10px 15px; color:#111; font-weight:bold; transition:0.2s;">Copiar Efectos y Extras</button>
-                    <button type="button" onclick="window.ejecutarClonacion('hex')" style="background:#b8860b; border:1px solid #ffd700; padding:10px 15px; color:#000; font-weight:bold; transition:0.2s;">Copiar HEX</button>
-                    <button type="button" onclick="window.ejecutarClonacion('completo')" style="background:#4a004a; border:1px solid #8a008a; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar Todo</button>
-                </div>
-            </div>
-    </div>`;
-    }
-
-    html += `
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
         <div>
             <h3 style="margin-top:0;">Vitalidad</h3>
@@ -333,12 +230,12 @@ export function dibujarDetalle() {
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Mando: ${calcTotal(p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}', event)"><label>Mando</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</span>${bTextSplit(p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</div>
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Psíquica: ${calcTotal(p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}', event)"><label>Psíquica</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</span>${bTextSplit(p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</div>
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Oscura: ${calcTotal(p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}', event)"><label>Oscura</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</span>${bTextSplit(p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</div>
-                <div class="copy-wrap" onclick="window.copySilently('Suma Total Afinidades: ${sumAf}', event)" style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333; display:block;">Suma Total Afinidades: ${sumAf}</div>
+                <div class="copy-wrap" onclick="window.copySilently('Suma Total Afinidades: ${['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcTotal(p.afinidadesBase[k],p.hechizos[k],p.hechizosEfecto[k],p.buffs[k]),0)}', event)" style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333; display:block;">Suma Total Afinidades: ${['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcTotal(p.afinidadesBase[k],p.hechizos[k],p.hechizosEfecto[k],p.buffs[k]),0)}</div>
             </div>
         </div>
     </div>`;
 
-    // GRID DE HECHIZOS (Botones de copiado mudo)
+    // GRID DE HECHIZOS
     html += `
     <h3 style="margin-top:30px; color:#4a90e2; border-bottom:1px solid #4a90e2; padding-bottom:5px;">Grimorio (Hechizos Aprendidos) <span style="font-size:0.7em; color:#aaa;">- Clic para copiar</span></h3>
     <div class="spell-grid-4">
@@ -346,6 +243,116 @@ export function dibujarDetalle() {
     </div>`;
 
     contenedor.innerHTML = html;
+}
+
+// PANEL OP COMO UN MODAL POP-UP
+export function dibujarPanelEdicionOP() {
+    const nombre = estadoUI.personajeSeleccionado; const p = statsGlobal[nombre];
+    if(!p) return ``;
+    
+    const pVidaDanoBase = [ { id: 'baseVidaAzul', label: 'C. Azules (BASE)', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada (BASE)', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo (BASE)', val: p.baseDanoRojo }, { id: 'danoAzul', label: 'Daño Azul (BASE)', val: p.baseDanoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (BASE)', val: p.baseElimDorada } ];
+    const pAfinidadesBase = [ { id: 'fisica', label: 'Física (BASE)', val: p.afinidadesBase.fisica }, { id: 'energetica', label: 'Energética (BASE)', val: p.afinidadesBase.energetica }, { id: 'espiritual', label: 'Espiritual (BASE)', val: p.afinidadesBase.espiritual }, { id: 'mando', label: 'Mando (BASE)', val: p.afinidadesBase.mando }, { id: 'psiquica', label: 'Psíquica (BASE)', val: p.afinidadesBase.psiquica }, { id: 'oscura', label: 'Oscura (BASE)', val: p.afinidadesBase.oscura } ];
+
+    const pAfinidadesSpellEff = [ { id: 'fisica', label: 'Física (ALT)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (ALT)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (ALT)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (ALT)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (ALT)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (ALT)', val: p.hechizosEfecto.oscura }, { id: 'danoRojo', label: 'Daño Rojo (ALT)', val: p.hechizosEfecto.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (ALT)', val: p.hechizosEfecto.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (ALT)', val: p.hechizosEfecto.elimDorada } ];
+
+    let html = `
+        <h2 style="color:var(--gold); margin-top:0; text-align:center;">🛠️ PANEL DE EDICIÓN MÁSTER: ${nombre.toUpperCase()}</h2>
+        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px;">
+            <button type="button" onclick="window.toggleIdentidad('isPlayer')" style="width:150px; background:${p.isPlayer ? '#004a00' : '#4a0000'}; border-color:${p.isPlayer ? '#00ff00' : '#ff0000'}; color:white;">${p.isPlayer ? 'ROL: JUGADOR' : 'ROL: NPC'}</button>
+            <button type="button" onclick="window.toggleIdentidad('isActive')" style="width:150px; background:${p.isActive ? '#004a00' : '#4a0000'}; border-color:${p.isActive ? '#00ff00' : '#ff0000'}; color:white;">${p.isActive ? 'ESTADO: ACTIVO' : 'ESTADO: INACTIVO'}</button>
+        </div>
+        
+        <h3 style="color:#fff; border-bottom:1px dashed var(--gold); padding-bottom:5px; text-align:left;">1. Acciones Rápidas (Vida y Energía)</h3>
+        <div class="edit-grid-3">
+            <div class="edit-card">
+                <h4>Ganancia HEX</h4>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modHexInd('${nombre}', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modHexInd('${nombre}', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modHexInd('${nombre}', 10)">+10</button><button type="button" class="btn-minus" onclick="window.modHexInd('${nombre}', -10)">-10</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a4a;" onclick="window.modHexInd('${nombre}', 50)">+50</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modHexInd('${nombre}', -50)">-50</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00;" onclick="window.modHexInd('${nombre}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000;" onclick="window.modHexInd('${nombre}', -100)">-100</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a;" onclick="window.modHexInd('${nombre}', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0040;" onclick="window.modHexInd('${nombre}', -500)">-500</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>Vida Roja (Actual)</h4>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00" onclick="window.modLibre('vidaRojaActual', 5)">+5 (Cura)</button><button type="button" class="btn-minus" onclick="window.modLibre('vidaRojaActual', -5)">-5 (Daño)</button></div>
+            </div>
+            <div class="edit-card" style="background:#1a1a00; border-color:#b8860b;">
+                <h4 style="color:#b8860b;">Restauración Teórica Óptima</h4>
+                <button type="button" onclick="window.recalcularBases()" style="background:#b8860b; color:#000; font-weight:bold; width:100%; padding:15px; font-size:1em; border-radius:4px; transition:0.2s; margin-top:10px;">RECALCULAR CORAZONES</button>
+                <p style="font-size:0.7em; color:#aaa; margin-top:5px; text-transform:none;">Esto ajustará el Límite Rojo a [10 + Física/2], la Vida Azul a [Magia/4] y curará al personaje.</p>
+            </div>
+        </div>
+
+        <h3 style="color:#fff; border-bottom:1px dashed #ff4444; padding-bottom:5px; text-align:left; margin-top:20px;">2. Límites de Vitalidad y Defensa</h3>
+        <div class="edit-grid-3">
+            <div class="edit-card">
+                <h4>Límite Rojo (BASE)</h4>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('vidaRojaMax', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('vidaRojaMax', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('vidaRojaMax', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('vidaRojaMax', -5)">-5</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>C. Azules (BASE)</h4>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('vidaAzul', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('vidaAzul', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('vidaAzul', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('vidaAzul', -5)">-5</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>Guarda Dorada (BASE)</h4>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('guardaDorada', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('guardaDorada', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('guardaDorada', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('guardaDorada', -5)">-5</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>Límite Rojo <span style="color:#00ff00">(EXT)</span></h4>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaRojaMaxExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaRojaMaxExtra', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaRojaMaxExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaRojaMaxExtra', -5)">-5</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>C. Azules <span style="color:#00ff00">(EXT)</span></h4>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaAzulExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaAzulExtra', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaAzulExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaAzulExtra', -5)">-5</button></div>
+            </div>
+            <div class="edit-card">
+                <h4>G. Dorada <span style="color:#00ff00">(EXT)</span></h4>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('guardaDoradaExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('guardaDoradaExtra', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('guardaDoradaExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('guardaDoradaExtra', -5)">-5</button></div>
+            </div>
+        </div>
+
+        <h3 style="color:#fff; border-bottom:1px dashed var(--gold); padding-bottom:5px; text-align:left; margin-top:30px;">3. Afinidades y Atributos BASE (Permanentes)</h3>
+        <div class="edit-grid-3">
+            ${[ { id: 'fisica', label: 'Física Base', val: p.afinidadesBase.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidadesBase.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidadesBase.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidadesBase.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidadesBase.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidadesBase.oscura }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.baseDanoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.baseDanoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.baseElimDorada } ].map(f => genCard(f, 'baseAfin')).join('')}
+        </div>
+
+        <h3 style="color:#fff; border-bottom:1px dashed #4a90e2; padding-bottom:5px; text-align:left; margin-top:30px;">4. Alteración por Efectos de Hechizos (Habilidades)</h3>
+        <div class="edit-grid-3">
+            ${[ { id: 'fisica', label: 'Física (Alteración)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (Alteración)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (Alteración)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (Alteración)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (Alteración)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (Alteración)', val: p.hechizosEfecto.oscura }, { id: 'danoRojo', label: 'Daño Rojo (Alteración)', val: p.hechizosEfecto.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (Alteración)', val: p.hechizosEfecto.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (Alteración)', val: p.hechizosEfecto.elimDorada } ].map(f => genCard(f, 'spellEffAfin')).join('')}
+        </div>
+
+        <h3 style="color:#fff; border-bottom:1px dashed #00ff00; padding-bottom:5px; text-align:left; margin-top:30px;">5. Extras Temporales (Buffs/Objetos)</h3>
+        <div class="edit-grid-3">
+            ${[ { id: 'fisica', label: 'Afin. Física (Extra)', val: p.buffs.fisica }, { id: 'energetica', label: 'Afin. Energética (Extra)', val: p.buffs.energetica }, { id: 'espiritual', label: 'Afin. Espiritual (Extra)', val: p.buffs.espiritual }, { id: 'mando', label: 'Afin. Mando (Extra)', val: p.buffs.mando }, { id: 'psiquica', label: 'Afin. Psíquica (Extra)', val: p.buffs.psiquica }, { id: 'oscura', label: 'Afin. Oscura (Extra)', val: p.buffs.oscura }, { id: 'danoRojo', label: 'Daño Rojo (Extra)', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (Extra)', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (Extra)', val: p.buffs.elimDorada } ].map(f => genCard(f, 'buff')).join('')}
+        </div>
+
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top:30px;">6. Efectos de Estado</h3>
+        <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom:20px;">`;
+        listaEstados.forEach(e => {
+            let val = p.estados[e.id];
+            if (e.tipo === 'numero') { html += `<div class="edit-card"><h4>${e.nombre}</h4><span style="color:${e.border}; font-size:1.5em; font-weight:bold;">${val}</span><div class="btn-row"><button type="button" class="btn-plus" onclick="window.modEstado('${e.id}', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modEstado('${e.id}', -1)">-1</button></div></div>`; } 
+            else { let extraStyle = val ? `background:${e.bg}; color:${e.id==='huesos'?'#000':'#fff'}; border-color:${e.border};` : ''; html += `<button type="button" class="status-toggle ${val ? 'active' : ''}" style="${extraStyle}" onclick="window.toggleEstado('${e.id}')">${e.nombre}</button>`; }
+        });
+html += `</div>
+        
+        <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
+            <h3 style="margin-top:0; color:var(--gold);">🛠️ Clonación e Importación</h3>
+            <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
+                <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;"><option value="" disabled selected>-- Selecciona Origen --</option>${Object.keys(statsGlobal).filter(n => n !== nombre).map(n => `<option value="${n}">${n}</option>`).join('')}</select>
+                <button type="button" onclick="window.ejecutarClonacion('estados')" style="background:#004a4a; border:1px solid #00ffff; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Importar Estados</button>
+                <button type="button" onclick="window.ejecutarClonacion('efectosExtras')" style="background:#4a90e2; border:1px solid #00ffff; padding:10px 15px; color:#111; font-weight:bold; transition:0.2s;">Copiar Efectos y Extras</button>
+                <button type="button" onclick="window.ejecutarClonacion('hex')" style="background:#b8860b; border:1px solid #ffd700; padding:10px 15px; color:#000; font-weight:bold; transition:0.2s;">Copiar HEX</button>
+                <button type="button" onclick="window.ejecutarClonacion('completo')" style="background:#4a004a; border:1px solid #8a008a; padding:10px 15px; color:white; font-weight:bold; transition:0.2s;">Clonar Todo</button>
+            </div>
+        </div>`;
+    return html;
 }
 
 export function dibujarMenuOP() {
@@ -530,5 +537,5 @@ export function dibujarFormularioCrear() {
 }
 
 export function dibujarFormularioEditar() {
-    return `<p>Usa los controles de la ficha directamente.</p>`;
+    return `<p>Editor movido a Modal OP en la ficha.</p>`;
 }
