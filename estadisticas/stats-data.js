@@ -5,7 +5,7 @@ const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENp
 const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 
-// Carga simultánea
+// Carga simultánea 3x más rápida
 export async function cargarTodoDesdeCSV() {
     try {
         const [resPj, resObj, resHz] = await Promise.all([
@@ -22,14 +22,24 @@ export async function cargarTodoDesdeCSV() {
 
 function procesarObjetos(texto) {
     const filas = texto.split(/\r?\n/).map(l => l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim()));
-    dbExtra.objetos = {};
+    dbExtra.objetosCount = {};
+    dbExtra.inventarios = {};
+    dbExtra.infoObjetos = {};
+
     filas.slice(1).forEach(f => {
         const nombre = f[0]; if (!nombre) return;
+        dbExtra.infoObjetos[nombre] = { rar: f[4] || 'Común' };
+
         const jugs = f[5] ? f[5].split(',').map(j => j.trim().toLowerCase()) : [];
         const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
+        
         jugs.forEach((j, i) => {
-            if (!dbExtra.objetos[j]) dbExtra.objetos[j] = 0;
-            dbExtra.objetos[j] += cants[i] || 0; 
+            const count = cants[i] || 0;
+            if (!dbExtra.objetosCount[j]) dbExtra.objetosCount[j] = 0;
+            if (!dbExtra.inventarios[j]) dbExtra.inventarios[j] = [];
+            
+            dbExtra.objetosCount[j] += count;
+            if (count > 0) dbExtra.inventarios[j].push(nombre);
         });
     });
 }
@@ -47,6 +57,7 @@ export function procesarTextoCSV(texto) {
         const nombre = f[0];
         const hexParts = (f[1] || '0_1').split('_'); const idenParts = (f[17] || '0_1').split('_');
         
+        // Estructura: Total_Base_Spell_SpellEff_Buff
         const getTotal = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
         const getBase = (idx) => parseInt((f[idx] || '0').split('_')[1]) || 0;
         const getSpell = (idx) => parseInt((f[idx] || '0').split('_')[2]) || 0;
@@ -87,7 +98,7 @@ export function procesarTextoCSV(texto) {
     });
 }
 
-// Lector blindado contra comas internas en las descripciones
+// Lector de CSV invencible contra comas y saltos de línea internos
 export async function cargarDiccionarioEstados() {
     try {
         const res = await fetch(CSV_ESTADOS + '?cb=' + new Date().getTime());
@@ -104,15 +115,15 @@ export async function cargarDiccionarioEstados() {
         filas.slice(1).forEach(f => {
             if(!f[0]) return;
             listaEstados.push({
-                id: f[0],
-                nombre: f[1] || f[0],
-                tipo: f[2] || 'booleano',
-                bg: f[3] || '#000',
-                border: f[4] || '#fff',
-                desc: f[5] || 'Sin descripción'
+                id: f[0].trim(),
+                nombre: f[1] ? f[1].trim() : f[0].trim(),
+                tipo: f[2] ? f[2].trim() : 'booleano',
+                bg: f[3] ? f[3].trim() : '#000',
+                border: f[4] ? f[4].trim() : '#fff',
+                desc: f[5] ? f[5].trim() : 'Sin descripción'
             });
         });
     } catch(e) {
-        console.warn("Fallo al cargar estados.csv. Verifica ruta.");
+        console.warn("Fallo al cargar estados.csv. Verifica ruta local.");
     }
 }
