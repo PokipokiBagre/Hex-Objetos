@@ -10,6 +10,7 @@ let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 if (!estadoUI.colaCambios) estadoUI.colaCambios = { stats: {} };
 if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
 
+// --- DRAG Y DROP DEL MODAL OP ---
 const dragHeader = document.getElementById('modal-drag-header');
 const modalContent = document.getElementById('hex-modal-content');
 let isDragging = false, startX, startY, initialX, initialY;
@@ -189,7 +190,6 @@ window.cerrarModalOP = () => {
 function repintarConScroll(vista) {
     const scrollY = window.scrollY; 
     
-    // Si el modal OP está abierto, lo actualizamos silenciosamente sin cerrar nada
     const modalBody = document.getElementById('modal-op-body');
     if (!document.getElementById('modal-op').classList.contains('oculto') && modalBody) {
         const modalScrollTop = modalBody.scrollTop;
@@ -328,12 +328,11 @@ function recalcularVidas(p, accion) {
 window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { p.baseVidaRojaMax = 10; p.vidaRojaActual = calcularVidaRojaMax(p); p.baseVidaAzul = getMysticBonus(p); p.vidaAzul = p.baseVidaAzul; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); } };
 
 window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
+window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 
-// Botones de Forja
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
     if(input) {
@@ -345,8 +344,8 @@ window.modForm = (inputId, cantidad) => {
 };
 
 window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
+window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 
 window.ejecutarClonacion = (tipo) => {
     const s = document.getElementById('clon-source'); if(!s) return; const sn = s.value; if(!sn) return alert("Selecciona origen.");
@@ -361,7 +360,7 @@ window.ejecutarClonacion = (tipo) => {
         dest.afinidadesBase = JSON.parse(JSON.stringify(orig.afinidadesBase)); dest.afinidades = JSON.parse(JSON.stringify(orig.afinidades));
         dest.vex = orig.vex; if(tipo==='completo') dest.iconoOverride = orig.iconoOverride || sn;
     }
-    window.encolarCambio(tn); guardar(); s.value = ""; repintarConScroll('detalle'); 
+    window.encolarCambio(tn); guardar(); s.value = ""; repintarConScroll('op'); 
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -386,21 +385,28 @@ window.descargarAumentada = () => { descargarArchivoCSV(generarCSVExportacion(),
 
 async function iniciar() {
     try {
-        // Limpiar caché si es recarga limpia (F5)
         const perf = performance.getEntriesByType("navigation")[0];
         if (perf && perf.type === "reload") {
             localStorage.removeItem('hex_stats_v2');
         }
 
+        const loader = document.getElementById('loader');
+        const barra = document.getElementById('carga-progreso');
+
         await cargarDiccionarioEstados(); 
         const cache = localStorage.getItem('hex_stats_v2'); 
-        if (!cache) { await cargarTodoDesdeCSV(); } 
-        else { 
+        if (!cache) { 
+            await cargarTodoDesdeCSV(barra); 
+        } else { 
             const parsed = JSON.parse(cache); 
             Object.assign(statsGlobal, parsed.stats); 
             if(parsed.party) estadoUI.party = parsed.party;
-            cargarTodoDesdeCSV(); // Fetch background para actualizar cruces
-        } 
+            cargarTodoDesdeCSV(barra); 
+        }
+        
+        if (loader) {
+            setTimeout(() => loader.classList.add('oculto'), 500); 
+        }
     } 
     catch (error) { console.error("Error crítico:", error); } 
     finally { 
