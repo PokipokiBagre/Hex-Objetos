@@ -4,7 +4,6 @@ import { calcularVidaRojaMax, calcularVexMax, getMayorAfinidad } from './stats-l
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'');
 const calcTotal = (base, spells, spellEff, buff) => (base || 0) + (spells || 0) + (spellEff || 0) + (buff || 0);
 
-// Nomenclatura Exacta (Hcz, Alt, Ext)
 const bTextSplit = (spells, spellEff, buff) => {
     let parts = [];
     if (spells !== 0) parts.push(`<span style="color:var(--cyan-magic); font-weight:bold;">Hcz: ${spells > 0 ? '+' : ''}${spells}</span>`);
@@ -12,7 +11,7 @@ const bTextSplit = (spells, spellEff, buff) => {
     if (buff !== 0) parts.push(`<span style="color:${buff > 0 ? '#00ff00' : '#ff4444'}; font-weight:bold;">Ext: ${buff > 0 ? '+' : ''}${buff}</span>`);
     
     if (parts.length === 0) return '';
-    return `<div style="font-size:0.75em; display:flex; flex-direction:column; gap:2px; margin-top:5px; border-top:1px dashed #555; padding-top:5px; font-family:monospace;">${parts.join('')}</div>`;
+    return `<div style="font-size:0.75em; display:flex; flex-direction:column; gap:2px; margin-top:5px; border-top:1px dashed #555; padding-top:5px;">${parts.join('')}</div>`;
 };
 
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
@@ -43,7 +42,6 @@ function generarVidasHTML(p) {
     return { rojasHTML, azulesHTML, guardasHTML, maxRojo, azulTotal, guardaTotal };
 }
 
-// NUEVA FUNCIÓN PARA GENERAR HEXÁGONO/HEPTÁGONO SVG
 function generarGeometriaSVG(tipo, valor, maxVex, nroLados) {
     const size = 150; const center = size / 2; const radius = (size / 2) - 10;
     const points = [];
@@ -55,14 +53,10 @@ function generarGeometriaSVG(tipo, valor, maxVex, nroLados) {
     }
     const pathData = `M ${points.join(' L ')} Z`;
     
-    let porcentaje = 0; let rotacion = -90;
-    if (tipo === 'hex') { 
-        porcentaje = Math.min((valor / 4000), 1); 
-    } else { 
-        porcentaje = Math.min((valor / maxVex), 1); 
-    }
+    let porcentaje = 0;
+    if (tipo === 'hex') { porcentaje = Math.min((valor / 4000), 1); } 
+    else { porcentaje = maxVex > 0 ? Math.min((valor / maxVex), 1) : 0; }
     
-    // Circunferencia teórica del path aproximada
     const perimeter = radius * 2 * nroLados * Math.sin(Math.PI/nroLados);
     const strokeDasharray = perimeter;
     const strokeDashoffset = perimeter * (1 - porcentaje);
@@ -116,7 +110,6 @@ export function dibujarCatalogo() {
     contenedor.innerHTML = html + `</div>`;
 }
 
-// RESUMEN VISUAL AVANZADO (Top 5 objetos/Top 10 Hechizos + Enlaces)
 export function dibujarResumenVisual() {
     const contenedor = document.getElementById('vista-resumen');
     let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px; text-shadow:0 0 10px rgba(212,175,55,0.8);">Resumen Global del Grupo</h2>
@@ -133,24 +126,23 @@ export function dibujarResumenVisual() {
         const iconoGrande = normalizar(p.iconoOverride || nombre);
         const objCount = dbExtra.objetosCount[pjNameLower] || 0;
         
-        // Top 5 Objetos con Enlace a Inventario de Linda
+        // Link directo al inventario
+        const linkObj = `https://pokipokibagre.github.io/Hexcraft-Heptagram/objetos/index.html?pj=${encodeURIComponent(nombre)}#inventario-${normalizar(nombre)}`;
+
         const myItems = dbExtra.inventarios[pjNameLower] || [];
         const topItems = myItems.sort((a,b) => (raridadValor[dbExtra.infoObjetos[b]?.rar]||0) - (raridadValor[dbExtra.infoObjetos[a]?.rar]||0)).slice(0, 5);
         let itemsHtml = topItems.map(o => {
             const rarClase = dbExtra.infoObjetos[o]?.rar === 'Raro' ? 'rarity-raro' : (dbExtra.infoObjetos[o]?.rar === 'Legendario' ? 'rarity-legendario' : 'rarity-comun');
-            // Enlace al inventario de Linda usando el ancla
-            const linkUrl = `https://pokipokibagre.github.io/Hexcraft-Heptagram/objetos/index.html#inventario-linda`;
-            return `<a href="${linkUrl}" target="_blank" class="mini-item-card ${rarClase}" title="${o} (Clic para ir al inventario de Linda)" onclick="event.stopPropagation();"><img src="../img/imgobjetos/${normalizar(o)}.png" onerror="${imgError}"></a>`;
+            return `<a href="${linkObj}" target="_blank" class="mini-item-card ${rarClase}" title="${o} (Clic para ir al inventario)" onclick="event.stopPropagation();"><img src="../img/imgobjetos/${normalizar(o)}.png" onerror="${imgError}"></a>`;
         }).join('');
 
-        // Top 10 Hechizos por Costo
         const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower);
         mySpells.forEach(s => {
             const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
             s.costo = info ? (parseInt(info.HEX) || 0) : 0;
         });
         const topSpells = mySpells.sort((a,b) => b.costo - a.costo).slice(0, 10);
-        let spellsHtml = topSpells.map(s => `<span class="mini-spell-tag" title="${s.Hechizo}">${s.Hechizo}</span>`).join('');
+        let spellsHtml = topSpells.map(s => `<span class="mini-spell-tag copy-wrap" title="${s.Hechizo} (${s.costo} HEX)" onclick="window.copySilently('${s.Hechizo.replace(/'/g, "\\'")}', event)">${s.Hechizo}</span>`).join('');
         
         const mayorAf = getMayorAfinidad(p);
         const mKey = afiMap[mayorAf] || 'fisica';
@@ -295,7 +287,6 @@ export function dibujarDetalle() {
         </div>
     </div>`;
 
-    // GRID DE HECHIZOS
     html += `
     <h3 style="margin-top:30px; color:#4a90e2; border-bottom:1px solid #4a90e2; padding-bottom:5px;">Grimorio (Hechizos Aprendidos) <span style="font-size:0.7em; color:#aaa;">- Clic para copiar</span></h3>
     <div class="spell-grid-4">
@@ -305,14 +296,13 @@ export function dibujarDetalle() {
     contenedor.innerHTML = html;
 }
 
-// PANEL OP QUE SE INYECTA EN EL MODAL ARRASTRABLE
 export function dibujarPanelEdicionOP() {
     const nombre = estadoUI.personajeSeleccionado; const p = statsGlobal[nombre];
     if(!p) return ``;
     
-    // Listas para iterar parámetros
     const pVidaDanoBase = [ { id: 'baseVidaAzul', label: 'C. Azules (BASE)', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada (BASE)', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo (BASE)', val: p.baseDanoRojo }, { id: 'danoAzul', label: 'Daño Azul (BASE)', val: p.baseDanoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (BASE)', val: p.baseElimDorada } ];
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física (BASE)', val: p.afinidadesBase.fisica }, { id: 'energetica', label: 'Energética (BASE)', val: p.afinidadesBase.energetica }, { id: 'espiritual', label: 'Espiritual (BASE)', val: p.afinidadesBase.espiritual }, { id: 'mando', label: 'Mando (BASE)', val: p.afinidadesBase.mando }, { id: 'psiquica', label: 'Psíquica (BASE)', val: p.afinidadesBase.psiquica }, { id: 'oscura', label: 'Oscura (BASE)', val: p.afinidadesBase.oscura } ];
+
     const pAfinidadesSpellEff = [ { id: 'fisica', label: 'Física (ALT)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (ALT)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (ALT)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (ALT)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (ALT)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (ALT)', val: p.hechizosEfecto.oscura }, { id: 'danoRojo', label: 'Daño Rojo (ALT)', val: p.hechizosEfecto.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (ALT)', val: p.hechizosEfecto.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (ALT)', val: p.hechizosEfecto.elimDorada } ];
     const pBuffs = [ { id: 'fisica', label: 'Física (EXT)', val: p.buffs.fisica }, { id: 'energetica', label: 'Energética (EXT)', val: p.buffs.energetica }, { id: 'espiritual', label: 'Espiritual (EXT)', val: p.buffs.espiritual }, { id: 'mando', label: 'Mando (EXT)', val: p.buffs.mando }, { id: 'psiquica', label: 'Psíquica (EXT)', val: p.buffs.psiquica }, { id: 'oscura', label: 'Oscura (EXT)', val: p.buffs.oscura }, { id: 'danoRojo', label: 'Daño Rojo (EXT)', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (EXT)', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (EXT)', val: p.buffs.elimDorada } ];
 
@@ -362,17 +352,17 @@ export function dibujarPanelEdicionOP() {
                 <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('guardaDorada', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('guardaDorada', -5)">-5</button></div>
             </div>
             <div class="edit-card">
-                <h4>Límite Rojo (EXT)</h4>
+                <h4>Límite Rojo <span style="color:#00ff00">(EXT)</span></h4>
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaRojaMaxExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaRojaMaxExtra', -1)">-1</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaRojaMaxExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaRojaMaxExtra', -5)">-5</button></div>
             </div>
             <div class="edit-card">
-                <h4>C. Azules (EXT)</h4>
+                <h4>C. Azules <span style="color:#00ff00">(EXT)</span></h4>
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaAzulExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaAzulExtra', -1)">-1</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaAzulExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaAzulExtra', -5)">-5</button></div>
             </div>
             <div class="edit-card">
-                <h4>G. Dorada (EXT)</h4>
+                <h4>G. Dorada <span style="color:#00ff00">(EXT)</span></h4>
                 <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('guardaDoradaExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('guardaDoradaExtra', -1)">-1</button></div>
                 <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('guardaDoradaExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('guardaDoradaExtra', -5)">-5</button></div>
             </div>
@@ -463,7 +453,7 @@ export function dibujarHexOP() {
             html += `
                 <label style="display:flex; align-items:center; gap:8px; background:#111; padding:8px; border-radius:4px; border:1px solid #333; cursor:pointer; transition:0.2s; user-select:none;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='#333'">
                     <input type="checkbox" ${isChecked} onchange="window.togglePartyMember('${nombre}', this.checked)" style="transform:scale(1.3); cursor:pointer;">
-                    <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:30px; height:30px; border-radius:50%; border:1px solid #fff; object-fit:cover; background:transparent;" onerror="${imgError}">
+                    <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:30px; height:30px; border-radius:50%; border:1px solid #fff; object-fit:cover;" onerror="${imgError}">
                     <span style="color:white; font-size:0.85em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:bold; flex:1;">${nombre}</span>
                 </label>
             `;
@@ -495,7 +485,7 @@ export function dibujarHexOP() {
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 15px;">`;
+        <div class="edit-grid-6">`;
 
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
@@ -550,11 +540,19 @@ function genCard(f, tipoAccion) {
     const attrInput = tipoAccion === 'form' ? `oninput="window.updateCreationAfinitySum()"` : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
     const paramId = tipoAccion === 'form' ? inputId : f.id;
     
-    // El input numérico nativo
-    let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput}>`;
+    let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
 
-    // Botones rápidos de +/-
-    btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 1)">+1</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -1)">-1</button></div><div class="btn-row"><button type="button" class="btn-plus5" onclick="${clickMod}('${paramId}', 5)">+5</button><button type="button" class="btn-minus5" onclick="${clickMod}('${paramId}', -5)">-5</button></div>`;
+    if (f.esHex) {
+        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 10)">+10</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -10)">-10</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 50)">+50</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -50)">-50</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00; border-color:#00ff00;" onclick="${clickMod}('${paramId}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -100)">-100</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#ff00ff;" onclick="${clickMod}('${paramId}', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -500)">-500</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#ff00ff;" onclick="${clickMod}('${paramId}', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -1000)">-1000</button></div>`;
+    } else {
+        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 1)">+1</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" onclick="${clickMod}('${paramId}', 5)">+5</button><button type="button" class="btn-minus5" onclick="${clickMod}('${paramId}', -5)">-5</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', 10)">+10</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', -10)">-10</button></div>`;
+    }
     
     return `<div class="edit-card"><h4>${f.label}</h4>${inputHtml}${btns}</div>`;
 }
@@ -569,7 +567,7 @@ export function dibujarFormularioCrear() {
         afinGridHtml += `
         <div class="edit-card">
             <h4>Afin. ${f.label}</h4>
-            <input type="number" id="${f.id}" value="0" oninput="window.updateCreationAfinitySum()">
+            <input type="number" id="${f.id}" value="0" oninput="window.updateCreationAfinitySum()" style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">
             <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modForm('${f.id}', 1); window.updateCreationAfinitySum();">+1</button><button type="button" class="btn-minus" onclick="window.modForm('${f.id}', -1); window.updateCreationAfinitySum();">-1</button></div>
             <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modForm('${f.id}', 5); window.updateCreationAfinitySum();">+5</button><button type="button" class="btn-minus5" onclick="window.modForm('${f.id}', -5); window.updateCreationAfinitySum();">-5</button></div>
         </div>`;
