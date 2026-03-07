@@ -5,19 +5,30 @@ const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENp
 const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 
-// Carga simultánea 3x más rápida
-export async function cargarTodoDesdeCSV() {
+// Carga simultánea con barra de progreso animada
+export async function cargarTodoDesdeCSV(barraProgreso) {
     try {
-        const [resPj, resObj, resHz] = await Promise.all([
-            fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime()),
-            fetch(CSV_OBJETOS + '&cb=' + new Date().getTime()),
-            fetch(API_HECHIZOS)
+        let progresoActual = 10; // Inicia en 10%
+        if (barraProgreso) barraProgreso.style.width = progresoActual + '%';
+
+        const avanzarProgreso = () => {
+            progresoActual += 30;
+            if (barraProgreso) barraProgreso.style.width = progresoActual + '%';
+        };
+
+        const [textoPj, textoObj, textoHz] = await Promise.all([
+            fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime()).then(r => r.text()).then(t => { avanzarProgreso(); return t; }),
+            fetch(CSV_OBJETOS + '&cb=' + new Date().getTime()).then(r => r.text()).then(t => { avanzarProgreso(); return t; }),
+            fetch(API_HECHIZOS).then(r => r.text()).then(t => { avanzarProgreso(); return t; })
         ]);
         
-        procesarTextoCSV(await resPj.text());
-        procesarObjetos(await resObj.text());
-        dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
-    } catch (error) { console.error("Error cargando bases de datos cruzadas:", error); }
+        procesarTextoCSV(textoPj);
+        procesarObjetos(textoObj);
+        dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(textoHz))));
+        
+    } catch (error) { 
+        console.error("Error cargando bases de datos cruzadas:", error); 
+    }
 }
 
 function procesarObjetos(texto) {
@@ -57,7 +68,6 @@ export function procesarTextoCSV(texto) {
         const nombre = f[0];
         const hexParts = (f[1] || '0_1').split('_'); const idenParts = (f[17] || '0_1').split('_');
         
-        // Estructura: Total_Base_Spell_SpellEff_Buff
         const getTotal = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
         const getBase = (idx) => parseInt((f[idx] || '0').split('_')[1]) || 0;
         const getSpell = (idx) => parseInt((f[idx] || '0').split('_')[2]) || 0;
@@ -98,7 +108,6 @@ export function procesarTextoCSV(texto) {
     });
 }
 
-// Lector Definitivo: Si la celda contiene una coma, une el resto de la fila.
 export async function cargarDiccionarioEstados() {
     try {
         const res = await fetch(CSV_ESTADOS + '?cb=' + new Date().getTime());
@@ -110,22 +119,14 @@ export async function cargarDiccionarioEstados() {
 
         filas.slice(1).forEach(f => {
             if(!f.trim()) return;
-            
-            // Separamos por comas primero
             const partes = f.split(',');
-            
-            // Si la fila tiene menos de 5 elementos, está corrupta
             if (partes.length < 5) return;
 
-            // Las primeras 5 columnas sabemos qué son. 
-            // La columna 6 (descripción) podría contener comas, así que unimos todo el resto.
             const id = partes[0].replace(/^"|"$/g, '').trim();
             const nombre = partes[1].replace(/^"|"$/g, '').trim() || id;
             const tipo = partes[2].replace(/^"|"$/g, '').trim() || 'booleano';
             const bg = partes[3].replace(/^"|"$/g, '').trim() || '#000';
             const border = partes[4].replace(/^"|"$/g, '').trim() || '#fff';
-            
-            // Unimos desde el índice 5 en adelante y quitamos comillas residuales
             let desc = partes.slice(5).join(',').replace(/^"|"$/g, '').trim();
             if (!desc) desc = 'Sin descripción';
 
