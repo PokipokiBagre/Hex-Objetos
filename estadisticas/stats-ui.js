@@ -506,4 +506,98 @@ export function dibujarHexOP() {
             <div class="edit-card" style="border-color:var(--gold);">
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                     <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:40px; height:40px; border-radius:50%; border:1px solid var(--gold); object-fit:cover; background:transparent;" onerror="${imgError}">
-                    <div style="text-align:left
+                    <div style="text-align:left;">
+                        <h4 style="margin:0; font-size:0.85em;">${nombre}</h4>
+                        <div style="color:var(--gold); font-size:0.85em; font-weight:bold;">HEX: ${p.hex} <br><span style="color:#aaa; font-size:0.8em;">${asisTexto}</span></div>
+                    </div>
+                </div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 1)" class="btn-plus">+1</button><button type="button" onclick="window.modHexInd('${nombre}', -1)" class="btn-minus">-1</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 5)" class="btn-plus">+5</button><button type="button" onclick="window.modHexInd('${nombre}', -5)" class="btn-minus">-5</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 10)" class="btn-plus">+10</button><button type="button" onclick="window.modHexInd('${nombre}', -10)" class="btn-minus">-10</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 50)" style="background:#004a4a;" class="btn-plus">+50</button><button type="button" onclick="window.modHexInd('${nombre}', -50)" style="background:#4a0000;" class="btn-minus">-50</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 100)" style="background:#004a00;" class="btn-plus">+100</button><button type="button" onclick="window.modHexInd('${nombre}', -100)" style="background:#4a0000;" class="btn-minus">-100</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 300)" style="background:#4a004a;" class="btn-plus">+300</button><button type="button" onclick="window.modHexInd('${nombre}', -300)" style="background:#4a0000;" class="btn-minus">-300</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 500)" style="background:#4a004a;" class="btn-plus">+500</button><button type="button" onclick="window.modHexInd('${nombre}', -500)" style="background:#4a0000;" class="btn-minus">-500</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 1000)" style="background:#4a004a;" class="btn-plus">+1000</button><button type="button" onclick="window.modHexInd('${nombre}', -1000)" style="background:#4a0000;" class="btn-minus">-1000</button></div>
+            </div>`;
+        }
+    });
+
+    html += `</div>
+        <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37; border-radius:8px;">
+            <h3 style="margin-top:0; color:var(--gold);">Registro de HEX Unificado (Portapapeles)</h3>
+            <textarea id="hex-log-textarea" readonly style="width:95%; height:150px; background:#000; color:#fff; border:1px solid var(--gold); padding:10px; font-family:monospace; margin-bottom:10px;"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button type="button" onclick="window.copiarHexLog(event)" style="flex:3; background:var(--gold); color:black; font-weight:bold; font-family:'Cinzel';">📄 COPIAR LOG</button>
+                <button type="button" onclick="window.limpiarHexLog()" style="flex:1; background:#4a0000; color:white; font-family:'Cinzel';">🗑️ LIMPIAR</button>
+            </div>
+        </div>
+    </div>`;
+    return html;
+}
+
+function genCard(f, tipoAccion) {
+    let btns = ''; let clickMod = '';
+    if (tipoAccion === 'buff') clickMod = 'window.modificarBuff'; 
+    else if (tipoAccion === 'baseTop') clickMod = 'window.modBaseTop'; 
+    else if (tipoAccion === 'baseAfin') clickMod = 'window.modBaseAfin'; 
+    else if (tipoAccion === 'spellEffTop') clickMod = 'window.modSpellEffTop'; 
+    else if (tipoAccion === 'spellEffAfin') clickMod = 'window.modSpellEffAfin'; 
+    else if (tipoAccion === 'form') clickMod = 'window.modForm';
+
+    const visualVal = f.val !== undefined ? f.val : 0;
+    const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
+    const attrInput = tipoAccion === 'form' ? `oninput="window.updateCreationAfinitySum()"` : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
+    const paramId = tipoAccion === 'form' ? inputId : f.id;
+    
+    // El input numérico nativo
+    let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput}>`;
+
+    // Botones rápidos de +/-
+    btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 1)">+1</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -1)">-1</button></div><div class="btn-row"><button type="button" class="btn-plus5" onclick="${clickMod}('${paramId}', 5)">+5</button><button type="button" class="btn-minus5" onclick="${clickMod}('${paramId}', -5)">-5</button></div>`;
+    
+    return `<div class="edit-card"><h4>${f.label}</h4>${inputHtml}${btns}</div>`;
+}
+
+export function dibujarFormularioCrear() {
+    const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
+    const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:1 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
+    const pAfinidades = [ { id:'npc-fis', label:'Física' }, { id:'npc-ene', label:'Energética' }, { id:'npc-esp', label:'Espiritual' }, { id:'npc-man', label:'Mando' }, { id:'npc-psi', label:'Psíquica' }, { id:'npc-osc', label:'Oscura' } ];
+    
+    let afinGridHtml = '';
+    pAfinidades.forEach(f => {
+        afinGridHtml += `
+        <div class="edit-card">
+            <h4>Afin. ${f.label}</h4>
+            <input type="number" id="${f.id}" value="0" oninput="window.updateCreationAfinitySum()">
+            <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modForm('${f.id}', 1); window.updateCreationAfinitySum();">+1</button><button type="button" class="btn-minus" onclick="window.modForm('${f.id}', -1); window.updateCreationAfinitySum();">-1</button></div>
+            <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modForm('${f.id}', 5); window.updateCreationAfinitySum();">+5</button><button type="button" class="btn-minus5" onclick="window.modForm('${f.id}', -5); window.updateCreationAfinitySum();">-5</button></div>
+        </div>`;
+    });
+
+    return `
+    <div style="text-align:center; max-width:1000px; margin:0 auto;">
+        <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje MÁSTER</h3>
+        <input type="text" id="npc-nombre" placeholder="Nombre del Personaje..." style="width:100%; max-width:400px; margin-bottom:20px; padding:10px; background:#000; color:var(--gold); border:1px solid var(--gold); font-size:1.2em; text-align:center; font-family:'Cinzel';">
+        
+        <div style="background:#1a0033; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--gold); max-width:600px; margin-left:auto; margin-right:auto;">
+            <h3 style="color:var(--gold); margin-top:0;">Identidad Inicial</h3>
+            <div style="display:flex; justify-content:center; gap:20px;">
+                <button type="button" id="btn-crear-rol" onclick="window.toggleCrearRol()" data-val="npc" style="width:150px; background:#4a0000; border-color:#ff0000; color:white;">ROL: NPC</button>
+                <button type="button" id="btn-crear-act" onclick="window.toggleCrearAct()" data-val="activo" style="width:150px; background:#004a00; border-color:#00ff00; color:white;">ESTADO: ACTIVO</button>
+            </div>
+        </div>
+
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">1. Energía Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pEnergia.map(f => genCard(f, 'form')).join('')}</div>
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">2. Vitalidad y Ofensiva Base</h3><div class="edit-grid" style="margin-bottom: 20px;">${pVidaDano.map(f => genCard(f, 'form')).join('')}</div>
+        <h3 style="color:#aaa; border-bottom: 1px solid #333; padding-bottom: 5px;">3. Afinidades Base</h3>
+        <div class="edit-grid" style="margin-bottom: 20px;">${afinGridHtml}</div>
+        <div id="creation-affinity-sum-display" style="text-align:center; color:var(--gold); font-weight:bold; font-size:1.1em; margin-top:-10px; margin-bottom:20px; font-family:monospace;">Total Afinidades: 0</div>
+        
+        <button type="button" onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px; border-radius:4px; font-family:'Cinzel';">✨ CREAR PERSONAJE ✨</button>
+    </div>`;
+}
+
+export function dibujarFormularioEditar() {
+    return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
+}
