@@ -1,27 +1,22 @@
-import { statsGlobal, listaEstados, estadoUI, dbExtra } from './stats-state.js';
+import { statsGlobal, listaEstados, dbExtra } from './stats-state.js';
 
-// Rutas CSV y API
+const CSV_ESTADOS = './estados.csv'; 
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 
 export async function cargarTodoDesdeCSV() {
     try {
-        // 1. Cargar Estadísticas base
         const resPj = await fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime());
         procesarTextoCSV(await resPj.text());
         
-        // 2. Cargar Conteo de Objetos
         const resObj = await fetch(CSV_OBJETOS + '&cb=' + new Date().getTime());
         procesarObjetos(await resObj.text());
 
-        // 3. Cargar Hechizos
         const resHz = await fetch(API_HECHIZOS);
         dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
         
-    } catch (error) {
-        console.error("Error cargando bases de datos cruzadas:", error);
-    }
+    } catch (error) { console.error("Error cargando bases de datos cruzadas:", error); }
 }
 
 function procesarObjetos(texto) {
@@ -33,7 +28,7 @@ function procesarObjetos(texto) {
         const cants = f[6] ? f[6].split(',').map(c => parseInt(c.trim()) || 0) : [];
         jugs.forEach((j, i) => {
             if (!dbExtra.objetos[j]) dbExtra.objetos[j] = 0;
-            dbExtra.objetos[j] += cants[i] || 0; // Suma la cantidad total de objetos que posee el personaje
+            dbExtra.objetos[j] += cants[i] || 0; 
         });
     });
 }
@@ -50,7 +45,10 @@ export function procesarTextoCSV(texto) {
         if(!f[0]) return;
         const nombre = f[0];
         const hexParts = (f[1] || '0_1').split('_'); const idenParts = (f[17] || '0_1').split('_');
-        const getBase = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
+        
+        // Estructura: Total_Base_Spell_SpellEff_Buff
+        const getTotal = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
+        const getBase = (idx) => parseInt((f[idx] || '0').split('_')[1]) || 0;
         const getSpell = (idx) => parseInt((f[idx] || '0').split('_')[2]) || 0;
         const getSpellEff = (idx) => parseInt((f[idx] || '0').split('_')[3]) || 0;
         const getBuff = (idx) => parseInt((f[idx] || '0').split('_')[4]) || 0;
@@ -69,31 +67,47 @@ export function procesarTextoCSV(texto) {
         statsGlobal[nombre] = {
             isPlayer: idenParts[0] === '1', isNPC: idenParts[0] === '0', isActive: idenParts[1] === '1',
             hex: parseInt(hexParts[0]) || 0, asistencia: parseInt(hexParts[1]) || 1, vex: parseInt(f[2]) || 0,
-            vidaRojaActual: parseInt(f[9]) || 0, vidaRojaMax: getBase(10),
-            vidaAzul: getBase(11), baseVidaAzul: getBase(11),
-            guardaDorada: getBase(12), baseGuardaDorada: getBase(12),
-            danoRojo: getBase(13), danoAzul: getBase(14), elimDorada: getBase(15),
-            afinidades: { fisica: getBase(3), energetica: getBase(4), espiritual: getBase(5), mando: getBase(6), psiquica: getBase(7), oscura: getBase(8) },
+            
+            vidaRojaActual: parseInt(f[9]) || 0, 
+            vidaRojaMax: getTotal(10), baseVidaRojaMax: getBase(10),
+            vidaAzul: getTotal(11), baseVidaAzul: getBase(11),
+            guardaDorada: getTotal(12), baseGuardaDorada: getBase(12),
+            danoRojo: getTotal(13), baseDanoRojo: getBase(13),
+            danoAzul: getTotal(14), baseDanoAzul: getBase(14),
+            elimDorada: getTotal(15), baseElimDorada: getBase(15),
+            
+            afinidades: { fisica: getTotal(3), energetica: getTotal(4), espiritual: getTotal(5), mando: getTotal(6), psiquica: getTotal(7), oscura: getTotal(8) },
+            afinidadesBase: { fisica: getBase(3), energetica: getBase(4), espiritual: getBase(5), mando: getBase(6), psiquica: getBase(7), oscura: getBase(8) },
             hechizos: { fisica: getSpell(3), energetica: getSpell(4), espiritual: getSpell(5), mando: getSpell(6), psiquica: getSpell(7), oscura: getSpell(8), danoRojo: getSpell(13), danoAzul: getSpell(14), elimDorada: getSpell(15), vidaRojaMaxExtra: getSpell(10), vidaAzulExtra: getSpell(11), guardaDoradaExtra: getSpell(12) },
             hechizosEfecto: { fisica: getSpellEff(3), energetica: getSpellEff(4), espiritual: getSpellEff(5), mando: getSpellEff(6), psiquica: getSpellEff(7), oscura: getSpellEff(8), danoRojo: getSpellEff(13), danoAzul: getSpellEff(14), elimDorada: getSpellEff(15), vidaRojaMaxExtra: getSpellEff(10), vidaAzulExtra: getSpellEff(11), guardaDoradaExtra: getSpellEff(12) },
             buffs: { fisica: getBuff(3), energetica: getBuff(4), espiritual: getBuff(5), mando: getBuff(6), psiquica: getBuff(7), oscura: getBuff(8), danoRojo: getBuff(13), danoAzul: getBuff(14), elimDorada: getBuff(15), vidaRojaMaxExtra: getBuff(10), vidaAzulExtra: getBuff(11), guardaDoradaExtra: getBuff(12) },
+            
             estados: stData, iconoOverride: f[18] || ""
         };
     });
 }
 
-// DICCIONARIO REVERTIDO: Usa descripciones genéricas para aplicar lo que viene del CSV
+// Carga oficial desde el CSV proporcionado
 export async function cargarDiccionarioEstados() {
-    listaEstados.push({ id:'envenenado', nombre:'Envenenado', tipo:'numero', desc:'Pierde corazones rojos por turno.', bg:'#4a004a', border:'#ff00ff' });
-    listaEstados.push({ id:'quemado', nombre:'Quemado', tipo:'numero', desc:'Pierde corazones rojos por turno.', bg:'#4a0000', border:'#ff4444' });
-    listaEstados.push({ id:'congelado', nombre:'Congelado', tipo:'numero', desc:'Reduce evasión.', bg:'#00224a', border:'#00ccff' });
-    listaEstados.push({ id:'paralizado', nombre:'Paralizado', tipo:'numero', desc:'Falla tiradas de dados.', bg:'#4a4a00', border:'#ffff00' });
-    listaEstados.push({ id:'aturdido', nombre:'Aturdido', tipo:'booleano', desc:'Pierde turnos.', bg:'#555', border:'#fff' });
-    listaEstados.push({ id:'cegado', nombre:'Cegado', tipo:'booleano', desc:'Falla ataques.', bg:'#111', border:'#666' });
-    listaEstados.push({ id:'silenciado', nombre:'Silenciado', tipo:'booleano', desc:'No puede castear hechizos.', bg:'#220022', border:'#aa00aa' });
-    listaEstados.push({ id:'petrificado', nombre:'Petrificado', tipo:'booleano', desc:'Inmune pero inactivo.', bg:'#333', border:'#888' });
-    listaEstados.push({ id:'inmune', nombre:'Inmune', tipo:'booleano', desc:'Inmune a daño.', bg:'#003300', border:'#00ff00' });
-    listaEstados.push({ id:'escondido', nombre:'Escondido', tipo:'booleano', desc:'No puede ser seleccionado.', bg:'#000', border:'#444' });
-    listaEstados.push({ id:'huesos', nombre:'Huesos Rotos', tipo:'booleano', desc:'Física reducida.', bg:'#fff', border:'#000' });
-    listaEstados.push({ id:'secuestrado', nombre:'Secuestrado', tipo:'booleano', desc:'Removido del campo.', bg:'#110000', border:'#ff0000' });
+    try {
+        const res = await fetch(CSV_ESTADOS + '?cb=' + new Date().getTime());
+        if(!res.ok) throw new Error("No se encontró el archivo de estados");
+        const texto = await res.text();
+        const filas = texto.split(/\r?\n/).map(l => l.split(','));
+        
+        listaEstados.length = 0; // Vaciar array
+        filas.slice(1).forEach(f => {
+            if(!f[0]) return;
+            listaEstados.push({
+                id: f[0].trim(),
+                nombre: f[1].trim(),
+                tipo: f[2].trim(),
+                bg: f[3].trim(),
+                border: f[4].trim(),
+                desc: f[5] ? f[5].trim() : ''
+            });
+        });
+    } catch(e) {
+        console.warn("Fallo al cargar estados.csv de la red. Cargando fallback.");
+    }
 }
