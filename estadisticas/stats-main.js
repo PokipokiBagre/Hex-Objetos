@@ -7,6 +7,10 @@ const API_ESTADISTICAS = 'https://script.google.com/macros/s/AKfycbwW4AXM9QSrPYR
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
+// Garantiza que la cola exista (Soluciona el error silencioso de los botones que no actualizaban el botón rojo)
+if (!estadoUI.colaCambios) estadoUI.colaCambios = { stats: {} };
+if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
+
 // --- LOGS DE HEX ---
 function updateHexLogText() {
     const textarea = document.getElementById('hex-log-textarea');
@@ -61,9 +65,6 @@ window.copySilently = (texto, event) => {
     }
 };
 
-// --- GESTIÓN DE LA COLA PARA LA API ---
-if (!estadoUI.colaCambios) estadoUI.colaCambios = { stats: {} };
-
 window.actualizarBotonSync = () => {
     const btn = document.getElementById('btn-sync-global'); if (!btn) return;
     const statsChanges = Object.keys(estadoUI.colaCambios.stats || {}).length;
@@ -78,30 +79,36 @@ window.actualizarBotonSync = () => {
 // Esta función arma la cadena de texto exacta para que el backend la inserte en Google Sheets
 window.encolarCambio = (nombre) => {
     try {
+        if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
         if (!estadoUI.colaCambios.stats[nombre]) estadoUI.colaCambios.stats[nombre] = {};
+        
         const p = statsGlobal[nombre];
         
-        const fStr = (t, b, s, se, bf) => `${t||0}_${b||0}_${s||0}_${se||0}_${bf||0}`;
+        const fStr = (b, s, se, bf) => {
+            const bSafe = b || 0; const sSafe = s || 0; const seSafe = se || 0; const bfSafe = bf || 0;
+            const tot = bSafe + sSafe + seSafe + bfSafe;
+            return `${tot}_${bSafe}_${sSafe}_${seSafe}_${bfSafe}`;
+        };
         
         const s = estadoUI.colaCambios.stats[nombre];
         s['Hex'] = `${p.hex||0}_${p.asistencia||1}`;
         s['Vex'] = p.isPlayer ? 0 : (p.vex || 0);
         
-        s['Fisica'] = fStr(p.afinidades.fisica, p.afinidadesBase.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica);
-        s['Energetica'] = fStr(p.afinidades.energetica, p.afinidadesBase.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica);
-        s['Espiritual'] = fStr(p.afinidades.espiritual, p.afinidadesBase.espiritual, p.hechizos.espiritual, p.hechizosEfecto.espiritual, p.buffs.espiritual);
-        s['Mando'] = fStr(p.afinidades.mando, p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando);
-        s['Psiquica'] = fStr(p.afinidades.psiquica, p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica);
-        s['Oscura'] = fStr(p.afinidades.oscura, p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura);
+        s['Fisica'] = fStr(p.afinidadesBase.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica);
+        s['Energetica'] = fStr(p.afinidadesBase.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica);
+        s['Espiritual'] = fStr(p.afinidadesBase.espiritual, p.hechizos.espiritual, p.hechizosEfecto.espiritual, p.buffs.espiritual);
+        s['Mando'] = fStr(p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando);
+        s['Psiquica'] = fStr(p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica);
+        s['Oscura'] = fStr(p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura);
         
         s['Corazones Rojo'] = p.vidaRojaActual || 0;
-        s['Corazones Rojos Max'] = fStr(p.vidaRojaMax, p.baseVidaRojaMax, p.hechizos.vidaRojaMaxExtra, p.hechizosEfecto.vidaRojaMaxExtra, p.buffs.vidaRojaMaxExtra);
-        s['Corazones Azules'] = fStr(p.vidaAzul, p.baseVidaAzul, p.hechizos.vidaAzulExtra, p.hechizosEfecto.vidaAzulExtra, p.buffs.vidaAzulExtra);
-        s['Guarda Dorada'] = fStr(p.guardaDorada, p.baseGuardaDorada, p.hechizos.guardaDoradaExtra, p.hechizosEfecto.guardaDoradaExtra, p.buffs.guardaDoradaExtra);
+        s['Corazones Rojos Max'] = fStr(p.baseVidaRojaMax, p.hechizos.vidaRojaMaxExtra, p.hechizosEfecto.vidaRojaMaxExtra, p.buffs.vidaRojaMaxExtra);
+        s['Corazones Azules'] = fStr(p.baseVidaAzul, p.hechizos.vidaAzulExtra, p.hechizosEfecto.vidaAzulExtra, p.buffs.vidaAzulExtra);
+        s['Guarda Dorada'] = fStr(p.baseGuardaDorada, p.hechizos.guardaDoradaExtra, p.hechizosEfecto.guardaDoradaExtra, p.buffs.guardaDoradaExtra);
         
-        s['Daño Rojo'] = fStr(p.danoRojo, p.baseDanoRojo, p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo);
-        s['Daño Azul'] = fStr(p.danoAzul, p.baseDanoAzul, p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul);
-        s['Eliminacion Dorada'] = fStr(p.elimDorada, p.baseElimDorada, p.hechizos.elimDorada, p.hechizosEfecto.elimDorada, p.buffs.elimDorada);
+        s['Daño Rojo'] = fStr(p.baseDanoRojo, p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo);
+        s['Daño Azul'] = fStr(p.baseDanoAzul, p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul);
+        s['Eliminacion Dorada'] = fStr(p.baseElimDorada, p.hechizos.elimDorada, p.hechizosEfecto.elimDorada, p.buffs.elimDorada);
         
         const estadoStr = listaEstados.map(e => { let v = p.estados[e.id]; if(e.tipo === 'booleano') return v ? '1' : '0'; return v || '0'; }).join('-');
         s['Estado'] = estadoStr;
@@ -175,7 +182,7 @@ window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; est
 window.abrirMenuOP = () => { 
     const enrutarOP = () => { 
         if (estadoUI.vistaActual === 'detalle' && estadoUI.personajeSeleccionado) {
-            repintarConScroll('detalle'); // Se queda en la ficha donde estaba
+            repintarConScroll('detalle'); 
         } else { 
             estadoUI.vistaActual = 'hex'; 
             refrescarVistas(); 
@@ -247,12 +254,12 @@ window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','ps
 window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 
 function recalcularVidas(p, accion) {
-    const calcFisT = () => (p.afinidades.fisica||0) + (p.hechizos.fisica||0) + (p.hechizosEfecto.fisica||0) + (p.buffs.fisica||0);
+    const calcFisT = () => (p.afinidadesBase.fisica||0) + (p.hechizos.fisica||0) + (p.hechizosEfecto.fisica||0) + (p.buffs.fisica||0);
     const preFisBase = p.afinidadesBase.fisica || 0; const preFis = calcFisT();
-    const calcMagT = () => ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidades[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0), 0);
+    const calcMagT = () => ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0), 0);
     const preMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const preMag = calcMagT();
 
-    accion(); // Ejecuta el +1 o -1
+    accion(); // Ejecuta el +1 o -1 a la variable específica (Buffs, SpellEff, Base)
 
     const postFisBase = p.afinidadesBase.fisica || 0; const postFis = calcFisT();
     const postMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const postMag = calcMagT();
@@ -267,12 +274,13 @@ function recalcularVidas(p, accion) {
 
 window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { p.vidaRojaMax = 10; p.baseVidaRojaMax = 10; p.vidaRojaActual = calcularVidaRojaMax(p); p.vidaAzul = getMysticBonus(p); p.baseVidaAzul = p.vidaAzul; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); } };
 
-// BOTONES DE EDICIÓN: Alteran y Encolan
+// Ediciones OP (Garantizan encolarCambio en todas)
 window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
 window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modificarDirecto = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
 
 window.modBlueExtra = (cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra||0)+cantidad); p.vidaAzul = Math.max(0, (p.vidaAzul||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
@@ -326,7 +334,7 @@ async function iniciar() {
             const parsed = JSON.parse(cache); 
             Object.assign(statsGlobal, parsed.stats); 
             if(parsed.party) estadoUI.party = parsed.party;
-            cargarTodoDesdeCSV(); // Fetch background para actualizar objetos/hechizos de ser posible
+            cargarTodoDesdeCSV(); 
         } 
     } 
     catch (error) { console.error("Error crítico:", error); } 
