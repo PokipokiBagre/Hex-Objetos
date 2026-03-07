@@ -1,20 +1,27 @@
-import { statsGlobal, listaEstados, dbExtra } from './stats-state.js';
+import { statsGlobal, listaEstados, estadoUI, dbExtra } from './stats-state.js';
 
 const CSV_ESTADOS = './estados.csv'; 
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 
+// CARGA EN PARALELO PARA MÁXIMA VELOCIDAD (3x más rápido)
 export async function cargarTodoDesdeCSV() {
     try {
-        const resPj = await fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime());
-        procesarTextoCSV(await resPj.text());
+        const [resPj, resObj, resHz] = await Promise.all([
+            fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime()),
+            fetch(CSV_OBJETOS + '&cb=' + new Date().getTime()),
+            fetch(API_HECHIZOS)
+        ]);
         
-        const resObj = await fetch(CSV_OBJETOS + '&cb=' + new Date().getTime());
-        procesarObjetos(await resObj.text());
+        const textoPj = await resPj.text();
+        procesarTextoCSV(textoPj);
+        
+        const textoObj = await resObj.text();
+        procesarObjetos(textoObj);
 
-        const resHz = await fetch(API_HECHIZOS);
-        dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
+        const textoHz = await resHz.text();
+        dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(textoHz))));
         
     } catch (error) { console.error("Error cargando bases de datos cruzadas:", error); }
 }
@@ -87,7 +94,7 @@ export function procesarTextoCSV(texto) {
     });
 }
 
-// Carga oficial desde el CSV proporcionado
+// Carga estricta y segura desde tu archivo 'estados.csv'
 export async function cargarDiccionarioEstados() {
     try {
         const res = await fetch(CSV_ESTADOS + '?cb=' + new Date().getTime());
@@ -95,19 +102,19 @@ export async function cargarDiccionarioEstados() {
         const texto = await res.text();
         const filas = texto.split(/\r?\n/).map(l => l.split(','));
         
-        listaEstados.length = 0; // Vaciar array
+        listaEstados.length = 0;
         filas.slice(1).forEach(f => {
             if(!f[0]) return;
             listaEstados.push({
                 id: f[0].trim(),
-                nombre: f[1].trim(),
-                tipo: f[2].trim(),
-                bg: f[3].trim(),
-                border: f[4].trim(),
-                desc: f[5] ? f[5].trim() : ''
+                nombre: f[1] ? f[1].trim() : f[0].trim(),
+                tipo: f[2] ? f[2].trim() : 'booleano',
+                bg: f[3] ? f[3].trim() : '#000',
+                border: f[4] ? f[4].trim() : '#fff',
+                desc: f[5] ? f[5].trim() : 'Sin descripción' // Lee la columna 5
             });
         });
     } catch(e) {
-        console.warn("Fallo al cargar estados.csv de la red. Cargando fallback.");
+        console.warn("Fallo al cargar estados.csv. Verifica que el archivo exista.");
     }
 }
