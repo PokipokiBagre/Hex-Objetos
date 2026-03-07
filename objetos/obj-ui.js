@@ -17,6 +17,7 @@ function drawnHEXPreserveFocus(containerId, html) {
 export function refrescarUI() { 
     if (estadoUI.vistaActual === 'grilla') dibujarGrillaPersonajes();
     else if (estadoUI.vistaActual === 'inventario') dibujarInventarios();
+    else if (estadoUI.vistaActual === 'resumen') dibujarResumenVisual();
     else if (estadoUI.vistaActual === 'catalogo') dibujarCatalogo(); 
     else if (estadoUI.vistaActual === 'control') dibujarControl();
     else if (estadoUI.vistaActual === 'op-menu') dibujarMenuOP();
@@ -51,6 +52,48 @@ export function dibujarGrillaPersonajes() {
     drawnHEXPreserveFocus('contenedor-grilla', html);
 }
 
+// NUEVA FUNCIÓN: Resumen Visual con Imágenes y Tooltips
+export function dibujarResumenVisual() {
+    let html = `<h2 style="margin-top:0;">Resumen del Equipo del Grupo</h2>`;
+    
+    Object.keys(invGlobal).sort().forEach(j => {
+        let hasItems = false;
+        let itemsHtml = '';
+        
+        Object.keys(invGlobal[j]).sort().forEach(o => {
+            const count = invGlobal[j][o];
+            if (count > 0) {
+                hasItems = true;
+                const info = objGlobal[o] || {};
+                const imgFile = normalizarNombre(o);
+                const tooltipText = `<span>${o}</span>Tipo: ${info.tipo}<br>Rareza: ${info.rar}<br><br>${info.eff}`;
+                
+                itemsHtml += `
+                <div class="hex-tooltip img-stack" onclick="window.verImagen('../img/imgobjetos/${imgFile}.png')">
+                    <img src="../img/imgobjetos/${imgFile}.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'" alt="${o}">
+                    <div class="badge">${count}</div>
+                    <div class="tooltiptext">${tooltipText}</div>
+                </div>`;
+            }
+        });
+
+        if(hasItems) {
+            html += `
+            <div class="resumen-row">
+                <div class="resumen-left">
+                    <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'" style="width:75px; height:75px; border-radius:50%; border:2px solid var(--gold); object-fit:cover;">
+                    <h3 style="margin:8px 0 0 0; font-size:1em; color:var(--gold);">${j.toUpperCase()}</h3>
+                </div>
+                <div class="resumen-right">
+                    ${itemsHtml}
+                </div>
+            </div>`;
+        }
+    });
+    
+    drawnHEXPreserveFocus('contenedor-resumen', html || '<p style="text-align:center; color:#aaa;">Nadie tiene objetos todavía.</p>');
+}
+
 export function dibujarInventarios() {
     if (!estadoUI.jugadorInv) return;
     const j = estadoUI.jugadorInv;
@@ -63,7 +106,7 @@ export function dibujarInventarios() {
         <div style="text-align:left; flex:1;">
             <h1 style="margin: 0; color:var(--gold);">${j.toUpperCase()}</h1>
         </div>
-        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPagina('control')" style="background:#4a004a; border-color:var(--gold);">Editar Stock / OP</button>` : ''}
+        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPagina('control')" style="background:#4a004a; border-color:var(--gold);">⚙️ Editar Stock / OP</button>` : ''}
     </div>
     <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
 
@@ -140,7 +183,7 @@ export function dibujarMenuOP() {
         <div class="op-grid">
             <button onclick="window.mostrarPagina('party-loot')" style="background:#b8860b; color:#000;">Repartir Loot a Party</button>
             <button onclick="window.mostrarPagina('transfer')" style="background:#1a4b8c; color:#fff;">Mercado de Transferencias</button>
-            <button onclick="window.mostrarCreacionObjeto()" style="background:#4a004a">Creación Rápida de Objeto</button>
+            <button onclick="window.mostrarCreacionObjeto()" style="background:#4a004a">Forja (Creación Múltiple)</button>
             <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar todos los JPGs</button>
             <button onclick="window.descargarLogExcel()" style="background:#107c41; color:#fff;">Descargar Log (Excel)</button>
             <button onclick="window.descargarEstadoExcel()" style="background:#107c41; color:#fff;">Descargar Stock (Excel)</button>
@@ -149,14 +192,34 @@ export function dibujarMenuOP() {
 
 export function dibujarControl() {
     if (!estadoUI.jugadorInv) return; const j = estadoUI.jugadorInv; 
+    
+    // SISTEMA DE ORDEN CONGELADO (Evita que salten de lugar al darles clic)
+    if (estadoUI.resetCacheOrder) {
+        estadoUI.cachedSortKeys = Object.keys(objGlobal).sort((a, b) => (invGlobal[j][b]||0) - (invGlobal[j][a]||0) || a.localeCompare(b));
+        estadoUI.cachedInvKeys = Object.keys(invGlobal[j]).filter(o => invGlobal[j][o] > 0).sort();
+        estadoUI.resetCacheOrder = false;
+    }
+    
+    // Añadimos al caché visual cualquier objeto nuevo que haya recibido stock en esta sesión
+    Object.keys(invGlobal[j]).forEach(k => {
+         if (invGlobal[j][k] > 0 && !estadoUI.cachedInvKeys.includes(k)) estadoUI.cachedInvKeys.push(k);
+    });
+
     let html = `<h2>Edición In-Situ: ${j}</h2><button onclick="window.mostrarPagina('inventario')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Inventario</button>`;
     
-    html += `<h3 style="color:var(--gold); margin-top:10px;">Inventario Actual</h3>
+    html += `<h3 style="color:var(--gold); margin-top:10px;">Inventario Actual (Click para modificar)</h3>
              <div style="background:#0a0014; padding:15px; border:1px solid var(--gold); border-radius:8px; margin-bottom:20px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">`;
+    
     let hasItems = false;
-    Object.keys(invGlobal[j]).sort().forEach(o => {
+    const actionColor = estadoUI.editModo === 1 ? '#00ff00' : '#ff0000';
+    
+    estadoUI.cachedInvKeys.forEach(o => {
         if (invGlobal[j][o] > 0) {
-            html += `<span style="background:#222; padding:5px 12px; border-radius:4px; border:1px solid #444; font-size:0.9em; box-shadow:0 2px 4px #000;">${o}: <b style="color:var(--gold); font-size:1.3em; margin-left:5px;">${invGlobal[j][o]}</b></span>`;
+            html += `<button onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
+                             style="background:#222; padding:5px 12px; border-radius:4px; border:1px solid #444; font-size:0.9em; box-shadow:0 2px 4px #000; cursor:pointer; transition:0.2s;" 
+                             onmouseover="this.style.borderColor='${actionColor}'" onmouseout="this.style.borderColor='#444'" title="Haz clic para modificar">
+                        ${o}: <b style="color:var(--gold); font-size:1.3em; margin-left:5px;">${invGlobal[j][o]}</b>
+                     </button>`;
             hasItems = true;
         }
     });
@@ -180,11 +243,10 @@ export function dibujarControl() {
              <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Filtrar objeto y haz clic en la imagen..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
              <div class="grid-control">`;
     
-    Object.keys(objGlobal).sort((a, b) => (invGlobal[j][b]||0) - (invGlobal[j][a]||0) || a.localeCompare(b)).forEach(o => {
+    estadoUI.cachedSortKeys.forEach(o => {
         const term = estadoUI.busquedaOP.toLowerCase();
         if (!term || o.toLowerCase().includes(term)) {
             const c = invGlobal[j][o] || 0;
-            const actionColor = estadoUI.editModo === 1 ? '#00ff00' : '#ff0000';
             html += `<div class="control-card ${c > 0 ? "item-con-stock" : ""}">
                         <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
                              onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
@@ -200,6 +262,12 @@ export function dibujarControl() {
 
 export function dibujarPartyLoot() {
     const term = (estadoUI.busquedaOP || "").toLowerCase();
+    
+    if (estadoUI.resetCacheOrder) {
+        estadoUI.cachedSortKeys = Object.keys(objGlobal).sort();
+        estadoUI.resetCacheOrder = false;
+    }
+
     let html = `<h2>Loot Rápido para la Party</h2>
                 <button onclick="window.mostrarPagina('op-menu')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Panel OP</button>
                 <div style="background:#1a0033; padding:15px; border-radius:8px; border:1px dashed var(--gold); margin-bottom:20px;">
@@ -235,7 +303,7 @@ export function dibujarPartyLoot() {
             <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Buscar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
             <div class="grid-control">`;
 
-    Object.keys(objGlobal).sort().forEach(o => {
+    estadoUI.cachedSortKeys.forEach(o => {
         if (!term || o.toLowerCase().includes(term)) {
             html += `<div class="control-card">
                         <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
@@ -314,27 +382,37 @@ export function dibujarTransferencia() {
     drawnHEXPreserveFocus('panel-transferencia', html);
 }
 
+// NUEVA FUNCIÓN: Forja Múltiple (Hasta 5 objetos)
 export function dibujarCreacionObjeto() {
-    let html = `<h2>Creación Rápida</h2>
-    <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
-        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateCreationLog()" style="width:95%">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-            <select id="new-obj-tipo" class="search-bar" style="width:100%"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
-            <select id="new-obj-mat" class="search-bar" style="width:100%"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
-        </div>
-        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
-        <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
-        <h3 style="margin-top:20px; font-size:1em;">Entregar a (Opcional)</h3>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
-    Object.keys(invGlobal).sort().forEach(j => {
-        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()"></div>`;
-    });
+    let html = `<h2>Forja (Creación Múltiple)</h2>
+    <div class="container-hex" style="max-width:800px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
+        
+        <h3 style="margin-top:0; font-size:1.1em; color:var(--gold);">Destinatario del Loot (Opcional)</h3>
+        <select id="multi-player-dest" class="search-bar" style="width:100%; margin-bottom:20px;">
+            <option value="">-- Nadie (Solo Crear en Catálogo) --</option>
+            ${Object.keys(invGlobal).sort().map(j => `<option value="${j}">${j}</option>`).join('')}
+        </select>
+        
+        <div id="multi-creation-container">`;
+    
+    // Crear 5 bloques de creación
+    for(let i=1; i<=5; i++) {
+        html += `
+        <div style="border: 1px dashed #555; padding: 15px; border-radius: 8px; margin-bottom: 15px; background:#0a0014;">
+            <h4 style="margin:0 0 10px 0; color:var(--cyan-magic); text-align:left;">Objeto ${i}</h4>
+            <input type="text" id="new-obj-name-${i}" class="search-bar" placeholder="Nombre del Objeto..." style="width:95%; margin-bottom:10px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:10px;">
+                <select id="new-obj-tipo-${i}" class="search-bar" style="margin:0; width:100%;"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
+                <select id="new-obj-mat-${i}" class="search-bar" style="margin:0; width:100%;"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
+                <select id="new-obj-rar-${i}" class="search-bar" style="margin:0; width:100%;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
+                <input type="number" id="new-obj-cant-${i}" class="search-bar" value="1" min="1" title="Cantidad a Entregar" style="margin:0; width:100%;">
+            </div>
+            <textarea id="new-obj-eff-${i}" class="search-bar" placeholder="Efecto o Descripción..." style="width:95%; height:45px; margin:0;"></textarea>
+        </div>`;
+    }
+
     html += `</div>
-        <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;"></textarea>
-            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
-        </div>
-        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">FORJAR Y REPARTIR</button>
+        <button onclick="window.ejecutarAgregarMulti()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold; font-size:1.2em; padding:15px;">🔨 FORJAR Y ASIGNAR OBJETOS 🔨</button>
         <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
     </div>`;
     drawnHEXPreserveFocus('panel-creacion', html);
