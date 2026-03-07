@@ -103,6 +103,10 @@ export function renderHeaders() {
 
     let logCasteoGlobalHTML = '';
     if (estadoUI.esAdmin) {
+        // Recordar el estado del usuario o dejarlos en true por defecto
+        const isConsumoChecked = estadoUI.consumoCast !== false ? 'checked' : '';
+        const isEfectosChecked = estadoUI.efectosCast !== false ? 'checked' : '';
+
         logCasteoGlobalHTML = `
         <div style="background:#1a0033; border:1px solid var(--gold); border-radius:8px; padding:15px; margin-top:15px;">
             <h4 style="color:#00ffff; margin:0 0 5px 0;">📋 Log de Conjuros (OP)</h4>
@@ -111,10 +115,14 @@ export function renderHeaders() {
                 <button onclick="window.copiarLogCasteo()" style="flex:3; background:var(--gold); color:black; font-weight:bold; padding:8px; border:none; cursor:pointer; border-radius:4px;">COPIAR LOG</button>
                 <button onclick="window.limpiarLogCasteo()" style="flex:1; background:#8b0000; color:white; padding:8px; border:none; cursor:pointer; border-radius:4px;">LIMPIAR LOG</button>
             </div>
-            <div style="margin-top:10px; border-top: 1px dashed #555; padding-top:10px;">
+            <div style="margin-top:15px; border-top: 1px dashed #555; padding-top:15px; display:flex; flex-direction:column; gap:10px;">
                 <label class="toggle-hex" style="margin-bottom:0; display:inline-flex;">
-                    <input type="checkbox" id="toggle-cast-consumo" checked>
+                    <input type="checkbox" id="toggle-cast-consumo" ${isConsumoChecked} onchange="window.toggleCastConsumo(this.checked)">
                     MODO OP: CONSUMIR VEX/HEX AL CALCULAR
+                </label>
+                <label class="toggle-hex" style="margin-bottom:0; display:inline-flex;">
+                    <input type="checkbox" id="toggle-cast-efectos" ${isEfectosChecked} onchange="window.toggleCastEfectos(this.checked)">
+                    MOSTRAR EFECTO Y EXTRAS EN EL LOG
                 </label>
             </div>
         </div>`;
@@ -364,7 +372,6 @@ export function dibujarAprendizajeGrid() {
     document.getElementById('grid-aprendizaje').innerHTML = html;
 }
 
-// NUEVA FUNCIÓN: Catálogo Enciclopédico de todos los Hechizos
 export function dibujarCatalogoHechizos() {
     let nodosBrutos = [...(db.hechizos.nodos || []), ...(db.hechizos.nodosOcultos || [])];
     
@@ -404,7 +411,6 @@ export function dibujarCatalogoHechizos() {
         const isPublicBase = h.Conocido && h.Conocido.toString().trim().toLowerCase() === 'si';
         const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
         
-        // Filtro de Estado de Descubrimiento
         if (fEs === 'Descubierto' && !isKnown) return;
         if (fEs === 'Oculto' && isKnown) return;
 
