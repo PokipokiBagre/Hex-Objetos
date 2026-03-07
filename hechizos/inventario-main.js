@@ -196,18 +196,31 @@ function actualizarBotonSync() {
 }
 
 window.ejecutarSincronizacion = async () => {
-    const btn = document.getElementById('btn-sync-global'); btn.innerText = "Sincronizando..."; btn.disabled = true;
+    const btn = document.getElementById('btn-sync-global'); 
+    btn.innerText = "Sincronizando..."; 
+    btn.disabled = true;
+    
     if(await sincronizarColaBD(estadoUI.colaCambios)) {
-        alert("¡Base de datos actualizada con éxito!"); 
         estadoUI.colaCambios = { agregar: [], quitar: [], toggleConocido: [], hexCasts: [], stats: {} };
-        if(estadoUI.esAdmin) {
-            if(confirm("Se aplicaron cambios en la memoria. ¿Descargar el nuevo CSV de estadísticas?")) exportarCSVPersonajes();
-        }
-        localStorage.removeItem('hex_hechizos_cache'); window.location.reload(); 
+        
+        // Cartel flotante elegante (Toast) que no requiere clics
+        const cartelito = document.createElement('div');
+        cartelito.innerHTML = "¡Guardado Exitoso! ✅";
+        cartelito.style.cssText = "position:fixed; top:30px; left:50%; transform:translateX(-50%); background:var(--gold); color:#000; padding:15px 40px; border-radius:8px; font-weight:bold; font-size:1.2em; z-index:9999; box-shadow:0 0 20px var(--gold); font-family:'Cinzel', serif; text-align:center;";
+        document.body.appendChild(cartelito);
+
+        localStorage.removeItem('hex_hechizos_cache'); 
+        
+        // Espera 1.5 segundos exactos para que leas el mensaje y luego recarga sola
+        setTimeout(() => { 
+            window.location.reload(); 
+        }, 1500);
+        
     } else {
         alert("Error de conexión. Reintenta.");
+        actualizarBotonSync();
+        btn.disabled = false;
     }
-    btn.disabled = false;
 };
 
 // =========================================================================
