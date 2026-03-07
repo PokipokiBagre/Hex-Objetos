@@ -394,8 +394,13 @@ export function dibujarPanelEdicionOP() {
         <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom:20px;">`;
         listaEstados.forEach(e => {
             let val = p.estados[e.id];
-            if (e.tipo === 'numero') { html += `<div class="edit-card"><h4>${e.nombre}</h4><span style="color:${e.border}; font-size:1.5em; font-weight:bold;">${val}</span><div class="btn-row"><button type="button" class="btn-plus" onclick="window.modEstado('${e.id}', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modEstado('${e.id}', -1)">-1</button></div></div>`; } 
-            else { let extraStyle = val ? `background:${e.bg}; color:${e.id==='huesos'?'#000':'#fff'}; border-color:${e.border};` : ''; html += `<button type="button" class="status-toggle ${val ? 'active' : ''}" style="${extraStyle}" onclick="window.toggleEstado('${e.id}')">${e.nombre}</button>`; }
+            if (e.tipo === 'numero') { 
+                html += `<div class="edit-card" title="${e.desc}"><h4>${e.nombre}</h4><span style="color:${e.border}; font-size:1.5em; font-weight:bold;">${val}</span><div class="btn-row"><button type="button" class="btn-plus" onclick="window.modEstado('${e.id}', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modEstado('${e.id}', -1)">-1</button></div></div>`; 
+            } 
+            else { 
+                let extraStyle = val ? `background:${e.bg}; color:${e.id==='huesos'?'#000':'#fff'}; border-color:${e.border};` : ''; 
+                html += `<button type="button" class="status-toggle ${val ? 'active' : ''}" style="${extraStyle}" title="${e.desc}" onclick="window.toggleEstado('${e.id}')">${e.nombre}</button>`; 
+            }
         });
 html += `</div>
         
@@ -605,4 +610,5 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
