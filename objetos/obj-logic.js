@@ -1,5 +1,6 @@
 import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
 
+// Prepara la info del objeto modificado para enviarla al servidor
 export function encolarCambioObjeto(nombreObj) {
     let duenos = [];
     let cants = [];
@@ -57,7 +58,25 @@ export function transferir(origen, destino, obj, cant, callback) {
     guardar(); if(callback) callback();
 }
 
-// Nueva función para procesar 5 objetos a la vez
+// 1. FUNCIÓN RECUPERADA: CREACIÓN INDIVIDUAL
+export function agregarObjetoManual(datos, reparticion, callback) {
+    const { nombre, tipo, mat, eff, rar } = datos;
+    if (!nombre) return alert("Falta nombre.");
+    objGlobal[nombre] = { tipo, mat, eff, rar };
+    Object.keys(reparticion).forEach(j => {
+        const cant = parseInt(reparticion[j]) || 0;
+        if (cant > 0) {
+            if (!invGlobal[j]) invGlobal[j] = {};
+            invGlobal[j][nombre] = (invGlobal[j][nombre] || 0) + cant;
+            historial.push({ fecha: new Date().toLocaleString(), jugador: j, objeto: nombre, cambio: cant, total: invGlobal[j][nombre] });
+        }
+    });
+    
+    encolarCambioObjeto(nombre); 
+    guardar(); if(callback) callback();
+}
+
+// 2. NUEVA FUNCIÓN: FORJA MÚLTIPLE (5 objetos)
 export function agregarObjetosMulti(listaDatos, destPlayer, callback) {
     let creados = 0;
     listaDatos.forEach(datos => {
