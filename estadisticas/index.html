@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ficha de Estado - HEX</title>
     <link rel="icon" type="image/png" href="../img/icon.png"> 
-    <link rel="stylesheet" href="../stylestats.css?v=2.2">
+    <link rel="stylesheet" href="../stylestats.css?v=2.3">
 </head>
 <body>
     <div class="nav-bar" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gold-dim); padding-bottom: 15px; margin-bottom: 20px;">
@@ -20,9 +20,16 @@
     </div>
 
     <div id="vista-catalogo" class="catalogo-grid"></div>
-    <div id="vista-resumen" class="detalle-container oculto" style="max-width:1400px; background:transparent; border:none;"></div>
+    <div id="vista-resumen" class="detalle-container oculto" style="max-width:1400px; background:transparent; border:none; box-shadow:none; padding:0;"></div>
     <div id="vista-detalle" class="detalle-container oculto"></div>
     <div id="vista-op" class="detalle-container oculto" style="text-align: center;"></div>
+
+    <div id="modal-op" class="hex-modal oculto">
+        <div class="hex-modal-content">
+            <span class="close-btn" onclick="window.cerrarModalOP()">×</span>
+            <div id="modal-op-body"></div>
+        </div>
+    </div>
 
     <button id="btn-sync-global" class="btn-sync-float oculto" onclick="window.ejecutarSincronizacion()"></button>
 
