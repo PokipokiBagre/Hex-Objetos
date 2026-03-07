@@ -6,15 +6,23 @@ const calcTotal = (base, spells, spellEff, buff) => (base || 0) + (spells || 0) 
 
 const bTextSplit = (spells, spellEff, buff) => {
     let html = '';
-    if (spells !== 0) html += `<span style="color:#d4af37; font-size:0.65em; display:block; margin-top:2px; font-weight:bold;">(${spells > 0 ? '+' : ''}${spells})</span>`;
-    if (spellEff !== 0) html += `<span style="color:#4a90e2; font-size:0.65em; display:block; margin-top:2px; font-weight:bold;">(${spellEff > 0 ? '+' : ''}${spellEff})</span>`;
-    if (buff !== 0) html += `<span style="color:${buff > 0 ? '#00ff00' : '#ff4444'}; font-size:0.65em; display:block; margin-top:2px; font-weight:bold;">(${buff > 0 ? '+' : ''}${buff})</span>`;
+    
+    // Cyan Magic
+    if (spells !== 0) html += `<div style="color:var(--cyan-magic); font-size:0.65em; display:block; font-weight:bold; text-align:left;">Hechizos: (${spells > 0 ? '+' : ''}${spells})</div>`;
+    // Blue Effect
+    if (spellEff !== 0) html += `<div style="color:#4a90e2; font-size:0.65em; display:block; font-weight:bold; text-align:left;">Alteración: (${spellEff > 0 ? '+' : ''}${spellEff})</div>`;
+    // Green/Red Buff
+    if (buff !== 0) html += `<div style="color:${buff > 0 ? '#00ff00' : '#ff4444'}; font-size:0.65em; display:block; font-weight:bold; text-align:left;">Extra: (${buff > 0 ? '+' : ''}${buff})</div>`;
+    
     return html;
 };
 
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
 
+function AsegurarGuardaD(p) { if(p.guardaDorada === undefined) p.guardaDorada = 0; if(p.baseGuardaDorada === undefined) p.baseGuardaDorada = 0; }
+
 function asegurarEstructuras(p) {
+    AsegurarGuardaD(p);
     if(!p.buffs) p.buffs = {}; if(!p.hechizos) p.hechizos = {}; if(!p.hechizosEfecto) p.hechizosEfecto = {}; if(!p.estados) p.estados = {};
     listaEstados.forEach(e => { if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false; });
     const props = ['fisica', 'energetica', 'espiritual', 'mando', 'psiquica', 'oscura', 'danoRojo', 'danoAzul', 'elimDorada', 'vidaRojaMaxExtra', 'vidaAzulExtra', 'guardaDoradaExtra'];
@@ -78,7 +86,7 @@ export function dibujarResumenVisual() {
 
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
-        if(!p.isPlayer || !p.isActive) return;
+        if(!p.isPlayer || !p.isActive) return; // Solo jugadores activos en el resumen
         
         const iconoGrande = normalizar(p.iconoOverride || nombre);
         const vidaRoja = p.vidaRojaActual;
@@ -86,6 +94,8 @@ export function dibujarResumenVisual() {
         const vex = calcularVexMax(p);
         const mayorAf = getMayorAfinidad(p);
         const objCount = dbExtra.objetos[nombre.toLowerCase()] || 0;
+        AsegurarGuardaD(p);
+        const guardaTotal = (p.guardaDorada||0) + (p.hechizos?.guardaDoradaExtra||0) + (p.hechizosEfecto?.guardaDoradaExtra||0) + (p.buffs?.guardaDoradaExtra||0);
         
         html += `
         <div style="display:flex; align-items:center; background:#150029; border:1px solid var(--gold); padding:15px; border-radius:8px; gap:20px; box-shadow:0 5px 15px rgba(0,0,0,0.5);">
@@ -93,8 +103,9 @@ export function dibujarResumenVisual() {
             <div style="flex:1; text-align:left;">
                 <h3 style="margin:0 0 10px 0; color:var(--gold); text-transform:uppercase;">${nombre}</h3>
                 <div style="display:flex; gap:15px; font-size:0.95em; color:#ddd; flex-wrap:wrap;">
-                    <span style="background:#220000; padding:5px 10px; border-radius:4px; border:1px solid #cc0000;">❤️ Vida: <b style="color:#ff4444">${vidaRoja}/${maxRoja}</b></span>
-                    <span style="background:#001133; padding:5px 10px; border-radius:4px; border:1px solid #0055ff;">🔮 Vex: <b style="color:#4a90e2">${vex}</b></span>
+                    <span style="background:#220000; padding:5px 10px; border-radius:4px; border:1px solid #cc0000; display:flex; align-items:center; gap:5px;"><div class="heart-red" style="width:12px;height:12px;"></div> Vida: <b style="color:#ff4444">${vidaRoja}/${maxRoja}</b></span>
+                    ${guardaTotal > 0 ? `<span style="background:#1a1a00; padding:5px 10px; border-radius:4px; border:1px solid var(--gold); display:flex; align-items:center; gap:5px;"><div class="guard-gold" style="width:10px;height:10px;margin:0;"></div> Guarda: <b style="color:var(--gold)">${guardaTotal}</b></span>` : ''}
+                    <span style="background:#001133; padding:5px 10px; border-radius:4px; border:1px solid #0055ff; display:flex; align-items:center; gap:5px;"><div class="heart-blue" style="width:12px;height:12px;"></div> Vex: <b style="color:#4a90e2">${vex}</b></span>
                     <span style="background:#1a1a00; padding:5px 10px; border-radius:4px; border:1px solid var(--gold);">✨ Afinidad: <b style="color:var(--gold)">${mayorAf}</b></span>
                     <span style="background:#0a1128; padding:5px 10px; border-radius:4px; border:1px solid #00ffff;">🎒 Objetos: <b style="color:#00ffff">${objCount}</b></span>
                 </div>
@@ -158,7 +169,7 @@ export function dibujarDetalle() {
                <span>✨ AFIN. PRIMARIA: <b style="color:var(--gold)">${mayorAf}</b></span>
             </div>
         </div>
-        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="background:#1a0033; border-color:#d4af37; padding:15px; font-size:1.1em;">Editar Ficha Base</button>` : ''}
+        ${estadoUI.esAdmin ? `<button onclick="window.mostrarPaginaOP('editar')" style="background:#1a0033; border-color:#d4af37; padding:15px; font-size:1.1em;">⚙️ Editar Ficha Base</button>` : ''}
     </div>
 
     <div class="circle-wrap">
@@ -191,7 +202,9 @@ export function dibujarDetalle() {
             </div>
         </div>
         <div>
-            <h3 style="margin-top:0;">Afinidades Totales</h3>
+            <h3 style="margin-top:0; color:#ddd; text-align:left;">
+                Afinidades <span style="font-size:0.7em;color:#aaa;">(Total = Base Permanente + Alteraciones Spells + Extras)</span>
+            </h3>
             <div class="affinities-grid">
                 <div class="affinity-box"><label>Física</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica)}</span>${bTextSplit(p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica)}</div>
                 <div class="affinity-box"><label>Energética</label><span style="font-size:1.4em;">${calcTotal(p.afinidades.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica)}</span>${bTextSplit(p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica)}</div>
@@ -204,18 +217,18 @@ export function dibujarDetalle() {
         </div>
     </div>`;
 
-    // GRID DE HECHIZOS DEL INVENTARIO MÁGICO
+    // GRID DE HECHIZOS DEL INVENTARIO MÁGICO (BOTONES DE COPIADO MUDO)
     html += `
-    <h3 style="margin-top:30px; color:#4a90e2; border-bottom:1px solid #4a90e2; padding-bottom:5px;">Grimorio (Hechizos Aprendidos)</h3>
+    <h3 style="margin-top:30px; color:#4a90e2; border-bottom:1px solid #4a90e2; padding-bottom:5px;">Grimorio (Hechizos Aprendidos) <span style="font-size:0.7em; color:#aaa;">- Clic para copiar</span></h3>
     <div class="spell-grid-4">
-        ${mySpells.map(s => `<div style="background:#0a0014; border:1px solid #1a4b8c; padding:8px; text-align:center; font-size:0.85em; font-weight:bold; color:var(--gold-light); border-radius:4px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" title="${s.Hechizo}">${s.Hechizo}</div>`).join('') || '<div style="grid-column:1/-1; text-align:center; color:#aaa; padding:10px;">No posee hechizos registrados.</div>'}
+        ${mySpells.map(s => `<button type="button" class="spell-button" onclick="window.copySpellSilently('${s.Hechizo.replace(/'/g, "\\'")}')" title="Clic para copiar ${s.Hechizo}">${s.Hechizo}</button>`).join('') || '<div style="grid-column:1/-1; text-align:center; color:#aaa; padding:10px;">No posee hechizos registrados.</div>'}
     </div>`;
 
     // ===== SECCIÓN OP: TODO ESTO SOLO SE DIBUJA SI ESTÁ EN MODO ADMIN =====
     if (estadoUI.esAdmin) {
         html += `
         <div style="margin-top:30px; background:#0a0014; border:1px solid var(--gold); padding:20px; border-radius:8px;">
-            <h3 style="margin-top:0; color:var(--gold); text-align:center;">Acciones Rápidas OP (Vida y Energía)</h3>
+            <h3 style="margin-top:0; color:var(--gold); text-align:center;">🔧 Acciones Rápidas MÁSTER (Vida y Energía)</h3>
             <div class="edit-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
                 <div class="edit-card">
                     <h4>Ganancia HEX</h4>
@@ -268,7 +281,7 @@ export function dibujarDetalle() {
 
         html += `
         <div style="margin-top:20px; background:#110022; border:1px solid #00ffff; padding:20px; border-radius:8px;">
-            <h3 style="margin-top:0; color:#00ffff; text-align:center;">Alteraciones Temporales (Extras)</h3>
+            <h3 style="margin-top:0; color:#00ffff; text-align:center;">MÁSTER: Alteraciones Temporales (Extras)</h3>
             <p style="color:#aaa; font-size:0.85em; text-align:center; margin-bottom:20px;">Estos valores representan buffs aplicados sobre la base.</p>
             <h4 style="color:#fff; border-bottom:1px dashed #004a4a; padding-bottom:5px; text-align:left; margin-bottom:15px; font-family:'Cinzel', serif;">1. Buffs de Vida y Daño</h4>
             <div class="edit-grid" style="margin-bottom: 30px;">${pVidaDanoE.map(f => genCard(f, 'buff')).join('')}</div>
@@ -279,7 +292,7 @@ export function dibujarDetalle() {
         let opcionesPersonajes = Object.keys(statsGlobal).filter(n => n !== nombre).map(n => `<option value="${n}">${n}</option>`).join('');
         html += `
         <div style="margin-top:20px; background:#1a0033; border:1px dashed #d4af37; padding:15px; border-radius:8px; text-align:center;">
-            <h3 style="margin-top:0; color:var(--gold);">Importación desde Personaje</h3>
+            <h3 style="margin-top:0; color:var(--gold);">🛠️ MÁSTER: Clonación e Importación</h3>
             <p style="color:#aaa; font-size:0.85em; margin-bottom:10px;">Importa estados alterados, clona toda la ficha o copia atributos específicos <b>desde</b> otro personaje hacia <b>${nombre}</b>.</p>
             <div style="display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;">
                 <select id="clon-source" style="padding:10px; background:#000; color:white; border:1px solid var(--gold); font-family:'Cinzel'; min-width:200px;"><option value="" disabled selected>-- Selecciona Origen --</option>${opcionesPersonajes}</select>
@@ -297,11 +310,12 @@ export function dibujarDetalle() {
 
 export function dibujarMenuOP() {
     return `
-        <h3>PANEL DE OPERADOR</h3>
+        <h3>PANEL GENERAL MÁSTER</h3>
+        <p style="color:#aaa; font-size:0.8em; margin-top:-10px; margin-bottom:20px;">Utiliza los botones rápidos o selecciona un personaje del catálogo para editar su ficha base.</p>
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
-            <button type="button" onclick="window.mostrarPaginaOP('hex')" style="background:#b8860b; color:#000;">Gestión de HEX y Party</button>
-            <button type="button" onclick="window.mostrarPaginaOP('crear')" style="background:#004a4a">Crear Personaje (Manual)</button>
-            <button type="button" onclick="window.descargarAumentada()">Descargar CSV</button>
+            <button type="button" onclick="window.mostrarPaginaOP('hex')" style="background:#b8860b; color:#000; font-weight:bold;">Gestión de HEX y Party</button>
+            <button type="button" onclick="window.mostrarPaginaOP('crear')" style="background:#004a4a; color:white; font-weight:bold;">Forjar Nuevo NPC (Manual)</button>
+            <button type="button" onclick="window.descargarAumentada()">📥 Descargar CSV Aumentado</button>
         </div>
         <div id="sub-vista-op"></div>
     `;
@@ -309,10 +323,10 @@ export function dibujarMenuOP() {
 
 export function dibujarHexOP() {
     let html = `<div style="text-align:center; max-width:1200px; margin:0 auto;">
-        <h2 style="color:var(--gold); margin-top:0;">Gestión de HEX y Party</h2>
+        <h2 style="color:var(--gold); margin-top:0;">Gestión de HEX y Party (MÁSTER)</h2>
         
         <div style="background:#1a0033; padding:15px; border-radius:8px; border:1px solid var(--gold); margin-bottom:20px;">
-            <h3 style="color:var(--gold); margin-top:0;">Party Activa (Máx 6)</h3>
+            <h3 style="color:var(--gold); margin-top:0;">Party Activa (Máx 6 Slots)</h3>
             
             <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:15px;">`;
     
@@ -406,11 +420,11 @@ export function dibujarHexOP() {
 
     html += `</div>
         <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37; border-radius:8px;">
-            <h3 style="margin-top:0; color:var(--gold);">Registro de HEX Unificado</h3>
+            <h3 style="margin-top:0; color:var(--gold);">Registro de HEX Unificado (Portapapeles)</h3>
             <textarea id="hex-log-textarea" readonly style="width:95%; height:150px; background:#000; color:#fff; border:1px solid var(--gold); padding:10px; font-family:monospace; margin-bottom:10px;"></textarea>
             <div style="display:flex; gap:10px;">
-                <button type="button" onclick="window.copiarHexLog()" style="flex:3; background:var(--gold); color:black; font-weight:bold;">COPIAR AL PORTAPAPELES</button>
-                <button type="button" onclick="window.limpiarHexLog()" style="flex:1; background:#4a0000; color:white;">LIMPIAR LOG</button>
+                <button type="button" onclick="window.copiarHexLog()" style="flex:3; background:var(--gold); color:black; font-weight:bold;">📄 COPIAR LOG</button>
+                <button type="button" onclick="window.limpiarHexLog()" style="flex:1; background:#4a0000; color:white;">🗑️ LIMPIAR</button>
             </div>
         </div>
     </div>`;
@@ -462,7 +476,7 @@ export function dibujarFormularioCrear() {
 
     return `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
-        <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje</h3>
+        <h3 style="margin-top:0; color:var(--gold)">Forja de Personaje MÁSTER</h3>
         <input type="text" id="npc-nombre" placeholder="Nombre del Personaje..." style="width:100%; max-width:400px; margin-bottom:20px; padding:10px; background:#000; color:var(--gold); border:1px solid var(--gold); font-size:1.2em; text-align:center;">
         
         <div style="background:#1a0033; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--gold); max-width:600px; margin-left:auto; margin-right:auto;">
@@ -479,7 +493,7 @@ export function dibujarFormularioCrear() {
         <div class="edit-grid" style="margin-bottom: 20px;">${afinGridHtml}</div>
         <div id="creation-affinity-sum-display" style="text-align:center; color:var(--gold); font-weight:bold; font-size:1.1em; margin-top:-10px; margin-bottom:20px;">Total Afinidades: 0</div>
         
-        <button type="button" onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px;">CREAR PERSONAJE</button>
+        <button type="button" onclick="window.ejecutarCreacionNPC()" style="width:100%; max-width:400px; margin-top:30px; background:var(--gold); color:black; font-weight:bold; font-size:1.2em; padding:15px; border-radius:4px;">✨ CREAR PERSONAJE ✨</button>
     </div>`;
 }
 
@@ -488,6 +502,7 @@ export function dibujarFormularioEditar() {
     if(!p) return `<p>Selecciona un personaje en el catálogo primero.</p>`;
     asegurarEstructuras(p);
     
+    // Eliminado el parámetro de vidaRojaMax de esta sección (Solo editable en Detalles ahora)
     const pVidaDanoBase = [ { id: 'baseVidaAzul', label: 'C. Azules Base', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada Base', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo Base', val: p.danoRojo }, { id: 'danoAzul', label: 'Daño Azul Base', val: p.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada Base', val: p.elimDorada } ];
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física Base', val: p.afinidades.fisica }, { id: 'energetica', label: 'Energética Base', val: p.afinidades.energetica }, { id: 'espiritual', label: 'Espiritual Base', val: p.afinidades.espiritual }, { id: 'mando', label: 'Mando Base', val: p.afinidades.mando }, { id: 'psiquica', label: 'Psíquica Base', val: p.afinidades.psiquica }, { id: 'oscura', label: 'Oscura Base', val: p.afinidades.oscura } ];
 
@@ -510,7 +525,7 @@ export function dibujarFormularioEditar() {
 
     let html = `
     <div style="text-align:center; max-width:1000px; margin:0 auto;">
-        <h3 style="margin-top:0; color:var(--gold)">Edición de Ficha Base y Hechizos</h3>
+        <h3 style="margin-top:0; color:var(--gold)">Edición MÁSTER de Ficha Base y Hechizos</h3>
         <button type="button" onclick="window.abrirDetalle('${estadoUI.personajeSeleccionado}')" style="background:#444; margin-bottom: 15px;">⬅ Volver al Perfil</button>
         
         <div style="display: flex; align-items: center; justify-content: center; gap: 20px; background: rgba(30, 0, 60, 0.6); padding: 15px; border: 1px dashed var(--gold); border-radius: 8px; margin-bottom: 20px;">
@@ -526,7 +541,7 @@ export function dibujarFormularioEditar() {
         </div>
 
         <div style="background:#1a0033; padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--gold);">
-            <h3 style="color:var(--gold); margin-top:0;">Identidad y Estado del Personaje</h3>
+            <h3 style="color:var(--gold); margin-top:0;">Identidad y Estado del Personaje (Máster)</h3>
             <div style="display:flex; justify-content:center; gap:20px;">
                 <button type="button" onclick="window.toggleIdentidad('isPlayer')" style="width:150px; background:${p.isPlayer ? '#004a00' : '#4a0000'}; border-color:${p.isPlayer ? '#00ff00' : '#ff0000'}; color:white;">${p.isPlayer ? 'ROL: JUGADOR' : 'ROL: NPC'}</button>
                 <button type="button" onclick="window.toggleIdentidad('isActive')" style="width:150px; background:${p.isActive ? '#004a00' : '#4a0000'}; border-color:${p.isActive ? '#00ff00' : '#ff0000'}; color:white;">${p.isActive ? 'ESTADO: ACTIVO' : 'ESTADO: INACTIVO'}</button>
