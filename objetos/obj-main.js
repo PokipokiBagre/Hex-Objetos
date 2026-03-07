@@ -1,7 +1,7 @@
 import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
 import { cargarTodoDesdeCSV, sincronizarObjetosBD } from './obj-data.js';
-import { modificar, modificarMulti, transferir, descargarLogExcel, descargarEstadoExcel, agregarObjetosMulti } from './obj-logic.js';
-import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia, dibujarResumenVisual } from './obj-ui.js';
+import { modificar, modificarMulti, transferir, descargarLogExcel, descargarEstadoExcel, agregarObjetoManual, agregarObjetosMulti } from './obj-logic.js';
+import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarCreacionMulti, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia, dibujarResumenVisual } from './obj-ui.js';
 
 window.actualizarBotonSyncObj = () => {
     const btn = document.getElementById('btn-sync-global');
@@ -21,10 +21,16 @@ window.ejecutarSincronizacion = async () => {
     if(await sincronizarObjetosBD(estadoUI.colaCambios)) {
         estadoUI.colaCambios = {}; 
         guardar();
-        alert("¡Base de datos actualizada con éxito!");
-        window.actualizarBotonSyncObj();
+        
+        const cartelito = document.createElement('div');
+        cartelito.innerHTML = "¡Guardado Exitoso! ✅";
+        cartelito.style.cssText = "position:fixed; top:30px; left:50%; transform:translateX(-50%); background:var(--gold); color:#000; padding:15px 40px; border-radius:8px; font-weight:bold; font-size:1.2em; z-index:9999; box-shadow:0 0 20px var(--gold); font-family:'Cinzel', serif; text-align:center;";
+        document.body.appendChild(cartelito);
+
+        setTimeout(() => { window.location.reload(); }, 1200);
+    } else {
+        btn.disabled = false;
     }
-    btn.disabled = false;
 };
 
 window.descargarInventariosJPG = async () => {
@@ -93,11 +99,12 @@ async function iniciar() {
     };
 
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
-    window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); alert("Copiado al portapapeles."); };
+    window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     
+    // Al cambiar la página se RECONGELA el orden de todo (para que no salten al editarlos)
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
-        estadoUI.resetCacheOrder = true; // Reinicia el congelador de orden
+        estadoUI.resetCacheOrder = true; 
         
         document.querySelectorAll('.pagina').forEach(p => p.classList.remove('activa')); 
         const target = document.getElementById('pag-' + id);
@@ -109,11 +116,16 @@ async function iniciar() {
 
     const _session = 'Y2FuZXk=';
     window.ejecutarSyncLog = () => { 
-        if (estadoUI.esAdmin) { window.mostrarPagina('op-menu'); return; } 
+        if (estadoUI.esAdmin) { 
+            // Si ya era OP y le da al botón, abre el panel general
+            window.mostrarPagina('op-menu'); 
+            return; 
+        } 
         const i = prompt("Acceso Restringido OP:"); 
         if (i === atob(_session)) { 
             estadoUI.esAdmin = true; 
-            refrescarUI(); // Refresca para mostrar el botón OP sin cambiar de página
+            // No cambia de página, solo refresca para inyectar los botones de edición
+            refrescarUI(); 
         } 
     };
 
@@ -170,28 +182,39 @@ async function iniciar() {
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; dibujarCatalogo(); };
     window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
     
+    // RUTAS PARA AMBAS CREACIONES
     window.mostrarCreacionObjeto = () => { window.mostrarPagina('crear'); };
+    window.mostrarCreacionMulti = () => { window.mostrarPagina('crear-multi'); };
     
-    // NUEVA LÓGICA DE CREACIÓN MÚLTIPLE
+    window.updateCreationLog = () => {
+        const n = document.getElementById('new-obj-name').value || "Objeto"; const e = document.getElementById('new-obj-eff').value || "Efecto";
+        let l = []; document.querySelectorAll('.cant-input').forEach(i => {
+            const c = parseInt(i.value) || 0; if (c > 0) l.push(`<${i.dataset.player} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e}>`);
+        });
+        const out = document.getElementById('copy-log-crea'); if (out) out.value = l.join('\n');
+    };
+
+    window.ejecutarAgregarObjeto = () => {
+        const d = { nombre: document.getElementById('new-obj-name').value.trim(), tipo: document.getElementById('new-obj-tipo').value, mat: document.getElementById('new-obj-mat').value, eff: document.getElementById('new-obj-eff').value.trim(), rar: document.getElementById('new-obj-rar').value };
+        const rep = {}; document.querySelectorAll('.cant-input').forEach(i => rep[i.dataset.player] = i.value);
+        if(!d.nombre) return alert("Nombre vacío");
+        agregarObjetoManual(d, rep, () => { window.mostrarPagina('op-menu'); window.actualizarBotonSyncObj(); });
+    };
+
     window.ejecutarAgregarMulti = () => {
         const destPlayer = document.getElementById('multi-player-dest').value;
         let listaNuevos = [];
-        
         for(let i=1; i<=5; i++) {
             const nombre = document.getElementById(`new-obj-name-${i}`).value.trim();
             if(!nombre) continue;
-
             const tipo = document.getElementById(`new-obj-tipo-${i}`).value;
             const mat = document.getElementById(`new-obj-mat-${i}`).value;
             const rar = document.getElementById(`new-obj-rar-${i}`).value;
             const eff = document.getElementById(`new-obj-eff-${i}`).value.trim();
             const cant = parseInt(document.getElementById(`new-obj-cant-${i}`).value) || 1;
-
             listaNuevos.push({ nombre, tipo, mat, eff, rar, cant });
         }
-        
         agregarObjetosMulti(listaNuevos, destPlayer, (creados) => {
-            alert(`¡Forja terminada! Se prepararon ${creados} objeto(s). RECUERDA GUARDAR EN EL SERVIDOR.`);
             window.mostrarPagina('op-menu');
             window.actualizarBotonSyncObj();
         });
