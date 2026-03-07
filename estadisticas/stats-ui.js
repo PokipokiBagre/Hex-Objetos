@@ -83,7 +83,7 @@ export function dibujarCatalogo() {
     contenedor.innerHTML = html + `</div>`;
 }
 
-// RESUMEN VISUAL (2 Columnas - Click Global para abrir ficha)
+// RESUMEN VISUAL (2 Columnas sin botones, full clickable)
 export function dibujarResumenVisual() {
     const contenedor = document.getElementById('vista-resumen');
     let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px; text-shadow:0 0 10px rgba(212,175,55,0.8);">Resumen Global del Grupo</h2>
@@ -109,7 +109,7 @@ export function dibujarResumenVisual() {
         const vidas = generarVidasHTML(p);
         const vexVisual = calcularVexMax(p);
 
-        // El fondo entero es clicleable para ir a la ficha
+        // El fondo de la tarjeta abre la ficha, pero evitamos que los span de copiado hagan doble click
         html += `
         <div class="resumen-row" onclick="window.abrirDetalle('${nombre}')">
             <div class="resumen-left">
@@ -125,7 +125,7 @@ export function dibujarResumenVisual() {
             
             <div class="resumen-right">
                 <div class="resumen-badges">
-                    <span class="copy-wrap" style="background:#1a1a00; border:1px solid var(--gold);" onclick="window.copySilently('Afinidad: ${mayorAf} (${valMayorAf}) | Suma: ${sumAf}', event)">
+                    <span class="copy-wrap" style="background:#1a1a00; border:1px solid var(--gold);" onclick="window.copySilently('Afinidad Primaria: ${mayorAf} (${valMayorAf}) | Suma Total: ${sumAf}', event)">
                         ✨ Afinidad Primaria: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b> | Suma: ${sumAf}
                     </span>
                 </div>
@@ -164,7 +164,7 @@ export function dibujarDetalle() {
     
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
-        // Aquí usa la descripción (e.desc) traída limpiamente del CSV
+        // Aquí usa la descripción limpia de comas de tu CSV
         if (e.tipo === 'numero' && val > 0) estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
         else if (e.tipo === 'booleano' && val) { let colorTexto = e.id === 'huesos' ? '#000' : '#fff'; let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid'; estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`; }
     });
@@ -181,7 +181,8 @@ export function dibujarDetalle() {
     const mKey = afiMap[mayorAf] || 'fisica';
     const calcAfT = (k) => (p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0);
     const valMayorAf = calcAfT(mKey);
-    
+    const sumAf = ['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcAfT(k),0);
+
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'}; flex-wrap:wrap;">
         <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #d4af37; object-fit: cover;" onerror="${imgError}">
@@ -230,12 +231,12 @@ export function dibujarDetalle() {
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Mando: ${calcTotal(p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}', event)"><label>Mando</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</span>${bTextSplit(p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</div>
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Psíquica: ${calcTotal(p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}', event)"><label>Psíquica</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</span>${bTextSplit(p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</div>
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Oscura: ${calcTotal(p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}', event)"><label>Oscura</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</span>${bTextSplit(p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</div>
-                <div class="copy-wrap" onclick="window.copySilently('Suma Total Afinidades: ${['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcTotal(p.afinidadesBase[k],p.hechizos[k],p.hechizosEfecto[k],p.buffs[k]),0)}', event)" style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333; display:block;">Suma Total Afinidades: ${['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcTotal(p.afinidadesBase[k],p.hechizos[k],p.hechizosEfecto[k],p.buffs[k]),0)}</div>
+                <div class="copy-wrap" onclick="window.copySilently('Suma Total Afinidades: ${sumAf}', event)" style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333; display:block;">Suma Total Afinidades: ${sumAf}</div>
             </div>
         </div>
     </div>`;
 
-    // GRID DE HECHIZOS
+    // GRID DE HECHIZOS (Botones de copiado mudo)
     html += `
     <h3 style="margin-top:30px; color:#4a90e2; border-bottom:1px solid #4a90e2; padding-bottom:5px;">Grimorio (Hechizos Aprendidos) <span style="font-size:0.7em; color:#aaa;">- Clic para copiar</span></h3>
     <div class="spell-grid-4">
@@ -245,7 +246,7 @@ export function dibujarDetalle() {
     contenedor.innerHTML = html;
 }
 
-// PANEL OP COMO UN MODAL POP-UP
+// PANEL OP QUE SE INYECTA EN EL MODAL ARRASTRABLE
 export function dibujarPanelEdicionOP() {
     const nombre = estadoUI.personajeSeleccionado; const p = statsGlobal[nombre];
     if(!p) return ``;
@@ -256,7 +257,6 @@ export function dibujarPanelEdicionOP() {
     const pAfinidadesSpellEff = [ { id: 'fisica', label: 'Física (ALT)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (ALT)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (ALT)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (ALT)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (ALT)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (ALT)', val: p.hechizosEfecto.oscura }, { id: 'danoRojo', label: 'Daño Rojo (ALT)', val: p.hechizosEfecto.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (ALT)', val: p.hechizosEfecto.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (ALT)', val: p.hechizosEfecto.elimDorada } ];
 
     let html = `
-        <h2 style="color:var(--gold); margin-top:0; text-align:center;">🛠️ PANEL DE EDICIÓN MÁSTER: ${nombre.toUpperCase()}</h2>
         <div style="display:flex; justify-content:center; gap:20px; margin-bottom:20px;">
             <button type="button" onclick="window.toggleIdentidad('isPlayer')" style="width:150px; background:${p.isPlayer ? '#004a00' : '#4a0000'}; border-color:${p.isPlayer ? '#00ff00' : '#ff0000'}; color:white;">${p.isPlayer ? 'ROL: JUGADOR' : 'ROL: NPC'}</button>
             <button type="button" onclick="window.toggleIdentidad('isActive')" style="width:150px; background:${p.isActive ? '#004a00' : '#4a0000'}; border-color:${p.isActive ? '#00ff00' : '#ff0000'}; color:white;">${p.isActive ? 'ESTADO: ACTIVO' : 'ESTADO: INACTIVO'}</button>
@@ -358,7 +358,6 @@ html += `</div>
 export function dibujarMenuOP() {
     return `
         <h3>PANEL GENERAL MÁSTER</h3>
-        <p style="color:#aaa; font-size:0.8em; margin-top:-10px; margin-bottom:20px;">Utiliza los botones rápidos o selecciona un personaje del catálogo para editar su ficha base.</p>
         <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
             <button type="button" onclick="window.mostrarPaginaOP('hex')" style="background:#b8860b; color:#000; font-weight:bold;">Gestión de HEX y Party</button>
             <button type="button" onclick="window.mostrarPaginaOP('crear')" style="background:#004a4a; color:white; font-weight:bold;">Forjar Nuevo NPC (Manual)</button>
@@ -435,7 +434,7 @@ export function dibujarHexOP() {
             </div>
         </div>
 
-        <div class="edit-grid">`;
+        <div class="edit-grid-6">`;
 
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
@@ -445,10 +444,10 @@ export function dibujarHexOP() {
             html += `
             <div class="edit-card" style="border-color:var(--gold);">
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:50px; height:50px; border-radius:50%; border:1px solid var(--gold); object-fit:cover;" onerror="${imgError}">
+                    <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:40px; height:40px; border-radius:50%; border:1px solid var(--gold); object-fit:cover;" onerror="${imgError}">
                     <div style="text-align:left;">
-                        <h4 style="margin:0; font-size:1em;">${nombre}</h4>
-                        <div style="color:var(--gold); font-size:0.9em; font-weight:bold;">HEX: ${p.hex} <span style="color:#aaa; font-size:0.8em;">${asisTexto}</span></div>
+                        <h4 style="margin:0; font-size:0.8em;">${nombre}</h4>
+                        <div style="color:var(--gold); font-size:0.8em; font-weight:bold;">HEX: ${p.hex} <span style="color:#aaa; font-size:0.8em;">${asisTexto}</span></div>
                     </div>
                 </div>
                 <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 1)" class="btn-plus">+1</button><button type="button" onclick="window.modHexInd('${nombre}', -1)" class="btn-minus">-1</button></div>
@@ -468,7 +467,7 @@ export function dibujarHexOP() {
             <h3 style="margin-top:0; color:var(--gold);">Registro de HEX Unificado (Portapapeles)</h3>
             <textarea id="hex-log-textarea" readonly style="width:95%; height:150px; background:#000; color:#fff; border:1px solid var(--gold); padding:10px; font-family:monospace; margin-bottom:10px;"></textarea>
             <div style="display:flex; gap:10px;">
-                <button type="button" onclick="window.copiarHexLog()" style="flex:3; background:var(--gold); color:black; font-weight:bold;">📄 COPIAR LOG</button>
+                <button type="button" onclick="window.copiarHexLog(event)" style="flex:3; background:var(--gold); color:black; font-weight:bold;">📄 COPIAR LOG</button>
                 <button type="button" onclick="window.limpiarHexLog()" style="flex:1; background:#4a0000; color:white;">🗑️ LIMPIAR</button>
             </div>
         </div>
@@ -537,5 +536,5 @@ export function dibujarFormularioCrear() {
 }
 
 export function dibujarFormularioEditar() {
-    return `<p>Editor movido a Modal OP en la ficha.</p>`;
+    return ``; // Se usa el popup modal
 }
