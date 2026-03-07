@@ -1,7 +1,7 @@
 import { statsGlobal, listaEstados, estadoUI, dbExtra } from './stats-state.js';
 import { calcularVidaRojaMax, calcularVexMax, getMayorAfinidad } from './stats-logic.js';
 
-const normalizar = (str) => str.toString().trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+const normalizar = (str) => str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'');
 const calcTotal = (base, spells, spellEff, buff) => (base || 0) + (spells || 0) + (spellEff || 0) + (buff || 0);
 
 // Nomenclatura Exacta (Hcz, Alt, Ext)
@@ -16,6 +16,7 @@ const bTextSplit = (spells, spellEff, buff) => {
 };
 
 const imgError = "this.onerror=null; this.src='../img/imgobjetos/no_encontrado.png'";
+const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 
 function AsegurarGuardaD(p) { if(p.guardaDorada === undefined) p.guardaDorada = 0; if(p.baseGuardaDorada === undefined) p.baseGuardaDorada = 0; }
 
@@ -28,7 +29,6 @@ function asegurarEstructuras(p) {
     if(p.isActive === undefined) p.isActive = true;
 }
 
-// Generador universal de vidas con símbolos visuales
 function generarVidasHTML(p) {
     const maxRojo = calcularVidaRojaMax(p);
     let normalRojo = Math.min(p.vidaRojaActual, maxRojo); let vaciosRojo = Math.max(0, maxRojo - normalRojo); let extraRojo = Math.max(0, p.vidaRojaActual - maxRojo);
@@ -83,21 +83,39 @@ export function dibujarCatalogo() {
     contenedor.innerHTML = html + `</div>`;
 }
 
-// RESUMEN VISUAL (2 Columnas sin botones, full clickable)
+// RESUMEN VISUAL AVANZADO (Top 5 objetos, Top 10 hechizos)
 export function dibujarResumenVisual() {
     const contenedor = document.getElementById('vista-resumen');
     let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px; text-shadow:0 0 10px rgba(212,175,55,0.8);">Resumen Global del Grupo</h2>
                 <div class="resumen-grid">`;
 
     const afiMap = { 'Física':'fisica', 'Energética':'energetica', 'Espiritual':'espiritual', 'Mando':'mando', 'Psíquica':'psiquica', 'Oscura':'oscura' };
+    const allNodos = [...(dbExtra.hechizos.nodos||[]), ...(dbExtra.hechizos.nodosOcultos||[])];
 
     Object.keys(statsGlobal).sort().forEach(nombre => {
         const p = statsGlobal[nombre];
         if(!p.isPlayer || !p.isActive) return; 
         
+        const pjNameLower = nombre.toLowerCase();
         const iconoGrande = normalizar(p.iconoOverride || nombre);
-        const objCount = dbExtra.objetos[nombre.toLowerCase()] || 0;
-        const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === nombre.toLowerCase());
+        const objCount = dbExtra.objetosCount[pjNameLower] || 0;
+        
+        // Top 5 Objetos
+        const myItems = dbExtra.inventarios[pjNameLower] || [];
+        const topItems = myItems.sort((a,b) => (raridadValor[dbExtra.infoObjetos[b]?.rar]||0) - (raridadValor[dbExtra.infoObjetos[a]?.rar]||0)).slice(0, 5);
+        let itemsHtml = topItems.map(o => {
+            const rarClase = dbExtra.infoObjetos[o]?.rar === 'Raro' ? 'rarity-raro' : (dbExtra.infoObjetos[o]?.rar === 'Legendario' ? 'rarity-legendario' : 'rarity-comun');
+            return `<div class="mini-item-card ${rarClase}" title="${o}"><img src="../img/imgobjetos/${normalizar(o)}.png" onerror="${imgError}"></div>`;
+        }).join('');
+
+        // Top 10 Hechizos por Costo
+        const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower);
+        mySpells.forEach(s => {
+            const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
+            s.costo = info ? (parseInt(info.HEX) || 0) : 0;
+        });
+        const topSpells = mySpells.sort((a,b) => b.costo - a.costo).slice(0, 10);
+        let spellsHtml = topSpells.map(s => `<span class="mini-spell-tag" title="${s.Hechizo}">${s.Hechizo}</span>`).join('');
         
         const mayorAf = getMayorAfinidad(p);
         const mKey = afiMap[mayorAf] || 'fisica';
@@ -109,17 +127,16 @@ export function dibujarResumenVisual() {
         const vidas = generarVidasHTML(p);
         const vexVisual = calcularVexMax(p);
 
-        // El fondo de la tarjeta abre la ficha, pero evitamos que los span de copiado hagan doble click
         html += `
         <div class="resumen-row" onclick="window.abrirDetalle('${nombre}')">
             <div class="resumen-left">
                 <img src="../img/imgpersonajes/${iconoGrande}icon.png" onerror="${imgError}">
                 <h3 style="margin:8px 0 0 0; font-size:1.1em; color:var(--gold); text-transform:uppercase;">${nombre}</h3>
                 <div class="copy-wrap hex-label" onclick="window.copySilently('HEX: ${p.hex}', event)">
-                    ${p.hex} HEX
+                    ${p.hex}<br><span style="font-size:0.5em; color:#fff;">HEX</span>
                 </div>
                 <div class="copy-wrap vex-label" onclick="window.copySilently('VEX: ${vexVisual}', event)">
-                    ${vexVisual} VEX
+                    ${vexVisual}<br><span style="font-size:0.6em; color:#fff;">VEX</span>
                 </div>
             </div>
             
@@ -130,7 +147,7 @@ export function dibujarResumenVisual() {
                     </span>
                 </div>
                 
-                <div class="resumen-badges" style="margin-top:10px; background:#000; padding:10px; border-radius:8px; border:1px dashed #444; width:fit-content;">
+                <div class="resumen-badges" style="margin-top:5px; background:#000; padding:10px; border-radius:8px; border:1px dashed #444; width:fit-content;">
                     <div class="copy-wrap health-grid" onclick="window.copySilently('Vida Roja: ${p.vidaRojaActual}/${vidas.maxRojo}', event)" style="margin:0;">
                         ${vidas.rojasHTML}
                     </div>
@@ -138,9 +155,18 @@ export function dibujarResumenVisual() {
                     ${vidas.guardasHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Guardas: ${vidas.guardaTotal}', event)" style="margin:0; border-left:1px solid #333; padding-left:15px;">${vidas.guardasHTML}</div>` : ''}
                 </div>
                 
-                <div class="resumen-badges" style="margin-top:5px; align-items:center;">
-                    <span style="background:#0a1128; border:1px solid #00ffff;">🎒 Objetos: <b style="color:#00ffff">${objCount}</b></span>
-                    <span style="background:#110022; border:1px solid var(--cyan-magic);">📖 Hechizos: <b style="color:var(--cyan-magic)">${mySpells.length}</b></span>
+                <div style="display:flex; gap:10px; margin-top:5px; flex-wrap:wrap; align-items:center;">
+                    <span class="copy-wrap" style="background:#0a1128; border:1px solid #00ffff; padding:2px 6px; border-radius:4px; font-size:0.8em;" onclick="window.copySilently('Objetos: ${objCount}', event)">
+                        🎒 Obj: <b style="color:#00ffff">${objCount}</b>
+                    </span>
+                    ${itemsHtml}
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:5px; flex-wrap:wrap; align-items:center;">
+                    <span class="copy-wrap" style="background:#110022; border:1px solid var(--cyan-magic); padding:2px 6px; border-radius:4px; font-size:0.8em;" onclick="window.copySilently('Hechizos: ${mySpells.length}', event)">
+                        📖 Hcz: <b style="color:var(--cyan-magic)">${mySpells.length}</b>
+                    </span>
+                    ${spellsHtml}
                 </div>
             </div>
         </div>`;
@@ -164,7 +190,6 @@ export function dibujarDetalle() {
     
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
-        // Aquí usa la descripción limpia de comas de tu CSV
         if (e.tipo === 'numero' && val > 0) estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
         else if (e.tipo === 'booleano' && val) { let colorTexto = e.id === 'huesos' ? '#000' : '#fff'; let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid'; estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`; }
     });
@@ -173,7 +198,7 @@ export function dibujarDetalle() {
     let asisUI = p.isPlayer ? `<div style="color:#aaa; font-size:0.8em; margin-top:5px; font-weight:bold;">ASISTENCIA: <span style="color:#b8860b;">${p.asistencia || 1}/7</span></div>` : '';
 
     const pjNameLower = nombre.toLowerCase();
-    const countObj = dbExtra.objetos[pjNameLower] || 0;
+    const countObj = dbExtra.objetosCount[pjNameLower] || 0;
     const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower).sort((a,b) => a.Hechizo.localeCompare(b.Hechizo));
     
     const afiMap = { 'Física':'fisica', 'Energética':'energetica', 'Espiritual':'espiritual', 'Mando':'mando', 'Psíquica':'psiquica', 'Oscura':'oscura' };
@@ -181,7 +206,6 @@ export function dibujarDetalle() {
     const mKey = afiMap[mayorAf] || 'fisica';
     const calcAfT = (k) => (p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0);
     const valMayorAf = calcAfT(mKey);
-    const sumAf = ['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcAfT(k),0);
 
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'}; flex-wrap:wrap;">
@@ -191,9 +215,9 @@ export function dibujarDetalle() {
             ${asisUI}
             <div class="status-container">${estadosHTML}</div>
             <div style="background:#111; border:1px solid var(--gold-dim); padding:10px; border-radius:4px; margin-top:15px; display:flex; justify-content:space-around; flex-wrap:wrap; gap:10px;">
-               <span>🎒 OBJETOS: <b style="color:var(--gold)">${countObj}</b></span>
-               <span>📖 HECHIZOS: <b style="color:var(--cyan-magic)">${mySpells.length}</b></span>
-               <span>✨ AFIN. PRIMARIA: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b></span>
+               <span class="copy-wrap" onclick="window.copySilently('Objetos: ${countObj}', event)">🎒 OBJETOS: <b style="color:var(--gold)">${countObj}</b></span>
+               <span class="copy-wrap" onclick="window.copySilently('Hechizos: ${mySpells.length}', event)">📖 HECHIZOS: <b style="color:var(--cyan-magic)">${mySpells.length}</b></span>
+               <span class="copy-wrap" onclick="window.copySilently('Afinidad Primaria: ${mayorAf} (${valMayorAf})', event)">✨ AFIN. PRIMARIA: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b></span>
             </div>
         </div>
         ${estadoUI.esAdmin ? `<button onclick="window.abrirModalOP()" style="background:#4a004a; border-color:#ff00ff; padding:15px; font-size:1.1em; color:white; box-shadow:0 0 15px rgba(255,0,255,0.3);">⚙️ EDITAR FICHA MÁSTER</button>` : ''}
@@ -231,12 +255,12 @@ export function dibujarDetalle() {
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Mando: ${calcTotal(p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}', event)"><label>Mando</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.mando, p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</span>${bTextSplit(p.hechizos.mando, p.hechizosEfecto.mando, p.buffs.mando)}</div>
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Psíquica: ${calcTotal(p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}', event)"><label>Psíquica</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.psiquica, p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</span>${bTextSplit(p.hechizos.psiquica, p.hechizosEfecto.psiquica, p.buffs.psiquica)}</div>
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Oscura: ${calcTotal(p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}', event)"><label>Oscura</label><span style="font-size:1.4em;">${calcTotal(p.afinidadesBase.oscura, p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</span>${bTextSplit(p.hechizos.oscura, p.hechizosEfecto.oscura, p.buffs.oscura)}</div>
-                <div class="copy-wrap" onclick="window.copySilently('Suma Total Afinidades: ${sumAf}', event)" style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333; display:block;">Suma Total Afinidades: ${sumAf}</div>
+                <div class="copy-wrap" onclick="window.copySilently('Suma Total Afinidades: ${['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcTotal(p.afinidadesBase[k],p.hechizos[k],p.hechizosEfecto[k],p.buffs[k]),0)}', event)" style="grid-column: 1 / -1; text-align:center; color:#aaa; font-size:0.75em; margin-top:5px; font-weight:bold; padding-top:5px; border-top:1px dashed #333; display:block;">Suma Total Afinidades: ${['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcTotal(p.afinidadesBase[k],p.hechizos[k],p.hechizosEfecto[k],p.buffs[k]),0)}</div>
             </div>
         </div>
     </div>`;
 
-    // GRID DE HECHIZOS (Botones de copiado mudo)
+    // GRID DE HECHIZOS
     html += `
     <h3 style="margin-top:30px; color:#4a90e2; border-bottom:1px solid #4a90e2; padding-bottom:5px;">Grimorio (Hechizos Aprendidos) <span style="font-size:0.7em; color:#aaa;">- Clic para copiar</span></h3>
     <div class="spell-grid-4">
@@ -246,7 +270,7 @@ export function dibujarDetalle() {
     contenedor.innerHTML = html;
 }
 
-// PANEL OP QUE SE INYECTA EN EL MODAL ARRASTRABLE
+// PANEL OP QUE SE INYECTA EN EL MODAL ARRASTRABLE (En grid de 3 columnas para evitar scroll infinito)
 export function dibujarPanelEdicionOP() {
     const nombre = estadoUI.personajeSeleccionado; const p = statsGlobal[nombre];
     if(!p) return ``;
@@ -434,7 +458,7 @@ export function dibujarHexOP() {
             </div>
         </div>
 
-        <div class="edit-grid-6">`;
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-top: 15px;">`;
 
     estadoUI.party.forEach(nombre => {
         if (nombre && statsGlobal[nombre]) {
@@ -446,15 +470,15 @@ export function dibujarHexOP() {
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                     <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width:40px; height:40px; border-radius:50%; border:1px solid var(--gold); object-fit:cover;" onerror="${imgError}">
                     <div style="text-align:left;">
-                        <h4 style="margin:0; font-size:0.8em;">${nombre}</h4>
-                        <div style="color:var(--gold); font-size:0.8em; font-weight:bold;">HEX: ${p.hex} <span style="color:#aaa; font-size:0.8em;">${asisTexto}</span></div>
+                        <h4 style="margin:0; font-size:0.85em;">${nombre}</h4>
+                        <div style="color:var(--gold); font-size:0.85em; font-weight:bold;">HEX: ${p.hex} <br><span style="color:#aaa; font-size:0.8em;">${asisTexto}</span></div>
                     </div>
                 </div>
                 <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 1)" class="btn-plus">+1</button><button type="button" onclick="window.modHexInd('${nombre}', -1)" class="btn-minus">-1</button></div>
                 <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 5)" class="btn-plus">+5</button><button type="button" onclick="window.modHexInd('${nombre}', -5)" class="btn-minus">-5</button></div>
                 <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 10)" class="btn-plus">+10</button><button type="button" onclick="window.modHexInd('${nombre}', -10)" class="btn-minus">-10</button></div>
                 <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 50)" style="background:#004a4a;" class="btn-plus">+50</button><button type="button" onclick="window.modHexInd('${nombre}', -50)" style="background:#4a0000;" class="btn-minus">-50</button></div>
-                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 100)" style="background:#004a4a;" class="btn-plus">+100</button><button type="button" onclick="window.modHexInd('${nombre}', -100)" style="background:#4a0000;" class="btn-minus">-100</button></div>
+                <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 100)" style="background:#004a00;" class="btn-plus">+100</button><button type="button" onclick="window.modHexInd('${nombre}', -100)" style="background:#4a0000;" class="btn-minus">-100</button></div>
                 <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 300)" style="background:#4a004a;" class="btn-plus">+300</button><button type="button" onclick="window.modHexInd('${nombre}', -300)" style="background:#4a0000;" class="btn-minus">-300</button></div>
                 <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 500)" style="background:#4a004a;" class="btn-plus">+500</button><button type="button" onclick="window.modHexInd('${nombre}', -500)" style="background:#4a0000;" class="btn-minus">-500</button></div>
                 <div class="btn-row"><button type="button" onclick="window.modHexInd('${nombre}', 1000)" style="background:#4a004a;" class="btn-plus">+1000</button><button type="button" onclick="window.modHexInd('${nombre}', -1000)" style="background:#4a0000;" class="btn-minus">-1000</button></div>
@@ -536,5 +560,6 @@ export function dibujarFormularioCrear() {
 }
 
 export function dibujarFormularioEditar() {
-    return ``; // Se usa el popup modal
+    return ``; // Se usa el popup modal arrastrable
 }
+
