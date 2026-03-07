@@ -7,7 +7,7 @@ const API_ESTADISTICAS = 'https://script.google.com/macros/s/AKfycbwW4AXM9QSrPYR
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
-// Inicialización vital
+// Inicializar cola de forma segura
 if (!estadoUI.colaCambios) estadoUI.colaCambios = { stats: {} };
 if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
 
@@ -203,29 +203,31 @@ window.cerrarModalOP = () => {
 function repintarConScroll(vista) {
     const scrollY = window.scrollY; 
     
-    // Si el modal OP está abierto, lo actualizamos silenciosamente
+    // Si el modal OP está abierto, lo actualizamos silenciosamente sin cerrar nada
     const modalBody = document.getElementById('modal-op-body');
     if (!document.getElementById('modal-op').classList.contains('oculto') && modalBody) {
+        // Guardamos el scroll interno del modal
+        const modalScrollTop = modalBody.scrollTop;
         modalBody.innerHTML = dibujarPanelEdicionOP();
+        // Restauramos el scroll interno
+        requestAnimationFrame(() => modalBody.scrollTop = modalScrollTop);
     }
 
-    const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op'; 
-    const container = document.getElementById(containerId);
-    
-    if (container) {
-        const h = container.getBoundingClientRect().height; container.style.minHeight = h + 'px';
-        
-        if (vista === 'detalle') dibujarDetalle(); 
-        else {
+    // Actualizamos la vista de fondo (Detalle)
+    if (estadoUI.vistaActual === 'detalle') {
+        dibujarDetalle(); 
+    } 
+    // O actualizamos la vista de fondo (OP Menu)
+    else if (estadoUI.vistaActual === 'hex' || estadoUI.vistaActual === 'crear') {
+        const container = document.getElementById('sub-vista-op');
+        if (container) {
             if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
             else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
+            if (estadoUI.vistaActual === 'hex') updateHexLogText();
         }
-        
-        if (estadoUI.vistaActual === 'hex') updateHexLogText();
-        window.scrollTo(0, scrollY); requestAnimationFrame(() => container.style.minHeight = '');
-    } else {
-        refrescarVistas(); window.scrollTo(0, scrollY);
     }
+
+    window.scrollTo(0, scrollY);
 }
 
 function refrescarVistas() {
@@ -321,13 +323,14 @@ window.toggleCrearAct = () => { const btn = document.getElementById('btn-crear-a
 window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','psi','osc'].reduce((acc,id)=>acc+(parseInt(document.getElementById('npc-'+id)?.value)||0),0); const d = document.getElementById('creation-affinity-sum-display'); if(d) d.innerText = `Total Afinidades: ${s}`; };
 window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 
+// Lógica de Vidas Automáticas
 function recalcularVidas(p, accion) {
     const calcFisT = () => (p.afinidadesBase.fisica||0) + (p.hechizos.fisica||0) + (p.hechizosEfecto.fisica||0) + (p.buffs.fisica||0);
     const preFisBase = p.afinidadesBase.fisica || 0; const preFis = calcFisT();
     const calcMagT = () => ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0), 0);
     const preMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const preMag = calcMagT();
 
-    accion();
+    accion(); // Ejecutar el cambio real
 
     const postFisBase = p.afinidadesBase.fisica || 0; const postFis = calcFisT();
     const postMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const postMag = calcMagT();
@@ -337,6 +340,7 @@ function recalcularVidas(p, accion) {
     const dTf = Math.floor(postFis/2) - Math.floor(preFis/2); if(dTf!==0) p.vidaRojaActual = Math.max(0, (p.vidaRojaActual||0) + dTf);
     const dTm = Math.floor(postMag/4) - Math.floor(preMag/4); if(dTm!==0) p.vidaAzul = Math.max(0, (p.vidaAzul||0) + dTm);
 
+    // Topear vida actual al nuevo max
     const fMax = calcularVidaRojaMax(p); if (p.vidaRojaActual > fMax) p.vidaRojaActual = fMax;
 }
 
@@ -344,18 +348,25 @@ window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const
 
 // Ediciones OP (Encolado Garantizado)
 window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modificarDirecto = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
+window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
+window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
+window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
+
+// Funciones para el formulario de creación manual (window.modForm)
+window.modForm = (inputId, cantidad) => {
+    const input = document.getElementById(inputId);
+    if(input) {
+        input.value = Math.max(0, (parseInt(input.value)||0) + cantidad);
+        if(inputId.startsWith('npc-fis') || inputId.startsWith('npc-ene') || inputId.startsWith('npc-esp') || inputId.startsWith('npc-man') || inputId.startsWith('npc-psi') || inputId.startsWith('npc-osc')) {
+            window.updateCreationAfinitySum();
+        }
+    }
+};
+
 window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-
-window.modBlueExtra = (cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra||0)+cantidad); p.vidaAzul = Math.max(0, (p.vidaAzul||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modGoldExtra = (cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra||0)+cantidad); p.guardaDorada = Math.max(0, (p.guardaDorada||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-
-window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
+window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
 
 window.ejecutarClonacion = (tipo) => {
     const s = document.getElementById('clon-source'); if(!s) return; const sn = s.value; if(!sn) return alert("Selecciona origen.");
@@ -370,7 +381,7 @@ window.ejecutarClonacion = (tipo) => {
         dest.afinidadesBase = JSON.parse(JSON.stringify(orig.afinidadesBase)); dest.afinidades = JSON.parse(JSON.stringify(orig.afinidades));
         dest.vex = orig.vex; if(tipo==='completo') dest.iconoOverride = orig.iconoOverride || sn;
     }
-    window.encolarCambio(tn); guardar(); s.value = ""; repintarConScroll('op'); 
+    window.encolarCambio(tn); guardar(); s.value = ""; repintarConScroll('detalle'); 
 };
 
 window.ejecutarCreacionNPC = () => {
