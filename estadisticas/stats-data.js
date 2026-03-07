@@ -1,5 +1,6 @@
 import { statsGlobal, listaEstados, estadoUI, dbExtra } from './stats-state.js';
 
+// Rutas CSV y API
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
@@ -81,17 +82,18 @@ export function procesarTextoCSV(texto) {
     });
 }
 
+// DICCIONARIO REVERTIDO: Usa descripciones genéricas para aplicar lo que viene del CSV
 export async function cargarDiccionarioEstados() {
-    listaEstados.push({ id:'envenenado', nombre:'Envenenado', tipo:'numero', desc:'Pierde X corazones rojos por turno.', bg:'#4a004a', border:'#ff00ff' });
-    listaEstados.push({ id:'quemado', nombre:'Quemado', tipo:'numero', desc:'Pierde X corazones rojos por turno. Reduce curación.', bg:'#4a0000', border:'#ff4444' });
-    listaEstados.push({ id:'congelado', nombre:'Congelado', tipo:'numero', desc:'Reduce evasión. Si llega a 3, pierde el turno.', bg:'#00224a', border:'#00ccff' });
-    listaEstados.push({ id:'paralizado', nombre:'Paralizado', tipo:'numero', desc:'Si falla la tirada, pierde el turno.', bg:'#4a4a00', border:'#ffff00' });
-    listaEstados.push({ id:'aturdido', nombre:'Aturdido', tipo:'booleano', desc:'Pierde su próximo turno obligatoriamente.', bg:'#555', border:'#fff' });
-    listaEstados.push({ id:'cegado', nombre:'Cegado', tipo:'booleano', desc:'Sus ataques tienen 50% de probabilidad de fallar.', bg:'#111', border:'#666' });
-    listaEstados.push({ id:'silenciado', nombre:'Silenciado', tipo:'booleano', desc:'No puede castear hechizos que requieran voz.', bg:'#220022', border:'#aa00aa' });
-    listaEstados.push({ id:'petrificado', nombre:'Petrificado', tipo:'booleano', desc:'Inmune a daño, pero no puede realizar ninguna acción.', bg:'#333', border:'#888' });
-    listaEstados.push({ id:'inmune', nombre:'Inmune', tipo:'booleano', desc:'No recibe daño temporalmente.', bg:'#003300', border:'#00ff00' });
-    listaEstados.push({ id:'escondido', nombre:'Escondido', tipo:'booleano', desc:'No puede ser seleccionado como objetivo directo.', bg:'#000', border:'#444' });
-    listaEstados.push({ id:'huesos', nombre:'Huesos Rotos', tipo:'booleano', desc:'Afinidad física reducida severamente.', bg:'#fff', border:'#000' });
-    listaEstados.push({ id:'secuestrado', nombre:'Secuestrado', tipo:'booleano', desc:'Removido del campo de batalla.', bg:'#110000', border:'#ff0000' });
+    listaEstados.push({ id:'envenenado', nombre:'Envenenado', tipo:'numero', desc:'Pierde corazones rojos por turno.', bg:'#4a004a', border:'#ff00ff' });
+    listaEstados.push({ id:'quemado', nombre:'Quemado', tipo:'numero', desc:'Pierde corazones rojos por turno.', bg:'#4a0000', border:'#ff4444' });
+    listaEstados.push({ id:'congelado', nombre:'Congelado', tipo:'numero', desc:'Reduce evasión.', bg:'#00224a', border:'#00ccff' });
+    listaEstados.push({ id:'paralizado', nombre:'Paralizado', tipo:'numero', desc:'Falla tiradas de dados.', bg:'#4a4a00', border:'#ffff00' });
+    listaEstados.push({ id:'aturdido', nombre:'Aturdido', tipo:'booleano', desc:'Pierde turnos.', bg:'#555', border:'#fff' });
+    listaEstados.push({ id:'cegado', nombre:'Cegado', tipo:'booleano', desc:'Falla ataques.', bg:'#111', border:'#666' });
+    listaEstados.push({ id:'silenciado', nombre:'Silenciado', tipo:'booleano', desc:'No puede castear hechizos.', bg:'#220022', border:'#aa00aa' });
+    listaEstados.push({ id:'petrificado', nombre:'Petrificado', tipo:'booleano', desc:'Inmune pero inactivo.', bg:'#333', border:'#888' });
+    listaEstados.push({ id:'inmune', nombre:'Inmune', tipo:'booleano', desc:'Inmune a daño.', bg:'#003300', border:'#00ff00' });
+    listaEstados.push({ id:'escondido', nombre:'Escondido', tipo:'booleano', desc:'No puede ser seleccionado.', bg:'#000', border:'#444' });
+    listaEstados.push({ id:'huesos', nombre:'Huesos Rotos', tipo:'booleano', desc:'Física reducida.', bg:'#fff', border:'#000' });
+    listaEstados.push({ id:'secuestrado', nombre:'Secuestrado', tipo:'booleano', desc:'Removido del campo.', bg:'#110000', border:'#ff0000' });
 }
