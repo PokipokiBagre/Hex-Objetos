@@ -210,13 +210,19 @@ export function dibujarDetalle() {
     let vexVisual = calcularVexMax(p);
     const vidas = generarVidasHTML(p);
 
-    let estadosHTML = ''; 
-    if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);">COPIA DE: ${p.iconoOverride.toUpperCase()}</div>`;
+let estadosHTML = ''; 
+    if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);" title="Este personaje es un clon visual.">COPIA DE: ${p.iconoOverride.toUpperCase()}</div>`;
     
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
-        if (e.tipo === 'numero' && val > 0) estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
-        else if (e.tipo === 'booleano' && val) { let colorTexto = e.id === 'huesos' ? '#000' : '#fff'; let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid'; estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`; }
+        // Aquí agregué el atributo nativo title="${e.desc}" para que salga sí o sí
+        if (e.tipo === 'numero' && val > 0) {
+            estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;" title="${e.desc}">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
+        } else if (e.tipo === 'booleano' && val) { 
+            let colorTexto = e.id === 'huesos' ? '#000' : '#fff'; 
+            let bStyle = e.id === 'secuestrado' ? 'dashed' : 'solid'; 
+            estadosHTML += `<div class="status-badge" style="background:${e.bg}; border: 1px ${bStyle} ${e.border}; color:${colorTexto};" title="${e.desc}">${e.nombre}<span class="tooltiptext">${e.desc}</span></div>`; 
+        }
     });
 
     const iconoGrande = normalizar(p.iconoOverride || nombre);
@@ -599,3 +605,4 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
