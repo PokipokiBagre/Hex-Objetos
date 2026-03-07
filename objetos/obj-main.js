@@ -220,9 +220,28 @@ async function iniciar() {
         });
     };
 
-    window.descargarEstadoExcel = descargarEstadoExcel; 
+window.descargarEstadoExcel = descargarEstadoExcel; 
     window.descargarLogExcel = descargarLogExcel;
     
-    window.mostrarPagina('grilla'); 
+    // --- NUEVA LÓGICA DE LECTURA DE URL ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const pjQuery = urlParams.get('pj');
+    let hashQuery = window.location.hash.replace('#inventario-', '');
+    if (hashQuery) hashQuery = decodeURIComponent(hashQuery).replace(/_/g, ' ');
+
+    const target = pjQuery || hashQuery;
+
+    if (target) {
+        // Busca al jugador ignorando mayúsculas/minúsculas
+        const exactMatch = Object.keys(invGlobal).find(k => k.toLowerCase() === target.toLowerCase());
+        if (exactMatch) {
+            estadoUI.jugadorInv = exactMatch;
+            window.mostrarPagina('inventario');
+        } else {
+            window.mostrarPagina('grilla');
+        }
+    } else {
+        window.mostrarPagina('grilla'); 
+    }
 }
 iniciar();
