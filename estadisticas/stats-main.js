@@ -1,12 +1,13 @@
 import { statsGlobal, estadoUI, listaEstados, guardar } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV, cargarDiccionarioEstados } from './stats-data.js';
-import { dibujarCatalogo, dibujarResumenVisual, dibujarDetalle, dibujarMenuOP, dibujarHexOP, dibujarFormularioCrear, dibujarFormularioEditar } from './stats-ui.js';
+import { dibujarCatalogo, dibujarResumenVisual, dibujarDetalle, dibujarMenuOP, dibujarHexOP, dibujarFormularioCrear, dibujarPanelEdicionOP } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMysticBonus } from './stats-logic.js';
 
 const API_ESTADISTICAS = 'https://script.google.com/macros/s/AKfycbwW4AXM9QSrPYR4vjXPdwSEhV1Q-t9S0exoskZQGoerVRJOsEMzReN1piMWzCfzW_RLmQ/exec';
 
 let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
 
+// Inicializar cola de forma segura
 if (!estadoUI.colaCambios) estadoUI.colaCambios = { stats: {} };
 if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
 
@@ -44,16 +45,19 @@ window.addHexLogEntry = (nombre, amount, isExtra = false) => {
 window.limpiarHexLog = () => { estadoUI.hexLog = {}; updateHexLogText(); };
 window.copiarHexLog = () => { const textarea = document.getElementById('hex-log-textarea'); if (textarea) { textarea.select(); document.execCommand('copy'); } };
 
-// COPIADO SILENCIOSO CON TOOLTIP EN EL RATÓN
+// COPIADO SILENCIOSO CON TOOLTIP
 window.copySilently = (texto, event) => {
     try {
+        if(event) { event.preventDefault(); event.stopPropagation(); }
         navigator.clipboard.writeText(texto);
+        
         const tooltip = document.createElement('div');
         tooltip.innerText = "✨ Copiado!";
         tooltip.className = 'floating-tooltip';
         tooltip.style.left = event.pageX + 'px';
         tooltip.style.top = (event.pageY - 20) + 'px';
         document.body.appendChild(tooltip);
+        
         setTimeout(() => tooltip.remove(), 600);
     } catch (e) {
         console.log("Fallo al copiar.", e);
@@ -71,9 +75,10 @@ window.actualizarBotonSync = () => {
     }
 };
 
-// FORMULA EXACTA PARA EXPORTAR: Total_Base_Hcz_Alt_Ext
+// ENCOLADO DE LA CADENA X_Y_Z_W_V
 window.encolarCambio = (nombre) => {
     try {
+        if (!estadoUI.colaCambios) estadoUI.colaCambios = { stats: {} };
         if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
         if (!estadoUI.colaCambios.stats[nombre]) estadoUI.colaCambios.stats[nombre] = {};
         
@@ -138,15 +143,52 @@ window.ejecutarSincronizacion = async () => {
     }
 };
 
+// --- POP-UP MODAL (EDITAR FICHA OP) ---
+window.abrirModalOP = () => {
+    const modal = document.getElementById('modal-op');
+    const body = document.getElementById('modal-op-body');
+    if (modal && body) {
+        body.innerHTML = dibujarPanelEdicionOP();
+        modal.classList.remove('oculto');
+    }
+};
+
+window.cerrarModalOP = () => {
+    const modal = document.getElementById('modal-op');
+    if (modal) modal.classList.add('oculto');
+};
+
+// Cerrar modal al hacer clic fuera
+window.onclick = (event) => {
+    const modal = document.getElementById('modal-op');
+    if (event.target === modal) {
+        modal.classList.add('oculto');
+    }
+};
+
+
+// --- RENDERIZADO Y NAVEGACIÓN ---
 function repintarConScroll(vista) {
-    const scrollY = window.scrollY; const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op'; const container = document.getElementById(containerId);
+    const scrollY = window.scrollY; 
+    
+    // Si estamos editando el Modal OP, lo repintamos
+    const modalBody = document.getElementById('modal-op-body');
+    if (!document.getElementById('modal-op').classList.contains('oculto') && modalBody) {
+        modalBody.innerHTML = dibujarPanelEdicionOP();
+    }
+
+    const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op'; 
+    const container = document.getElementById(containerId);
+    
     if (container) {
         const h = container.getBoundingClientRect().height; container.style.minHeight = h + 'px';
-        if (vista === 'detalle') dibujarDetalle(); else {
+        
+        if (vista === 'detalle') dibujarDetalle(); 
+        else {
             if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
             else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
-            else container.innerHTML = dibujarFormularioEditar();
         }
+        
         if (estadoUI.vistaActual === 'hex') updateHexLogText();
         window.scrollTo(0, scrollY); requestAnimationFrame(() => container.style.minHeight = '');
     } else {
@@ -156,6 +198,8 @@ function repintarConScroll(vista) {
 
 function refrescarVistas() {
     ['vista-catalogo', 'vista-resumen', 'vista-detalle', 'vista-op'].forEach(id => document.getElementById(id).classList.add('oculto'));
+    window.cerrarModalOP(); // Asegura que el modal se cierre al cambiar de página
+
     if (estadoUI.vistaActual === 'catalogo') { document.getElementById('vista-catalogo').classList.remove('oculto'); dibujarCatalogo(); }
     else if (estadoUI.vistaActual === 'resumen') { document.getElementById('vista-resumen').classList.remove('oculto'); dibujarResumenVisual(); }
     else if (estadoUI.vistaActual === 'detalle') { document.getElementById('vista-detalle').classList.remove('oculto'); dibujarDetalle(); }
@@ -165,7 +209,6 @@ function refrescarVistas() {
         const sub = document.getElementById('sub-vista-op');
         if (estadoUI.vistaActual === 'hex') { sub.innerHTML = dibujarHexOP(); updateHexLogText(); }
         else if (estadoUI.vistaActual === 'crear') sub.innerHTML = dibujarFormularioCrear();
-        else sub.innerHTML = dibujarFormularioEditar();
     }
 }
 
@@ -174,14 +217,7 @@ window.mostrarResumen = () => { estadoUI.vistaActual = 'resumen'; refrescarVista
 window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
 
 window.abrirMenuOP = () => { 
-    const enrutarOP = () => { 
-        if (estadoUI.vistaActual === 'detalle' && estadoUI.personajeSeleccionado) {
-            repintarConScroll('detalle'); 
-        } else { 
-            estadoUI.vistaActual = 'hex'; 
-            refrescarVistas(); 
-        }
-    };
+    const enrutarOP = () => { estadoUI.vistaActual = 'hex'; refrescarVistas(); };
     if (estadoUI.esAdmin) { enrutarOP(); return; }
     const pass = prompt("Acceso Restringido MÁSTER. Contraseña:");
     if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } 
@@ -209,7 +245,8 @@ window.modHexInd = (nombre, amount) => {
     p.hex = Math.max(0, p.hex + amount); 
     window.addHexLogEntry(nombre, amount, false); 
     window.encolarCambio(nombre); 
-    guardar(); repintarConScroll('hex'); 
+    guardar(); 
+    repintarConScroll('hex'); 
 };
 
 window.modHexGlobal = (amount) => {
@@ -240,46 +277,34 @@ window.addAsistenciaGlobal = () => {
     repintarConScroll('hex');
 };
 
+// --- FORMULARIOS CREACIÓN Y EDICIÓN ---
 window.toggleCrearRol = () => { const btn = document.getElementById('btn-crear-rol'); if (btn.dataset.val === 'npc') { btn.dataset.val = 'jugador'; btn.innerText = 'ROL: JUGADOR'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } else { btn.dataset.val = 'npc'; btn.innerText = 'ROL: NPC'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } };
 window.toggleCrearAct = () => { const btn = document.getElementById('btn-crear-act'); if (btn.dataset.val === 'activo') { btn.dataset.val = 'inactivo'; btn.innerText = 'ESTADO: INACTIVO'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } else { btn.dataset.val = 'activo'; btn.innerText = 'ESTADO: ACTIVO'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } };
 window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','psi','osc'].reduce((acc,id)=>acc+(parseInt(document.getElementById('npc-'+id)?.value)||0),0); const d = document.getElementById('creation-affinity-sum-display'); if(d) d.innerText = `Total Afinidades: ${s}`; };
 window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 
-function recalcularVidas(p, accion) {
-    const calcFisT = () => (p.afinidadesBase.fisica||0) + (p.hechizos.fisica||0) + (p.hechizosEfecto.fisica||0) + (p.buffs.fisica||0);
-    const preFisBase = p.afinidadesBase.fisica || 0; const preFis = calcFisT();
-    const calcMagT = () => ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0), 0);
-    const preMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const preMag = calcMagT();
-
-    accion();
-
-    const postFisBase = p.afinidadesBase.fisica || 0; const postFis = calcFisT();
-    const postMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); const postMag = calcMagT();
-
-    const dbFis = Math.floor(postFisBase/2) - Math.floor(preFisBase/2); if(dbFis!==0) p.baseVidaRojaMax = Math.max(0, (p.baseVidaRojaMax||10) + dbFis);
-    const dbMag = Math.floor(postMagBase/4) - Math.floor(preMagBase/4); if(dbMag!==0) p.baseVidaAzul = Math.max(0, (p.baseVidaAzul||0) + dbMag);
-    const dTf = Math.floor(postFis/2) - Math.floor(preFis/2); if(dTf!==0) p.vidaRojaActual = Math.max(0, (p.vidaRojaActual||0) + dTf);
-    const dTm = Math.floor(postMag/4) - Math.floor(preMag/4); if(dTm!==0) p.vidaAzul = Math.max(0, (p.vidaAzul||0) + dTm);
-
-    const fMax = calcularVidaRojaMax(p); if (p.vidaRojaActual > fMax) p.vidaRojaActual = fMax;
-}
-
-window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { p.baseVidaRojaMax = 10; p.vidaRojaActual = calcularVidaRojaMax(p); p.baseVidaAzul = getMysticBonus(p); p.vidaAzul = p.baseVidaAzul; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); } };
-
-// Ediciones OP (Garantizan encolarCambio en todas)
-window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
-window.modificarDirecto = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.buffs[statId] = (p.buffs[statId]||0)+cantidad; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-
-window.modBlueExtra = (cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.buffs.vidaAzulExtra = Math.max(0, (p.buffs.vidaAzulExtra||0)+cantidad); p.vidaAzul = Math.max(0, (p.vidaAzul||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
-window.modGoldExtra = (cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.buffs.guardaDoradaExtra = Math.max(0, (p.buffs.guardaDoradaExtra||0)+cantidad); p.guardaDorada = Math.max(0, (p.guardaDorada||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
 
 window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
 window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); repintarConScroll('op'); };
+
+window.recalcularBases = () => { 
+    const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; 
+    if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { 
+        p.baseVidaRojaMax = 10; 
+        p.vidaRojaActual = calcularVidaRojaMax(p); 
+        p.baseVidaAzul = getMysticBonus(p); 
+        p.vidaAzul = p.baseVidaAzul; 
+        window.encolarCambio(n); 
+        guardar(); 
+        repintarConScroll('op'); 
+    } 
+};
 
 window.ejecutarClonacion = (tipo) => {
     const s = document.getElementById('clon-source'); if(!s) return; const sn = s.value; if(!sn) return alert("Selecciona origen.");
@@ -294,7 +319,7 @@ window.ejecutarClonacion = (tipo) => {
         dest.afinidadesBase = JSON.parse(JSON.stringify(orig.afinidadesBase)); dest.afinidades = JSON.parse(JSON.stringify(orig.afinidades));
         dest.vex = orig.vex; if(tipo==='completo') dest.iconoOverride = orig.iconoOverride || sn;
     }
-    window.encolarCambio(tn); guardar(); s.value = ""; repintarConScroll('detalle'); 
+    window.encolarCambio(tn); guardar(); s.value = ""; repintarConScroll('op'); 
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -326,7 +351,7 @@ async function iniciar() {
             const parsed = JSON.parse(cache); 
             Object.assign(statsGlobal, parsed.stats); 
             if(parsed.party) estadoUI.party = parsed.party;
-            cargarTodoDesdeCSV(); 
+            cargarTodoDesdeCSV(); // Carga las 3 APIs en paralelo de fondo
         } 
     } 
     catch (error) { console.error("Error crítico:", error); } 
@@ -336,3 +361,4 @@ async function iniciar() {
     }
 }
 iniciar();
+
