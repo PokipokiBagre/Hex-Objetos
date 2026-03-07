@@ -7,12 +7,15 @@
     <link rel="icon" type="image/png" href="../img/icon.png"> 
     <link rel="stylesheet" href="../stylehechizos.css">
 </head>
+<!DOCTYPE html>
+<html lang="es">
 <body>
     <div class="container-hex">
         <div class="nav-bar">
             <div style="display:flex; gap:10px;">
                 <button class="btn-nav btn-volver" onclick="window.location.href='../index.html'">⬅ Inicio</button>
-                <button id="btn-nav-catalogo" class="btn-nav btn-volver oculto" onclick="window.cambiarVista('catalogo')">⬅ Catálogo</button>
+                <button id="btn-nav-catalogo" class="btn-nav btn-volver oculto" onclick="window.cambiarVista('catalogo')">👤 Personajes</button>
+                <button id="btn-nav-all-hechizos" class="btn-nav btn-volver" onclick="window.cambiarVista('catalogo-hechizos')">📖 Catálogo Hechizos</button>
                 <button class="btn-nav" style="border-color:#00ff00; background:#001a00; padding:10px 15px; cursor:default;" disabled title="Conectado a la Base de Datos">🟢</button>
             </div>
             <button class="btn-nav btn-op" onclick="window.abrirMenuOP()">⚙️ Acceso OP</button>
@@ -48,6 +51,17 @@
                 <input type="text" id="f-grim-texto" class="search-bar" placeholder="Buscar en grimorio..." onkeyup="window.aplicarFiltrosGrimorio()">
             </div>
             <div id="grid-grimorio" class="grid-inventario"></div>
+        </div>
+
+        <div id="c-catalogo-hechizos" class="vista-seccion oculto">
+            <h2 style="margin-top:0;">Enciclopedia Mágica</h2>
+            <div class="filter-group" style="gap:15px; margin-bottom:20px;">
+                <select id="f-all-afinidad" class="search-bar" style="margin:0; width:auto;" onchange="window.aplicarFiltrosAll()"><option value="Todos">Todas Afinidades</option><option>Física</option><option>Energética</option><option>Espiritual</option><option>Mando</option><option>Psíquica</option><option>Oscura</option></select>
+                <select id="f-all-clase" class="search-bar" style="margin:0; width:auto;" onchange="window.aplicarFiltrosAll()"><option value="Todos">Todas Clases</option><option value="Clase 1">Clase 1</option><option value="Clase 2">Clase 2</option><option value="Clase 3">Clase 3</option><option value="Clase 4">Clase 4</option><option value="Clase 5">Clase 5</option></select>
+                <select id="f-all-estado" class="search-bar" style="margin:0; width:auto;" onchange="window.aplicarFiltrosAll()"><option value="Todos">Todos (Descubrimiento)</option><option value="Descubierto">Solo Descubiertos</option><option value="Oculto">Solo Sellados</option></select>
+                <input type="text" id="f-all-texto" class="search-bar" style="margin:0; flex:1;" placeholder="Buscar en la enciclopedia..." onkeyup="window.aplicarFiltrosAll()">
+            </div>
+            <div id="grid-catalogo-hechizos" class="grid-inventario"></div>
         </div>
 
         <div id="c-gestion" class="vista-seccion oculto">
