@@ -19,7 +19,14 @@
         <button onclick="window.abrirMenuOP()" style="border-style: dashed; background:#2e004f;">⚙️ Acceso OP</button>
     </div>
 
-    <div id="vista-catalogo" class="catalogo-grid"></div>
+    <div id="loader" class="loading" style="margin-bottom: 20px;">
+        <div style="margin-bottom: 10px; color:var(--gold); font-weight:bold;">Decodificando Datos desde el Servidor...</div>
+        <div style="width: 80%; max-width: 400px; height: 10px; background: #111; border: 1px solid var(--gold); border-radius: 5px; margin: 0 auto; overflow: hidden;">
+            <div id="carga-progreso" style="width: 0%; height: 100%; background: var(--cyan-magic); transition: width 0.4s ease-out; box-shadow: 0 0 10px var(--cyan-magic);"></div>
+        </div>
+    </div>
+
+    <div id="vista-catalogo" class="catalogo-grid oculto"></div>
     <div id="vista-resumen" class="detalle-container oculto" style="max-width:1400px; background:transparent; border:none; box-shadow:none; padding:0;"></div>
     <div id="vista-detalle" class="detalle-container oculto"></div>
     <div id="vista-op" class="detalle-container oculto" style="text-align: center;"></div>
