@@ -203,7 +203,7 @@ window.ejecutarSincronizacion = async () => {
 
 // ================= EVENTOS GLOBALES (AUTO-SCROLL Y DRAG OUT) =================
 
-// Auto-Scroll gigante: Si te acercas a 150px del borde superior o inferior, baja rapidísimo.
+// Auto-Scroll: Si te acercas a 105px del borde superior o inferior (ajustado -30%), scrollea.
 document.addEventListener("dragover", (e) => {
     const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
     const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
@@ -212,9 +212,9 @@ document.addEventListener("dragover", (e) => {
         e.preventDefault(); 
         e.dataTransfer.dropEffect = "move"; 
         
-        // AUTO-SCROLL ZONES
-        const edgeThreshold = 150; // Área muy grande para detectar el borde
-        const scrollSpeed = 25; // Velocidad de scroll muy rápida
+        // AUTO-SCROLL ZONES (Reducidas un 30%)
+        const edgeThreshold = 100; // Área de detección ajustada
+        const scrollSpeed = 20; // Velocidad ligeramente ajustada
         
         if (e.clientY < edgeThreshold) {
             window.scrollBy(0, -scrollSpeed);
@@ -243,7 +243,6 @@ document.addEventListener("drop", (e) => {
     }
 });
 
-// (Mantenemos la prevención original por si se soltaba mal)
 document.addEventListener("dragend", () => {
     document.body.classList.remove('is-dragging-player');
 });
