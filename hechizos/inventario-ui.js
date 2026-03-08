@@ -103,7 +103,6 @@ export function renderHeaders() {
 
     let logCasteoGlobalHTML = '';
     if (estadoUI.esAdmin) {
-        // Recordar el estado del usuario o dejarlos en true por defecto
         const isConsumoChecked = estadoUI.consumoCast !== false ? 'checked' : '';
         const isEfectosChecked = estadoUI.efectosCast !== false ? 'checked' : '';
 
@@ -128,12 +127,18 @@ export function renderHeaders() {
         </div>`;
     }
 
+    // ENLACE MÁGICO A ESTADÍSTICAS
+    const linkStats = `../stats/index.html?pj=${encodeURIComponent(pj)}`;
+    const portraitHTML = `<a href="${linkStats}" target="_blank" title="Ver ficha de estado de ${pj}" style="display:flex;"><img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></a>`;
+
     document.getElementById('header-grimorio').innerHTML = `
         <div class="player-header">
             <div style="display:flex; align-items:center; gap:20px;">
-                <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                ${portraitHTML}
                 <div>
-                    <h2 style="margin:0;">${pj.toUpperCase()}</h2>
+                    <a href="${linkStats}" target="_blank" style="text-decoration:none;" title="Ver ficha de estado de ${pj}">
+                        <h2 style="margin:0; color:var(--gold); cursor:pointer;">${pj.toUpperCase()}</h2>
+                    </a>
                     <p style="margin:5px 0 0 0; color:var(--gold); font-weight:bold;">
                         HEX: <span style="color:white;">${char.hex}</span> &nbsp;|&nbsp; VEX MAX: <span style="color:#dcb1f0;">${maxVex}</span>
                     </p>
@@ -151,8 +156,12 @@ export function renderHeaders() {
         <button onclick="window.cambiarVista('grimorio')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Grimorio</button>
         <div class="player-header" style="justify-content:center;">
             <div style="display:flex; align-items:center; gap:20px;">
-                <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <div><h2 style="margin:0;">ÁRBOL DE APRENDIZAJE</h2></div>
+                ${portraitHTML}
+                <div>
+                    <a href="${linkStats}" target="_blank" style="text-decoration:none;" title="Ver ficha de estado de ${pj}">
+                        <h2 style="margin:0; color:var(--gold); cursor:pointer;">ÁRBOL DE APRENDIZAJE</h2>
+                    </a>
+                </div>
             </div>
         </div>`;
 
@@ -160,9 +169,11 @@ export function renderHeaders() {
         <button onclick="window.cambiarVista('grimorio')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Grimorio</button>
         <div class="player-header" style="flex-direction:column; align-items:stretch;">
             <div style="display:flex; align-items:center; gap:20px;">
-                <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                ${portraitHTML}
                 <div>
-                    <h2 style="margin:0;">ZONA DE CONJURO: ${pj.toUpperCase()}</h2>
+                    <a href="${linkStats}" target="_blank" style="text-decoration:none;" title="Ver ficha de estado de ${pj}">
+                        <h2 style="margin:0; color:var(--gold); cursor:pointer;">ZONA DE CONJURO: ${pj.toUpperCase()}</h2>
+                    </a>
                     <p style="margin:5px 0 0 0; font-size:1.1em; color:var(--gold); font-weight:bold;">
                         HEX: <span style="color:white;">${char.hex}</span> &nbsp;|&nbsp; VEX MAX: <span style="color:#dcb1f0;">${maxVex}</span>
                     </p>
@@ -175,9 +186,11 @@ export function renderHeaders() {
         <button onclick="window.cambiarVista('grimorio')" class="btn-nav btn-volver" style="margin-bottom:20px;">⬅ Volver al Grimorio</button>
         <div class="player-header">
             <div style="display:flex; align-items:center; gap:20px;">
-                <img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                ${portraitHTML}
                 <div>
-                    <h2 style="margin:0;">GESTIÓN OP: ${pj.toUpperCase()}</h2>
+                    <a href="${linkStats}" target="_blank" style="text-decoration:none;" title="Ver ficha de estado de ${pj}">
+                        <h2 style="margin:0; color:var(--gold); cursor:pointer;">GESTIÓN OP: ${pj.toUpperCase()}</h2>
+                    </a>
                     <p style="margin:5px 0 0 0; color:var(--gold); font-weight:bold;">
                         HEX Actual: <span style="color:white;">${char.hex}</span> &nbsp;|&nbsp; VEX MAX: <span style="color:#dcb1f0;">${maxVex}</span>
                     </p>
