@@ -201,18 +201,18 @@ window.ejecutarSincronizacion = async () => {
     }
 };
 
-// ================= AUTO-SCROLL AL ARRASTRAR =================
-// Obliga a la pantalla a bajar o subir si arrastras una ficha cerca de los bordes
-document.addEventListener("dragover", (e) => {
-    const scrollSpeed = 15; // Velocidad del scroll
-    const edgeThreshold = 80; // Distancia en píxeles desde el borde para activar el scroll
-    
-    // Si el cursor está cerca del borde superior
-    if (e.clientY < edgeThreshold) {
-        window.scrollBy(0, -scrollSpeed);
-    } 
-    // Si el cursor está cerca del borde inferior
-    else if (window.innerHeight - e.clientY < edgeThreshold) {
-        window.scrollBy(0, scrollSpeed);
+// ================= FORZAR SCROLL CON LA RUEDA DEL RATÓN AL ARRASTRAR =================
+document.addEventListener("wheel", (e) => {
+    // Verificamos si estamos arrastrando un jugador o una columna
+    const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
+    const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
+
+    if (arrastrandoJugador || arrastrandoColumna) {
+        // Fuerza el scroll de la página basado en el movimiento de tu rueda
+        window.scrollBy({
+            top: e.deltaY,
+            left: 0,
+            behavior: 'auto'
+        });
     }
-});
+}, { passive: true });
