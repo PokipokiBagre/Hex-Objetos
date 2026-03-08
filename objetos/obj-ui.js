@@ -139,7 +139,7 @@ export function dibujarInventarios() {
     const norm = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
     
     // ENLACE HACIA LA PÁGINA DE ESTADÍSTICAS (Abre en nueva pestaña)
-    const linkStats = `../stats/index.html?pj=${encodeURIComponent(j)}`;
+const linkStats = `../estadisticas/index.html?pj=${encodeURIComponent(j)}`;
     
     let html = `
     <button onclick="window.volverAGrilla()" style="background:#444; margin-bottom: 20px;">⬅ Volver a Inventarios</button>
@@ -507,6 +507,7 @@ export function dibujarCreacionMulti() {
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
+
 
 
 
