@@ -1,16 +1,14 @@
 import { misGlobal, jugadoresActivos, estadoUI } from './mis-state.js';
 
-// --- ENLACE PUBLICADO COMO CSV (Para Leer) ---
-const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/1I_0X5JJLcSb37dgkfSf459HkXQfpSB-P8DRDHdG_omc/pub?output=csv'; 
-// --- ENLACE DE PERSONAJES (Para Leer Jugadores) ---
+// --- TUS ENLACES REALES Y DEFINITIVOS ---
+const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTI_7MnwczeHhMCuQ_YInOHBvVUFv7ZSp_bsvFqkTmC_GvSdINkoskGPk__u9dq9XHTeVo4AMAMQl7v/pub?output=csv'; 
 const CSV_STATS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
-// --- ENLACE DE TU APPS SCRIPT (Solo para Guardar) ---
 const API_MISIONES = 'https://script.google.com/macros/s/AKfycbyDBdYRAVyt1ZxgjXu7_MzLCXothXR_mtocQfctwA8vnSa8Qm_GGfsquq2jAAiyciUe/exec'; 
 
 export async function cargarDatos() {
     try {
         const [resMis, resStats] = await Promise.all([
-            fetch(CSV_MISIONES + (CSV_MISIONES.includes('?')?'&':'?') + 'cb=' + new Date().getTime()),
+            fetch(CSV_MISIONES + '&cb=' + new Date().getTime()),
             fetch(CSV_STATS + '&cb=' + new Date().getTime())
         ]);
         
@@ -21,18 +19,39 @@ export async function cargarDatos() {
     }
 }
 
+// Lector de CSV blindado: Respeta las comas que están dentro de textos largos (descripciones)
+function csvSplit(row) {
+    let result = []; 
+    let cur = ''; 
+    let inQuotes = false;
+    for (let i = 0; i < row.length; i++) {
+        let char = row[i];
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(cur); 
+            cur = ''; 
+        } else {
+            cur += char;
+        }
+    }
+    result.push(cur);
+    return result;
+}
+
 function parsearStats(texto) {
     const filas = texto.split(/\r?\n/);
     jugadoresActivos.length = 0;
+    
     filas.slice(1).forEach(f => {
-        const c = f.split(',');
+        if(!f.trim()) return;
+        const c = csvSplit(f);
         if (c.length > 17) {
-            const nombre = c[0].replace(/^"|"$/g, '').trim();
-            const idenParts = (c[17] || '0_1').replace(/^"|"$/g, '').split('_');
+            const nombre = c[0].trim();
+            const idenParts = (c[17] || '0_1').split('_');
             const isPlayer = idenParts[0] === '1';
             const isActive = idenParts[1] === '1';
-            // Extraer override icon si existe, si no usar el nombre
-            const icon = c[18] ? c[18].replace(/^"|"$/g, '').trim() : nombre;
+            const icon = c[18] ? c[18].trim() : nombre;
             
             if (isPlayer && isActive) {
                 jugadoresActivos.push({ nombre, icon });
@@ -42,27 +61,26 @@ function parsearStats(texto) {
 }
 
 function parsearMisiones(texto) {
-    const filas = texto.split(/\r?\n/).map(l => {
-        let matches = l.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
-        if(!matches) return []; return matches.map(m => m.replace(/^,/, '').replace(/^"|"$/g, '').trim());
-    });
-
-    misGlobal.length = 0; // Vaciamos
+    const filas = texto.split(/\r?\n/);
+    misGlobal.length = 0; 
 
     filas.slice(1).forEach((f, index) => {
-        if(!f[0]) return;
+        if(!f.trim()) return;
+        const c = csvSplit(f);
+        if(!c[0]) return;
+        
         misGlobal.push({
-            id: f[0], // ID Único
-            titulo: f[1] || 'Sin Título',
-            tipo: f[2] || 'Personalizada', // Grande, Normal, Personalizada, OP
-            clase: f[3] || '1',
-            desc: f[4] || '',
-            autor: f[5] || 'Sistema',
-            estado: parseInt(f[6]) || 0, // 0:Inactiva, 1:Pendiente, 2:Proceso, 3:Finalizada
-            jugadores: f[7] ? f[7].split(',').map(j=>j.trim()).filter(j=>j) : [],
-            cupos: parseInt(f[8]) || 0, // Si es 0, es infinito
-            notaOP: f[9] || '',
-            orden: index // Guardamos el orden original del Excel
+            id: c[0].trim(), 
+            titulo: c[1] ? c[1].trim() : 'Sin Título',
+            tipo: c[2] ? c[2].trim() : 'Personalizada', // Grande, Normal, Personalizada, OP
+            clase: c[3] ? c[3].trim() : '1',
+            desc: c[4] ? c[4].trim() : '',
+            autor: c[5] ? c[5].trim() : 'Sistema',
+            estado: parseInt(c[6]) || 0, // 0:Inactiva, 1:Pendiente, 2:Proceso, 3:Finalizada
+            jugadores: c[7] ? c[7].split(',').map(j=>j.trim()).filter(j=>j) : [],
+            cupos: parseInt(c[8]) || 0, // Si es 0, es infinito
+            notaOP: c[9] ? c[9].trim() : '',
+            orden: index 
         });
     });
 }
@@ -70,11 +88,15 @@ function parsearMisiones(texto) {
 export async function sincronizarBD() {
     try {
         const payload = { accion: 'sincronizar_misiones', misiones: estadoUI.colaCambios.misiones };
-        const res = await fetch(API_MISIONES, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+        const res = await fetch(API_MISIONES, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+            body: JSON.stringify(payload) 
+        });
         const data = await res.json();
         return data.status === 'success';
     } catch(e) {
-        console.error(e);
+        console.error("Error en sincronización:", e);
         return false;
     }
 }
