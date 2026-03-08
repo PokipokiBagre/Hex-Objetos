@@ -6,8 +6,33 @@ import { getInventarioCombinado } from './inventario-logic.js';
 estadoUI.colaCambios.hexCasts = estadoUI.colaCambios.hexCasts || [];
 
 window.onload = async () => {
+    // 1. Limpieza de caché si recarga con F5
+    const perf = performance.getEntriesByType("navigation")[0];
+    if (perf && perf.type === "reload") {
+        localStorage.removeItem('hex_hechizos_cache');
+    }
+
     const loader = document.getElementById('loader');
     const barra = document.getElementById('carga-progreso');
+
+    // Función para atrapar URL dinámica (?pj=Linda)
+    const enrutarPorURL = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const pjQuery = urlParams.get('pj');
+        let hashQuery = window.location.hash.replace('#grimorio-', '');
+        if (hashQuery) hashQuery = decodeURIComponent(hashQuery).replace(/_/g, ' ');
+
+        const target = pjQuery || hashQuery;
+
+        if (target) {
+            const exactMatch = Object.keys(db.personajes).find(k => k.toLowerCase() === target.toLowerCase());
+            if (exactMatch) {
+                window.abrirGrimorio(exactMatch);
+                return;
+            }
+        }
+        window.cambiarVista('catalogo');
+    };
 
     const cacheData = localStorage.getItem('hex_hechizos_cache');
     if(cacheData) {
@@ -15,11 +40,12 @@ window.onload = async () => {
             const parsed = JSON.parse(cacheData);
             db.personajes = parsed.personajes; db.hechizos = parsed.hechizos; db.csvHeadersPersonajes = parsed.headers;
             if(loader) loader.style.display = 'none'; 
-            window.cambiarVista('catalogo'); 
+            
+            enrutarPorURL(); 
             
             await inicializarDatos(null);
             localStorage.setItem('hex_hechizos_cache', JSON.stringify({ personajes: db.personajes, hechizos: db.hechizos, headers: db.csvHeadersPersonajes }));
-            window.cambiarVista(estadoUI.vistaActual); 
+            if (estadoUI.vistaActual !== 'catalogo') window.cambiarVista(estadoUI.vistaActual); 
             return; 
         } catch(e) { console.warn("Caché obsoleto, recargando..."); }
     }
@@ -27,7 +53,10 @@ window.onload = async () => {
     const ok = await inicializarDatos(barra);
     if(!ok) { if(loader) loader.innerHTML = "<span style='color:red'>Fallo Crítico al cargar Servidores.</span>"; return; }
     localStorage.setItem('hex_hechizos_cache', JSON.stringify({ personajes: db.personajes, hechizos: db.hechizos, headers: db.csvHeadersPersonajes }));
-    setTimeout(() => { if(loader) loader.style.display = 'none'; window.cambiarVista('catalogo'); }, 400); 
+    setTimeout(() => { 
+        if(loader) loader.style.display = 'none'; 
+        enrutarPorURL(); 
+    }, 400); 
 };
 
 window.cambiarVista = (vista) => {
