@@ -62,7 +62,7 @@ window.cambiarFiltroFinalizadas = () => {
 
 // ================= DRAG & DROP: COLUMNAS =================
 window.dragColStart = (e, colId) => {
-    if(e.target.id !== colId) return; // Evita que se active arrastrando un hijo
+    if(e.target.id !== colId) return; 
     e.dataTransfer.setData('text/column', colId);
     setTimeout(() => document.getElementById(colId).classList.add('col-dragging'), 0);
 };
@@ -87,7 +87,6 @@ window.dropCol = (e, targetColId) => {
         if (sIdx < tIdx) parent.insertBefore(sourceEl, targetEl.nextSibling);
         else parent.insertBefore(sourceEl, targetEl);
 
-        // Guardar orden
         const newOrder = Array.from(parent.children).map(c => c.id);
         localStorage.setItem('hex_col_order', JSON.stringify(newOrder));
     }
@@ -95,7 +94,7 @@ window.dropCol = (e, targetColId) => {
 
 // ================= DRAG & DROP: JUGADORES =================
 window.dragStart = (e, playerName, sourceId = 'roster') => {
-    e.stopPropagation(); // Para no arrastrar la columna
+    e.stopPropagation(); 
     document.body.classList.add('is-dragging-player');
     e.dataTransfer.setData('application/json', JSON.stringify({ player: playerName, from: sourceId }));
 };
@@ -126,13 +125,54 @@ window.dropToRoster = (e) => {
     
     if (data.from !== 'roster') removerJugador(data.from, data.player);
 };
+
+// --- SOLUCIÓN AL CLIC FANTASMA Y AUTO-SCROLL ---
 document.addEventListener("dragend", () => {
     document.body.classList.remove('is-dragging-player');
+    // Activa un escudo anti-clic durante 150ms al terminar de arrastrar
+    window.justDragged = true;
+    setTimeout(() => window.justDragged = false, 150);
 });
 
 window.quitarJugador = (misionId, playerName) => {
+    // Si el escudo está activo (fue un arrastre), se ignora el evento y NO lanza la alerta
+    if (window.justDragged) return; 
+    
+    // Si fue un clic real, entonces sí pregunta
     if(confirm(`¿Remover a ${playerName} de esta misión?`)) removerJugador(misionId, playerName);
 };
+
+document.addEventListener("dragover", (e) => {
+    const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
+    const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
+    
+    if (arrastrandoJugador || arrastrandoColumna) {
+        e.preventDefault(); 
+        e.dataTransfer.dropEffect = "move"; 
+        
+        const edgeThreshold = 105; 
+        const scrollSpeed = 20; 
+        
+        if (e.clientY < edgeThreshold) {
+            window.scrollBy(0, -scrollSpeed);
+        } else if (window.innerHeight - e.clientY < edgeThreshold) {
+            window.scrollBy(0, scrollSpeed);
+        }
+    }
+});
+
+document.addEventListener("drop", (e) => {
+    document.body.classList.remove('is-dragging-player');
+    if (!e.target.closest('.drop-zone') && !e.target.closest('#roster-container')) {
+        const dataStr = e.dataTransfer.getData('application/json');
+        if (dataStr) {
+            try {
+                const data = JSON.parse(dataStr);
+                if (data.from !== 'roster') removerJugador(data.from, data.player);
+            } catch(err) {}
+        }
+    }
+});
 
 // ================= MODALES =================
 window.abrirModalCrear = (tipoForzado = null) => {
@@ -174,7 +214,7 @@ window.ejecutarGuardarMision = () => {
         id, titulo, tipo,
         clase: document.getElementById('form-clase').value,
         estado: parseInt(document.getElementById('form-estado').value) || 0,
-        cupos: parseInt(document.getElementById('form-cupos').value) || 2, // Default 2
+        cupos: parseInt(document.getElementById('form-cupos').value) || 2, 
         autor: document.getElementById('form-autor').value.trim(),
         desc: document.getElementById('form-desc').value.trim(),
         notaOP: document.getElementById('form-notaOP') ? document.getElementById('form-notaOP').value.trim() : ''
@@ -200,49 +240,3 @@ window.ejecutarSincronizacion = async () => {
         btn.disabled = false; btn.innerText = "Reintentar Sync";
     }
 };
-
-// ================= EVENTOS GLOBALES (AUTO-SCROLL Y DRAG OUT) =================
-
-// Auto-Scroll: Si te acercas a 105px del borde superior o inferior (ajustado -30%), scrollea.
-document.addEventListener("dragover", (e) => {
-    const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
-    const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
-    
-    if (arrastrandoJugador || arrastrandoColumna) {
-        e.preventDefault(); 
-        e.dataTransfer.dropEffect = "move"; 
-        
-        // AUTO-SCROLL ZONES (Reducidas un 30%)
-        const edgeThreshold = 100; // Área de detección ajustada
-        const scrollSpeed = 20; // Velocidad ligeramente ajustada
-        
-        if (e.clientY < edgeThreshold) {
-            window.scrollBy(0, -scrollSpeed);
-        } else if (window.innerHeight - e.clientY < edgeThreshold) {
-            window.scrollBy(0, scrollSpeed);
-        }
-    }
-});
-
-// Evento de caída GLOBAL: Si sueltas a un jugador en el vacío, lo quita de la misión
-document.addEventListener("drop", (e) => {
-    document.body.classList.remove('is-dragging-player');
-    
-    // Validar que NO lo estemos soltando en otra misión ni en el panel de roster superior
-    if (!e.target.closest('.drop-zone') && !e.target.closest('#roster-container')) {
-        const dataStr = e.dataTransfer.getData('application/json');
-        if (dataStr) {
-            try {
-                const data = JSON.parse(dataStr);
-                // Si el jugador viene de una misión (no del roster inicial), lo quitamos
-                if (data.from !== 'roster') {
-                    removerJugador(data.from, data.player);
-                }
-            } catch(err) {}
-        }
-    }
-});
-
-document.addEventListener("dragend", () => {
-    document.body.classList.remove('is-dragging-player');
-});
