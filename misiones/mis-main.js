@@ -201,29 +201,42 @@ window.ejecutarSincronizacion = async () => {
     }
 };
 
-// ================= FIX DEFINITIVO: SCROLL Y CURSOR DE ERROR =================
-// En Windows/Chrome, si arrastras sobre un lugar vacío, sale el cursor de error (🚫) 
-// y el navegador BLOQUEA la rueda del ratón. Esto lo soluciona:
-
+// ================= EVENTOS GLOBALES (SCROLL Y DRAG OUT) =================
 document.addEventListener("dragover", (e) => {
     const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
     const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
     
-    // Al prevenir el comportamiento por defecto en TODA la pantalla, 
-    // quitamos el icono de error (🚫) y el navegador libera la rueda del ratón.
     if (arrastrandoJugador || arrastrandoColumna) {
         e.preventDefault(); 
-        e.dataTransfer.dropEffect = "move"; // Fuerza el cursor a la manito
+        e.dataTransfer.dropEffect = "move"; 
     }
 });
 
-// Refuerzo agresivo para obligar al scroll con la rueda del ratón
+// Evento de caída GLOBAL: Si sueltas a un jugador en el vacío, lo quita de la misión
+document.addEventListener("drop", (e) => {
+    document.body.classList.remove('is-dragging-player');
+    
+    // Validar que NO lo estemos soltando en otra misión ni en el panel de roster superior
+    if (!e.target.closest('.drop-zone') && !e.target.closest('#roster-container')) {
+        const dataStr = e.dataTransfer.getData('application/json');
+        if (dataStr) {
+            try {
+                const data = JSON.parse(dataStr);
+                // Si el jugador viene de una misión (no del roster inicial), lo quitamos
+                if (data.from !== 'roster') {
+                    removerJugador(data.from, data.player);
+                }
+            } catch(err) {}
+        }
+    }
+});
+
+// Permite scrollear con la rueda mientras arrastras
 window.addEventListener("wheel", (e) => {
     const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
     const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
 
     if (arrastrandoJugador || arrastrandoColumna) {
-        // Ejecutamos el scroll manualmente saltando las restricciones del navegador
         window.scrollBy({ top: e.deltaY, left: 0, behavior: 'auto' });
     }
 }, { passive: true, capture: true });
