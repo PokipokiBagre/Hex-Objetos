@@ -1,20 +1,25 @@
-import { misGlobal, jugadoresActivos, estadoUI } from './mis-state.js';
+import { misGlobal, jugadoresActivos, estadoUI, dbExtra } from './mis-state.js';
 
 const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTI_7MnwczeHhMCuQ_YInOHBvVUFv7ZSp_bsvFqkTmC_GvSdINkoskGPk__u9dq9XHTeVo4AMAMQl7v/pub?output=csv'; 
 const CSV_STATS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
+const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 const API_MISIONES = 'https://script.google.com/macros/s/AKfycbyDBdYRAVyt1ZxgjXu7_MzLCXothXR_mtocQfctwA8vnSa8Qm_GGfsquq2jAAiyciUe/exec'; 
 
 export async function cargarDatos() {
     try {
-        const [resMis, resStats] = await Promise.all([
+        const [resMis, resStats, resHz] = await Promise.all([
             fetch(CSV_MISIONES + '&cb=' + new Date().getTime()),
-            fetch(CSV_STATS + '&cb=' + new Date().getTime())
+            fetch(CSV_STATS + '&cb=' + new Date().getTime()),
+            fetch(API_HECHIZOS)
         ]);
         
         parsearStats(await resStats.text());
         parsearMisiones(await resMis.text());
+        
+        const jsonHz = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
+        dbExtra.hechizos = [...(jsonHz.nodos||[]), ...(jsonHz.nodosOcultos||[])].sort((a,b) => (b.Nombre||'').length - (a.Nombre||'').length);
     } catch (e) {
-        console.error("Error cargando CSVs:", e);
+        console.error("Error cargando datos:", e);
     }
 }
 
@@ -44,15 +49,14 @@ function parsearStats(texto) {
             const isActive = idenParts[1] === '1';
             const icon = c[18] ? c[18] : nombre;
 
-            // Extraer afinidad para el borde del Roster
-            const f_val = parseInt((c[3]||'0').split('_')[0])||0;
-            const e_val = parseInt((c[4]||'0').split('_')[0])||0;
-            const s_val = parseInt((c[5]||'0').split('_')[0])||0;
-            const m_val = parseInt((c[6]||'0').split('_')[0])||0;
-            const p_val = parseInt((c[7]||'0').split('_')[0])||0;
-            const o_val = parseInt((c[8]||'0').split('_')[0])||0;
-
-            const afis = { 'Física': f_val, 'Energética': e_val, 'Espiritual': s_val, 'Mando': m_val, 'Psíquica': p_val, 'Oscura': o_val };
+            const afis = { 
+                'Física': parseInt((c[3]||'0').split('_')[0])||0, 
+                'Energética': parseInt((c[4]||'0').split('_')[0])||0, 
+                'Espiritual': parseInt((c[5]||'0').split('_')[0])||0, 
+                'Mando': parseInt((c[6]||'0').split('_')[0])||0, 
+                'Psíquica': parseInt((c[7]||'0').split('_')[0])||0, 
+                'Oscura': parseInt((c[8]||'0').split('_')[0])||0 
+            };
             let max = -1; let mayor = "Física";
             for(let key in afis) { if(afis[key] > max && afis[key] > 0) { max = afis[key]; mayor = key; } }
             
@@ -93,8 +97,5 @@ export async function sincronizarBD() {
         const res = await fetch(API_MISIONES, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
         const data = await res.json();
         return data.status === 'success';
-    } catch(e) {
-        console.error("Error en sincronización:", e);
-        return false;
-    }
+    } catch(e) { return false; }
 }
