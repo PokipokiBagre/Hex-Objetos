@@ -259,6 +259,13 @@ export function dibujarDetalle() {
     const linkHechizos = `../hechizos/index.html?pj=${encodeURIComponent(nombre)}`;
     const linkMisiones = `../misiones/index.html`;
 
+    // CONDICIONAL: Solo mostramos la UI de Misiones si es un Jugador
+    const uiMisiones = p.isPlayer ? `
+        <div style="display:flex; align-items:center; gap:5px;">
+            <span class="copy-wrap" onclick="window.copySilently('Misiones: ${countMis}', event)" style="padding:4px 8px; margin:0;">📜 MISIONES: <b style="color:#ffaa00">${countMis}</b></span>
+            <a href="${linkMisiones}" target="_blank" onclick="event.stopPropagation();" title="Ir a Misiones" style="display:inline-block; background:#000; color:#aaa; border:1px solid #555; padding:2px 6px; font-size:0.8em; border-radius:4px; text-decoration:none; font-family:sans-serif;" onmouseover="this.style.borderColor='#ffaa00'; this.style.color='#fff';" onmouseout="this.style.borderColor='#555'; this.style.color='#aaa';">(IR)</a>
+        </div>` : '';
+
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'}; flex-wrap:wrap;">
         <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #d4af37; object-fit: cover; background:transparent;" onerror="${imgError}">
@@ -279,10 +286,7 @@ export function dibujarDetalle() {
                    <a href="${linkHechizos}" target="_blank" onclick="event.stopPropagation();" title="Ir al Grimorio" style="display:inline-block; background:#000; color:#aaa; border:1px solid #555; padding:2px 6px; font-size:0.8em; border-radius:4px; text-decoration:none; font-family:sans-serif;" onmouseover="this.style.borderColor='var(--cyan-magic)'; this.style.color='#fff';" onmouseout="this.style.borderColor='#555'; this.style.color='#aaa';">(IR)</a>
                </div>
 
-               <div style="display:flex; align-items:center; gap:5px;">
-                   <span class="copy-wrap" onclick="window.copySilently('Misiones: ${countMis}', event)" style="padding:4px 8px; margin:0;">📜 MISIONES: <b style="color:#ffaa00">${countMis}</b></span>
-                   <a href="${linkMisiones}" target="_blank" onclick="event.stopPropagation();" title="Ir a Misiones" style="display:inline-block; background:#000; color:#aaa; border:1px solid #555; padding:2px 6px; font-size:0.8em; border-radius:4px; text-decoration:none; font-family:sans-serif;" onmouseover="this.style.borderColor='#ffaa00'; this.style.color='#fff';" onmouseout="this.style.borderColor='#555'; this.style.color='#aaa';">(IR)</a>
-               </div>
+               ${uiMisiones}
 
                <span class="copy-wrap" onclick="window.copySilently('Afinidad Primaria: ${mayorAf} (${valMayorAf})', event)" style="padding:4px 8px;">✨ AFIN. PRIMARIA: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b></span>
             </div>
@@ -646,6 +650,7 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
 
 
