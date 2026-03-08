@@ -4,27 +4,43 @@ const CSV_ESTADOS = './estados.csv';
 const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YWmgW05Hzpv4IQzpMaKrgSvVUm_Yrps3DdwwPpIjD4iHrdLyPHGucuTHnwwYdM7bPrcnRO/pub?output=csv';
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
+const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTI_7MnwczeHhMCuQ_YInOHBvVUFv7ZSp_bsvFqkTmC_GvSdINkoskGPk__u9dq9XHTeVo4AMAMQl7v/pub?output=csv';
 
-// Carga simultánea con barra de progreso animada
 export async function cargarTodoDesdeCSV(barraProgreso) {
     try {
         let progresoActual = 10; // Inicia en 10%
         if (barraProgreso) barraProgreso.style.width = progresoActual + '%';
 
         const avanzarProgreso = () => {
-            progresoActual += 30;
+            progresoActual += 20;
             if (barraProgreso) barraProgreso.style.width = progresoActual + '%';
         };
 
-        const [textoPj, textoObj, textoHz] = await Promise.all([
+        const [textoPj, textoObj, textoHz, textoMis] = await Promise.all([
             fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime()).then(r => r.text()).then(t => { avanzarProgreso(); return t; }),
             fetch(CSV_OBJETOS + '&cb=' + new Date().getTime()).then(r => r.text()).then(t => { avanzarProgreso(); return t; }),
-            fetch(API_HECHIZOS).then(r => r.text()).then(t => { avanzarProgreso(); return t; })
+            fetch(API_HECHIZOS).then(r => r.text()).then(t => { avanzarProgreso(); return t; }),
+            fetch(CSV_MISIONES + '&cb=' + new Date().getTime()).then(r => r.text()).then(t => { avanzarProgreso(); return t; })
         ]);
         
         procesarTextoCSV(textoPj);
         procesarObjetos(textoObj);
         dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(textoHz))));
+        
+        // PROCESAR CONTEO DE MISIONES
+        dbExtra.misionesCount = {};
+        textoMis.split(/\r?\n/).slice(1).forEach(l => {
+            let matches = l.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
+            if(!matches) return;
+            let c = matches.map(m => m.replace(/^,/, '').replace(/^"|"$/g, '').trim());
+            let estado = parseInt(c[3]) || 0;
+            
+            // Solo cuenta Pendientes (1) y En Proceso (2)
+            if (estado === 1 || estado === 2) { 
+                let jugs = (c[7] || '').split(',').map(j => j.trim().toLowerCase());
+                jugs.forEach(j => { if(j) dbExtra.misionesCount[j] = (dbExtra.misionesCount[j] || 0) + 1; });
+            }
+        });
         
     } catch (error) { 
         console.error("Error cargando bases de datos cruzadas:", error); 
@@ -136,3 +152,4 @@ export async function cargarDiccionarioEstados() {
         console.warn("Fallo al cargar estados.csv. Verifica ruta local.");
     }
 }
+
