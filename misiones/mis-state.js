@@ -1,6 +1,5 @@
 export let misGlobal = []; 
 export let jugadoresActivos = []; 
-export let dbExtra = { hechizos: [] }; // Para enlazar las recompensas
 
 export let estadoUI = {
     esAdmin: false,
