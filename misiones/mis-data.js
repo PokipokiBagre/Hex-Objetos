@@ -79,7 +79,7 @@ function parsearMisiones(texto) {
             id: c[0], 
             titulo: c[0], 
             tipo: c[1] || 'Personalizada', 
-            cupos: parseInt(c[2]) || 0, 
+            cupos: !isNaN(parseInt(c[2])) ? parseInt(c[2]) : 2, // Si está vacío, por defecto es 2
             estado: parseInt(c[3]) || 0, 
             clase: c[4] ? c[4].replace(/Clase/gi, '').trim() : '1', 
             desc: c[5] || '', 
