@@ -95,7 +95,16 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: sans-seri
 
 .modal-guide { background: #000; border: 1px dashed var(--cyan-magic); padding: 10px; border-radius: 6px; margin-bottom: 15px; }
 .modal-guide h4 { margin: 0 0 10px 0; color: var(--cyan-magic); font-size: 0.9em; text-align: center; }
-.guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 0.75em; text-align: center; color: #aaa; font-family: sans-serif;}
+.guide-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+    gap: 12px; 
+    font-size: 0.85em; 
+    text-align: center; 
+    color: #aaa; 
+    font-family: sans-serif;
+    margin-bottom: 10px;
+}
 .guide-grid b { color: #fff; }
 
 .btn-sync-float { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(145deg, #aa0000, #ff4444); color: white; padding: 15px 25px; border-radius: 50px; font-weight: bold; font-size: 1.1em; border: 2px solid #fff; box-shadow: 0 5px 20px rgba(255,0,0,0.6); z-index: 99999; cursor: pointer; animation: pulse 2s infinite; font-family: 'Cinzel', serif; }
