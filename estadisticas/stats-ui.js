@@ -125,7 +125,12 @@ export function dibujarResumenVisual() {
         const pjNameLower = nombre.toLowerCase();
         const iconoGrande = normalizar(p.iconoOverride || nombre);
         const objCount = dbExtra.objetosCount[pjNameLower] || 0;
-        const countMis = dbExtra.misionesCount ? (dbExtra.misionesCount[pjNameLower] || 0) : 0;
+        
+        // Array de nombres de misiones
+        const myMissions = dbExtra.misionesActivas ? (dbExtra.misionesActivas[pjNameLower] || []) : [];
+        const countMis = myMissions.length;
+        // Generador de etiquetas para las Misiones
+        let missionsHtml = myMissions.map(m => `<span class="mini-spell-tag copy-wrap" style="border-color:#ffaa00; color:#ffaa00; font-style:italic;" title="${m}" onclick="window.copySilently('${m.replace(/'/g, "\\'")}', event)">${m}</span>`).join('');
         
         // Link directo al inventario
         const linkObj = `../objetos/index.html?pj=${encodeURIComponent(nombre)}#inventario-${normalizar(nombre)}`;
@@ -201,6 +206,7 @@ export function dibujarResumenVisual() {
                     <span class="copy-wrap" style="background:#1a0a00; border:1px solid #ffaa00; padding:3px 6px; border-radius:4px; font-size:0.8em;" onclick="window.copySilently('Misiones Activas: ${countMis}', event)">
                         📜 Mis: <b style="color:#ffaa00">${countMis}</b>
                     </span>
+                    ${missionsHtml}
                 </div>
             </div>
         </div>`;
@@ -639,6 +645,7 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
 
 
