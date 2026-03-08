@@ -53,7 +53,7 @@ body {
 .mision-clase { font-size: 0.65em; padding: 2px 5px; border-radius: 4px; background: #000; border: 1px solid #555; font-family: sans-serif; font-weight: bold; color:#aaa; cursor: help; }
 
 /* ESTADOS */
-.estado-badge { padding: 2px 6px; border-radius: 2px; font-size: 0.65em; font-weight: bold; font-family: sans-serif; text-transform: uppercase; display: inline-block; margin-bottom:5px; text-shadow: 1px 1px 0 #000;}
+.estado-badge { padding: 2px 6px; border-radius: 2px; font-size: 0.65em; font-weight: bold; font-family: sans-serif; text-transform: uppercase; display: inline-block; margin-bottom:5px; width: fit-content; text-shadow: 1px 1px 0 #000;}
 .st-0 { background: #333; color: #aaa; border: 1px solid #555; }
 .st-1 { background: #4a4a00; color: #ffff00; border: 1px solid #ffff00; }
 .st-2 { background: #00224a; color: #00aaff; border: 1px solid #00aaff; }
@@ -64,13 +64,9 @@ details.mision-details { background: transparent; padding: 0; margin-bottom: 5px
 details.mision-details summary { font-size: 0.7em; color: #888; cursor: pointer; outline: none; text-align: left; font-weight: normal; padding: 2px 0; border-bottom: 1px dashed #333; transition: 0.2s; font-family: sans-serif; }
 details.mision-details summary:hover { color: var(--cyan-magic); border-color: var(--cyan-magic); }
 .mision-meta { font-size: 0.75em; color: #777; margin: 8px 0; font-family: sans-serif; }
-.mision-desc { font-size: 0.8em; color: #ddd; line-height: 1.4; padding: 5px; border-left: 2px solid #444; background: rgba(0,0,0,0.3); font-family: sans-serif;}
+.mision-desc { font-size: 0.8em; color: #ddd; line-height: 1.4; padding: 5px; border-left: 2px solid #444; background: rgba(0,0,0,0.3); font-family: sans-serif; white-space: pre-wrap;}
 
-/* ENLACES A HECHIZOS */
-.spell-link { color: var(--cyan-magic); text-decoration: none; font-weight: bold; padding: 0 2px; transition: 0.2s;}
-.spell-link:hover { text-shadow: 0 0 5px var(--cyan-magic); }
-
-/* DROPZONE JUGADORES (OCULTO SI ESTÁ VACÍO, A MENOS QUE SE ARRASTRE) */
+/* DROPZONE JUGADORES */
 .drop-zone { border: 1px dashed transparent; border-radius: 6px; padding: 2px; display: none; flex-wrap: wrap; background: transparent; transition: 0.2s; align-items: center; justify-content: flex-start;}
 .drop-zone:not(:empty) { display: flex; border-color: #333; padding: 5px; background: rgba(0,0,0,0.4); margin-top: 5px;}
 body.is-dragging-player .drop-zone { display: flex; min-height: 40px; border-color: #555; background: rgba(0,0,0,0.6); margin-top: 5px; }
@@ -85,14 +81,14 @@ body.is-dragging-player .drop-zone:empty::before { content: "Soltar jugador aqu�
 
 /* MODAL Y FORMULARIOS FLOTANTES */
 .hex-modal { position: fixed; z-index: 10000; left: 0; top: 0; width: 100vw; height: 100vh; pointer-events: none; display: flex; align-items: center; justify-content: center; }
-.hex-modal-content { background: #0a0014; border: 1px solid var(--gold); border-radius: 8px; width: 90%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(184, 134, 11, 0.3); pointer-events: auto; position: relative; }
-.modal-header { padding: 12px 20px; background: #000; border-bottom: 1px solid var(--gold); display: flex; justify-content: space-between; border-radius: 8px 8px 0 0; cursor: move; user-select: none;}
+.hex-modal-content { background: #0a0014; border: 2px solid #b8860b; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(184, 134, 11, 0.3); pointer-events: auto; position: relative; }
+.modal-header { padding: 15px 20px; background: #000; border-bottom: 1px solid var(--gold); display: flex; justify-content: space-between; border-radius: 8px 8px 0 0; cursor: move; user-select: none;}
 .modal-body-scroll { padding: 20px; overflow-y: auto; flex: 1; }
 .close-btn { color: var(--gold); font-size: 25px; font-weight: bold; cursor: pointer; line-height: 1; margin-top:-2px;}
 .close-btn:hover { color: #ff4444; }
 
 .form-group { margin-bottom: 15px; text-align: left; }
-.form-group label { display: block; color: var(--gold); font-size: 0.8em; margin-bottom: 5px; font-weight:bold; }
+.form-group label { display: block; color: var(--gold); font-size: 0.8em; margin-bottom: 5px; font-weight:bold; text-transform:uppercase;}
 .form-input { width: 100%; background: #111; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 4px; font-family: 'Cinzel', serif; box-sizing: border-box; transition:0.3s; font-size:0.95em;}
 .form-input:focus { outline: none; border-color: var(--cyan-magic); background:#000; box-shadow: 0 0 10px rgba(0,255,255,0.1);}
 textarea.form-input { resize: vertical; min-height: 80px; font-family: sans-serif; font-size: 0.85em; }
@@ -101,7 +97,6 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: sans-seri
 .modal-guide h4 { margin: 0 0 10px 0; color: var(--cyan-magic); font-size: 0.9em; text-align: center; }
 .guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 0.75em; text-align: center; color: #aaa; font-family: sans-serif;}
 .guide-grid b { color: #fff; }
-.guide-warning { margin: 10px 0 0 0; color: #ffaa00; font-size: 0.75em; text-align: center; font-family:sans-serif;}
 
 .btn-sync-float { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(145deg, #aa0000, #ff4444); color: white; padding: 15px 25px; border-radius: 50px; font-weight: bold; font-size: 1.1em; border: 2px solid #fff; box-shadow: 0 5px 20px rgba(255,0,0,0.6); z-index: 99999; cursor: pointer; animation: pulse 2s infinite; font-family: 'Cinzel', serif; }
 @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
