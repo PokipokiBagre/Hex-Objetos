@@ -201,7 +201,9 @@ window.ejecutarSincronizacion = async () => {
     }
 };
 
-// ================= EVENTOS GLOBALES (SCROLL Y DRAG OUT) =================
+// ================= EVENTOS GLOBALES (AUTO-SCROLL Y DRAG OUT) =================
+
+// Auto-Scroll gigante: Si te acercas a 150px del borde superior o inferior, baja rapidísimo.
 document.addEventListener("dragover", (e) => {
     const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
     const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
@@ -209,6 +211,16 @@ document.addEventListener("dragover", (e) => {
     if (arrastrandoJugador || arrastrandoColumna) {
         e.preventDefault(); 
         e.dataTransfer.dropEffect = "move"; 
+        
+        // AUTO-SCROLL ZONES
+        const edgeThreshold = 150; // Área muy grande para detectar el borde
+        const scrollSpeed = 25; // Velocidad de scroll muy rápida
+        
+        if (e.clientY < edgeThreshold) {
+            window.scrollBy(0, -scrollSpeed);
+        } else if (window.innerHeight - e.clientY < edgeThreshold) {
+            window.scrollBy(0, scrollSpeed);
+        }
     }
 });
 
@@ -231,12 +243,7 @@ document.addEventListener("drop", (e) => {
     }
 });
 
-// Permite scrollear con la rueda mientras arrastras
-window.addEventListener("wheel", (e) => {
-    const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
-    const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
-
-    if (arrastrandoJugador || arrastrandoColumna) {
-        window.scrollBy({ top: e.deltaY, left: 0, behavior: 'auto' });
-    }
-}, { passive: true, capture: true });
+// (Mantenemos la prevención original por si se soltaba mal)
+document.addEventListener("dragend", () => {
+    document.body.classList.remove('is-dragging-player');
+});
