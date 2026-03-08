@@ -52,18 +52,10 @@ export function dibujarGrillaPersonajes() {
                 else countComun += invGlobal[j][o];
             }
         });
-        
-        // Enlace mágico hacia la página de Estadísticas del jugador
-        const linkStats = `../stats/index.html?pj=${encodeURIComponent(j)}`;
-
         html += `
         <div class="char-card player-card" onclick="window.abrirInventario('${j}')">
-            <a href="${linkStats}" target="_blank" onclick="event.stopPropagation();" title="Ver ficha de estado de ${j}">
-                <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-            </a>
-            <a href="${linkStats}" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; color:inherit;">
-                <h3 title="Ver ficha de estado de ${j}">${j}</h3>
-            </a>
+            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+            <h3>${j}</h3>
             <p>Comunes: <b style="color:white">${countComun}</b></p>
             <p>Raros: <b style="color:#8a2be2">${countRaro}</b> | Legendarios: <b style="color:var(--gold)">${countLeg}</b></p>
         </div>`;
@@ -465,4 +457,5 @@ export function dibujarCreacionMulti() {
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
+
 
