@@ -200,3 +200,19 @@ window.ejecutarSincronizacion = async () => {
         btn.disabled = false; btn.innerText = "Reintentar Sync";
     }
 };
+
+// ================= AUTO-SCROLL AL ARRASTRAR =================
+// Obliga a la pantalla a bajar o subir si arrastras una ficha cerca de los bordes
+document.addEventListener("dragover", (e) => {
+    const scrollSpeed = 15; // Velocidad del scroll
+    const edgeThreshold = 80; // Distancia en píxeles desde el borde para activar el scroll
+    
+    // Si el cursor está cerca del borde superior
+    if (e.clientY < edgeThreshold) {
+        window.scrollBy(0, -scrollSpeed);
+    } 
+    // Si el cursor está cerca del borde inferior
+    else if (window.innerHeight - e.clientY < edgeThreshold) {
+        window.scrollBy(0, scrollSpeed);
+    }
+});
