@@ -407,6 +407,26 @@ async function iniciar() {
         if (loader) {
             setTimeout(() => loader.classList.add('oculto'), 500); 
         }
+
+        // --- NUEVA LÓGICA DE LECTURA DE URL PARA ABRIR FICHA DIRECTAMENTE ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const pjQuery = urlParams.get('pj');
+        
+        // Limpiamos el hash por si viene con "#detalle-linda" o "#inventario-linda"
+        let hashQuery = window.location.hash.replace('#detalle-', '').replace('#inventario-', '');
+        if (hashQuery) hashQuery = decodeURIComponent(hashQuery).replace(/_/g, ' ');
+
+        const target = pjQuery || hashQuery;
+
+        if (target) {
+            const exactMatch = Object.keys(statsGlobal).find(k => k.toLowerCase() === target.toLowerCase());
+            if (exactMatch) {
+                estadoUI.personajeSeleccionado = exactMatch;
+                estadoUI.vistaActual = 'detalle';
+            }
+        }
+        // ----------------------------------------------------------------------
+
     } 
     catch (error) { console.error("Error crítico:", error); } 
     finally { 
