@@ -236,7 +236,9 @@ export function dibujarDetalle() {
 
     const pjNameLower = nombre.toLowerCase();
     const pjNorm = normalizar(nombre);
+    
     const countObj = dbExtra.objetosCount[pjNameLower] || 0;
+    const countMis = dbExtra.misionesCount ? (dbExtra.misionesCount[pjNameLower] || 0) : 0;
     const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower).sort((a,b) => a.Hechizo.localeCompare(b.Hechizo));
     
     const afiMap = { 'Física':'fisica', 'Energética':'energetica', 'Espiritual':'espiritual', 'Mando':'mando', 'Psíquica':'psiquica', 'Oscura':'oscura' };
@@ -248,6 +250,7 @@ export function dibujarDetalle() {
     // ENLACES DINÁMICOS HACIA LAS OTRAS PÁGINAS
     const linkObjetos = `../objetos/index.html?pj=${encodeURIComponent(nombre)}#inventario-${pjNorm}`;
     const linkHechizos = `../hechizos/index.html?pj=${encodeURIComponent(nombre)}`;
+    const linkMisiones = `../misiones/index.html`;
 
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'}; flex-wrap:wrap;">
@@ -267,6 +270,11 @@ export function dibujarDetalle() {
                <div style="display:flex; align-items:center; gap:5px;">
                    <span class="copy-wrap" onclick="window.copySilently('Hechizos: ${mySpells.length}', event)" style="padding:4px 8px; margin:0;">📖 HECHIZOS: <b style="color:var(--cyan-magic)">${mySpells.length}</b></span>
                    <a href="${linkHechizos}" target="_blank" onclick="event.stopPropagation();" title="Ir al Grimorio" style="display:inline-block; background:#000; color:#aaa; border:1px solid #555; padding:2px 6px; font-size:0.8em; border-radius:4px; text-decoration:none; font-family:sans-serif;" onmouseover="this.style.borderColor='var(--cyan-magic)'; this.style.color='#fff';" onmouseout="this.style.borderColor='#555'; this.style.color='#aaa';">(IR)</a>
+               </div>
+
+               <div style="display:flex; align-items:center; gap:5px;">
+                   <span class="copy-wrap" onclick="window.copySilently('Misiones: ${countMis}', event)" style="padding:4px 8px; margin:0;">📜 MISIONES: <b style="color:#ffaa00">${countMis}</b></span>
+                   <a href="${linkMisiones}" target="_blank" onclick="event.stopPropagation();" title="Ir a Misiones" style="display:inline-block; background:#000; color:#aaa; border:1px solid #555; padding:2px 6px; font-size:0.8em; border-radius:4px; text-decoration:none; font-family:sans-serif;" onmouseover="this.style.borderColor='#ffaa00'; this.style.color='#fff';" onmouseout="this.style.borderColor='#555'; this.style.color='#aaa';">(IR)</a>
                </div>
 
                <span class="copy-wrap" onclick="window.copySilently('Afinidad Primaria: ${mayorAf} (${valMayorAf})', event)" style="padding:4px 8px;">✨ AFIN. PRIMARIA: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b></span>
@@ -631,6 +639,7 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
 
 
