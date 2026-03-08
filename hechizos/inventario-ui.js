@@ -128,7 +128,7 @@ export function renderHeaders() {
     }
 
     // ENLACE MÁGICO A ESTADÍSTICAS
-    const linkStats = `../stats/index.html?pj=${encodeURIComponent(pj)}`;
+    const linkStats = `../estadisticas/index.html?pj=${encodeURIComponent(pj)}`;
     const portraitHTML = `<a href="${linkStats}" target="_blank" title="Ver ficha de estado de ${pj}" style="display:flex;"><img src="../img/imgpersonajes/${normalizar(char.iconoOverride)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></a>`;
 
     document.getElementById('header-grimorio').innerHTML = `
