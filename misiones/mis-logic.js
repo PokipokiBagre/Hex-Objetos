@@ -43,14 +43,13 @@ export function asignarJugador(idMision, nombreJugador) {
     if(!m) return;
     
     if (!estadoUI.esAdmin && (m.tipo === 'Grande' || m.tipo === 'Normal')) {
-        alert("Solo el OP puede modificar los cupos de misiones Grandes o Normales.");
-        return;
+        return alert("Solo el OP puede modificar misiones Grandes o Normales.");
     }
 
     if (!m.jugadores.includes(nombreJugador)) {
         m.jugadores.push(nombreJugador);
         
-        // EL DETONADOR: Si está inactiva y cumple el cupo, pasa a Pendiente (1)
+        // EL DETONADOR: Activa la misión si llega al umbral requerido
         if (m.estado === 0 && m.cupos > 0 && m.jugadores.length >= m.cupos) {
             m.estado = 1;
         }
@@ -65,13 +64,12 @@ export function removerJugador(idMision, nombreJugador) {
     if(!m) return;
 
     if (!estadoUI.esAdmin && (m.tipo === 'Grande' || m.tipo === 'Normal')) {
-        alert("Solo el OP puede modificar los cupos de misiones Grandes o Normales.");
-        return;
+        return alert("Solo el OP puede modificar misiones Grandes o Normales.");
     }
 
     m.jugadores = m.jugadores.filter(j => j !== nombreJugador);
     
-    // EL APAGADOR: Si estaba Pendiente (1) y baja del cupo, regresa a Inactiva (0)
+    // EL APAGADOR: Si estaba Pendiente y baja del umbral, regresa a Inactiva
     if (m.estado === 1 && m.cupos > 0 && m.jugadores.length < m.cupos) {
         m.estado = 0;
     }
