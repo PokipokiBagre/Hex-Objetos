@@ -6,6 +6,7 @@ const CSV_OBJETOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQDaZ1Zr9YW
 const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTI_7MnwczeHhMCuQ_YInOHBvVUFv7ZSp_bsvFqkTmC_GvSdINkoskGPk__u9dq9XHTeVo4AMAMQl7v/pub?output=csv';
 
+// Carga simultánea con barra de progreso animada
 export async function cargarTodoDesdeCSV(barraProgreso) {
     try {
         let progresoActual = 10; // Inicia en 10%
@@ -27,18 +28,26 @@ export async function cargarTodoDesdeCSV(barraProgreso) {
         procesarObjetos(textoObj);
         dbExtra.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(textoHz))));
         
-        // PROCESAR CONTEO DE MISIONES
-        dbExtra.misionesCount = {};
+        // PROCESAR LISTA DE MISIONES ACTIVAS (NOMBRES EXACTOS)
+        dbExtra.misionesActivas = {};
         textoMis.split(/\r?\n/).slice(1).forEach(l => {
             let matches = l.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
             if(!matches) return;
             let c = matches.map(m => m.replace(/^,/, '').replace(/^"|"$/g, '').trim());
+            if(!c[0]) return;
+
+            let titulo = c[0];
             let estado = parseInt(c[3]) || 0;
             
-            // Solo cuenta Pendientes (1) y En Proceso (2)
+            // Solo recopila Pendientes (1) y En Proceso (2)
             if (estado === 1 || estado === 2) { 
                 let jugs = (c[7] || '').split(',').map(j => j.trim().toLowerCase());
-                jugs.forEach(j => { if(j) dbExtra.misionesCount[j] = (dbExtra.misionesCount[j] || 0) + 1; });
+                jugs.forEach(j => { 
+                    if(j) {
+                        if (!dbExtra.misionesActivas[j]) dbExtra.misionesActivas[j] = [];
+                        dbExtra.misionesActivas[j].push(titulo);
+                    }
+                });
             }
         });
         
@@ -152,4 +161,5 @@ export async function cargarDiccionarioEstados() {
         console.warn("Fallo al cargar estados.csv. Verifica ruta local.");
     }
 }
+
 
