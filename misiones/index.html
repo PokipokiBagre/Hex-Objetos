@@ -17,24 +17,28 @@
         <button onclick="window.abrirMenuOP()" class="btn-op">⚙️ Acceso OP</button>
     </div>
 
-    <div id="roster-container" class="roster-panel" ondragover="window.dragOver(event)" ondrop="window.dropToRoster(event)" ondragleave="window.dragLeave(event)">
+    <div id="roster-container" class="roster-panel" ondragover="window.dragOver(event)" ondrop="window.dropToRoster(event)">
         <div id="roster-jugadores" class="roster-grid"></div>
     </div>
 
     <div id="tablon-misiones" class="tablon-grid">
-        <div class="columna-mision" id="col-grandes">
+        
+        <div class="columna-mision" id="col-grandes" draggable="true" ondragstart="window.dragColStart(event, 'col-grandes')" ondragend="window.dragColEnd(event)" ondragover="window.dragColOver(event)" ondrop="window.dropCol(event, 'col-grandes')">
             <h2 class="col-title title-grandes">MISIONES GRANDES (<span id="count-grandes">0</span>/7)</h2>
             <div id="lista-grandes" class="lista-misiones"></div>
         </div>
-        <div class="columna-mision" id="col-normales">
+
+        <div class="columna-mision" id="col-normales" draggable="true" ondragstart="window.dragColStart(event, 'col-normales')" ondragend="window.dragColEnd(event)" ondragover="window.dragColOver(event)" ondrop="window.dropCol(event, 'col-normales')">
             <h2 class="col-title title-normales">MISIONES NORMALES (<span id="count-normales">0</span>/14)</h2>
             <div id="lista-normales" class="lista-misiones"></div>
         </div>
-        <div class="columna-mision" id="col-perso">
+
+        <div class="columna-mision" id="col-perso" draggable="true" ondragstart="window.dragColStart(event, 'col-perso')" ondragend="window.dragColEnd(event)" ondragover="window.dragColOver(event)" ondrop="window.dropCol(event, 'col-perso')">
             <h2 class="col-title title-perso">MISIONES PERSONALIZADAS</h2>
-            <button onclick="window.abrirModalCrear('Personalizada')" class="btn-crear-mis">+ FORJAR MISIÓN</button>
+            <button onclick="window.abrirModalCrear('Personalizada')" class="btn-crear-mis">+ CREAR MISIÓN</button>
             <div id="lista-perso" class="lista-misiones"></div>
         </div>
+
         <div class="columna-mision oculto" id="col-op">
             <h2 class="col-title title-op">IDEAS OP (Ocultas)</h2>
             <div id="lista-op" class="lista-misiones"></div>
