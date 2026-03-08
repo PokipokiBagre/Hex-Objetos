@@ -1,4 +1,4 @@
-import { misGlobal, jugadoresActivos, estadoUI, RECOMPENSAS_CLASE } from './mis-state.js';
+import { misGlobal, jugadoresActivos, estadoUI, dbExtra } from './mis-state.js';
 import { removerJugador, guardarMision, eliminarPersonalizada } from './mis-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'');
@@ -15,13 +15,24 @@ export function dibujarRoster() {
         const color = getAfColor(j.afinidad);
         html += `<img src="../img/imgpersonajes/${normalizar(j.icon)}icon.png" 
                       class="drag-char" 
-                      style="border-color:${color}; box-shadow:0 0 8px ${color};"
-                      title="${j.nombre} (Afinidad: ${j.afinidad})" 
+                      style="border-color:${color};"
+                      title="${j.nombre} (${j.afinidad})" 
                       draggable="true" 
-                      ondragstart="window.dragStart(event, '${j.nombre}')" 
+                      ondragstart="window.dragStart(event, '${j.nombre}', 'roster')" 
                       onerror="this.src='../img/imgobjetos/no_encontrado.png'">`;
     });
     container.innerHTML = html;
+}
+
+function formatearRecompensa(texto) {
+    if (!texto) return '';
+    let t = texto;
+    dbExtra.hechizos.forEach(sp => {
+        if(!sp.Nombre || sp.Nombre.length < 3) return;
+        const regex = new RegExp(`(^|[^a-zA-ZáéíóúÁÉÍÓÚñÑ])(${sp.Nombre})([^a-zA-ZáéíóúÁÉÍÓÚñÑ]|$)`, 'gi');
+        t = t.replace(regex, `$1<a href="../hechizos/index.html?spell=${sp.ID}" target="_blank" class="spell-link" title="Ver Hechizo">$2</a>$3`);
+    });
+    return t;
 }
 
 function renderBadgeEstado(estado) {
@@ -34,45 +45,50 @@ function renderBadgeEstado(estado) {
 
 function generarHTMLMision(m) {
     const btnEditar = (estadoUI.esAdmin || m.tipo === 'Personalizada') 
-        ? `<button onclick="window.abrirModalEditar('${m.id}')" style="background:#222; border:1px solid #555; color:var(--gold); padding:4px 8px; font-size:0.7em; cursor:pointer; border-radius:4px;">✏️ Editar</button>` : '';
+        ? `<button onclick="window.abrirModalEditar('${m.id}')" style="background:#111; border:1px solid #555; color:var(--gold); padding:4px 8px; font-size:0.75em; cursor:pointer; border-radius:4px; font-family:'Cinzel';">✏️ Editar</button>` : '';
     const btnBorrar = (m.tipo === 'Personalizada' || estadoUI.esAdmin)
-        ? `<button onclick="window.eliminarMis('${m.id}')" style="background:#4a0000; border:1px solid #ff4444; padding:4px 8px; font-size:0.7em; color:white; cursor:pointer; border-radius:4px;">🗑️</button>` : '';
+        ? `<button onclick="window.eliminarMis('${m.id}')" style="background:#4a0000; border:1px solid #ff4444; padding:4px 8px; font-size:0.75em; color:white; cursor:pointer; border-radius:4px;">🗑️</button>` : '';
 
     let htmlJugadores = '';
     m.jugadores.forEach(j => {
         const targetJug = jugadoresActivos.find(jug => jug.nombre === j);
         const icon = targetJug?.icon || j;
         const color = getAfColor(targetJug?.afinidad);
-        htmlJugadores += `<div class="assigned-char" onclick="window.quitarJugador('${m.id}', '${j}')" title="Quitar a ${j}">
+        htmlJugadores += `<div class="assigned-char" title="Mover para quitar a ${j}" draggable="true" ondragstart="window.dragStart(event, '${j}', '${m.id}')">
                             <img src="../img/imgpersonajes/${normalizar(icon)}icon.png" style="border-color:${color}" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                           </div>`;
     });
 
-    const notaHTML = (estadoUI.esAdmin && m.notaOP) ? `<div style="background:#2e004f; padding:5px; border-left:3px solid var(--purple-magic); font-size:0.75em; margin-bottom:10px;"><b>OP:</b> ${m.notaOP}</div>` : '';
-
-    // Color del contador si ya superó el cupo
     const isReady = m.cupos > 0 && m.jugadores.length >= m.cupos;
     const cuposColor = isReady ? 'var(--green-ok)' : '#888';
+    const textCupo = m.cupos === 0 ? '∞' : m.cupos;
+
+    const notaHTML = (estadoUI.esAdmin && m.notaOP) ? `<div style="background:#2e004f; padding:5px; border-left:3px solid var(--purple-magic); font-size:0.75em; margin-bottom:5px;"><b>OP:</b> ${m.notaOP}</div>` : '';
 
     return `
     <div class="mision-card">
         <div class="mision-header">
             <h3 class="mision-titulo" title="${m.titulo}">${m.titulo}</h3>
-            <span class="mision-clase" title="${RECOMPENSAS_CLASE[m.clase] || ''}">CLASE ${m.clase}</span>
+            <span class="mision-clase">C-${m.clase}</span>
         </div>
-        ${renderBadgeEstado(m.estado)}
-        <div class="mision-meta">
-            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:60%;">Autor: <span style="color:#aaa">${m.autor}</span></span>
-            <span>Cupos: <b style="color:${cuposColor}">${m.jugadores.length}/${m.cupos === 0 ? '∞' : m.cupos}</b></span>
-        </div>
-        <div class="mision-desc" title="${m.desc}">${m.desc}</div>
-        ${notaHTML}
         
-        <div class="drop-zone" id="drop-${m.id}" ondragover="window.dragOver(event)" ondrop="window.dropPlayer(event, '${m.id}')" ondragleave="window.dragLeave(event)">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+            ${renderBadgeEstado(m.estado)}
+            <span style="font-size:0.75em; color:#aaa; font-family:monospace;">Jugadores: <b style="color:${cuposColor}">${m.jugadores.length}/${textCupo}</b></span>
+        </div>
+        
+        <details class="mision-details">
+            <summary>Ver Detalles y Recompensas</summary>
+            <div class="mision-meta">Autor: <span style="color:#aaa">${m.autor}</span></div>
+            <div class="mision-desc">${formatearRecompensa(m.desc)}</div>
+            ${notaHTML}
+        </details>
+        
+        <div class="drop-zone" ondragover="window.dragOver(event)" ondrop="window.dropPlayer(event, '${m.id}')" ondragleave="window.dragLeave(event)">
             ${htmlJugadores}
         </div>
         
-        <div style="display:flex; justify-content:flex-end; gap:5px; margin-top:10px;">
+        <div style="display:flex; justify-content:flex-end; gap:5px; margin-top:8px;">
             ${btnEditar}
             ${btnBorrar}
         </div>
@@ -84,7 +100,6 @@ export function dibujarTablero() {
     let htmlGrandes = ''; let htmlNormales = ''; let htmlPerso = ''; let htmlOP = '';
 
     misGlobal.forEach(m => {
-        // Solo ocultamos las Finalizadas si el filtro está desactivado. Todas las Inactivas (0) SE MUESTRAN.
         if (!estadoUI.verFinalizadas && m.estado === 3) return; 
 
         if (m.estado === 1 || m.estado === 2) {
@@ -100,9 +115,9 @@ export function dibujarTablero() {
         else if (m.tipo === 'OP' && estadoUI.esAdmin) htmlOP += htmlCard;
     });
 
-    document.getElementById('lista-grandes').innerHTML = htmlGrandes || '<p style="color:#666; font-style:italic;">No hay misiones disponibles.</p>';
-    document.getElementById('lista-normales').innerHTML = htmlNormales || '<p style="color:#666; font-style:italic;">No hay misiones disponibles.</p>';
-    document.getElementById('lista-perso').innerHTML = htmlPerso || '<p style="color:#666; font-style:italic;">No hay misiones creadas por jugadores.</p>';
+    document.getElementById('lista-grandes').innerHTML = htmlGrandes || '<p style="color:#666; font-style:italic;">No hay misiones publicadas.</p>';
+    document.getElementById('lista-normales').innerHTML = htmlNormales || '<p style="color:#666; font-style:italic;">No hay misiones publicadas.</p>';
+    document.getElementById('lista-perso').innerHTML = htmlPerso || '<p style="color:#666; font-style:italic;">No hay misiones de jugadores.</p>';
     document.getElementById('lista-op').innerHTML = htmlOP;
 
     document.getElementById('count-grandes').innerText = contGrandes;
@@ -140,15 +155,15 @@ export function renderFormularioModal(mision = null) {
 
     const infoGuia = `
     <div class="modal-guide">
-        <h4>📚 Guía de Recompensas por Clase</h4>
+        <h4>💡 Guía Aproximada de Recompensas</h4>
         <div class="guide-grid">
-            <div><b>C1:</b> 600-1200 Hex<br>2 a 4 PA</div>
-            <div><b>C2:</b> 1000-1800 Hex<br>3 a 6 PA</div>
-            <div><b>C3:</b> 1500-2200 Hex<br>4 a 8 PA</div>
-            <div><b>C4:</b> 2000-3000 Hex<br>5 a 10 PA</div>
-            <div><b>C5:</b> 2500-3600 Hex<br>6 a 12 PA</div>
+            <div><b>C1:</b> 600-1200 Hex</div>
+            <div><b>C2:</b> 1000-1800 Hex</div>
+            <div><b>C3:</b> 1500-2200 Hex</div>
+            <div><b>C4:</b> 2000-3000 Hex</div>
+            <div><b>C5:</b> 2500-3600 Hex</div>
         </div>
-        <p class="guide-warning">⚠️ Para misiones personalizadas: Los hechizos de recompensa DEBEN ser de la misma clase que la misión.</p>
+        <p class="guide-warning">Recomendación: Usar hechizos como recompensa equivalentes a la clase de la misión.</p>
     </div>`;
 
     return `
@@ -187,7 +202,7 @@ export function renderFormularioModal(mision = null) {
             </select>
         </div>
         <div class="form-group" style="flex:1; min-width:120px;">
-            <label>Cupos Máximos (Detonador. 0 = Infinito)</label>
+            <label>Umbral Detonador (0 = Infinito)</label>
             <input type="number" id="form-cupos" class="form-input" value="${m.cupos}">
         </div>
     </div>
