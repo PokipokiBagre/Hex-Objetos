@@ -8,29 +8,27 @@ export function encolarCambioMision(idMision) {
     if(!estadoUI.colaCambios.misiones[idMision]) estadoUI.colaCambios.misiones[idMision] = {};
     const sync = estadoUI.colaCambios.misiones[idMision];
     
-    sync['Titulo'] = m.titulo;
+    // NOMBRES EXACTOS DE LOS ENCABEZADOS DE TU EXCEL
+    sync['Misiones'] = m.titulo;
     sync['Tipo'] = m.tipo;
-    sync['Clase'] = m.clase;
-    sync['Descripcion'] = m.desc;
+    sync['Necesarios'] = m.cupos;
+    sync['Activa'] = m.estado;
+    sync['Clase'] = 'Clase ' + m.clase;
+    sync['Recompensa'] = m.desc;
+    sync['Nota OP'] = m.notaOP;
+    sync['Jugadores'] = m.jugadores.join(', ');
     sync['Autor'] = m.autor;
-    sync['Estado'] = m.estado;
-    sync['Jugadores'] = m.jugadores.join(',');
-    sync['MaxCupos'] = m.cupos;
-    sync['NotaOP'] = m.notaOP;
     
     actualizarBotonSync();
 }
 
 export function verificarLimites() {
-    // Cuenta activas (Pendientes 1 o En Proceso 2)
     const activasGrandes = misGlobal.filter(m => m.tipo === 'Grande' && (m.estado === 1 || m.estado === 2));
     const activasNormales = misGlobal.filter(m => m.tipo === 'Normal' && (m.estado === 1 || m.estado === 2));
 
-    // Si exceden el límite, desactiva las más antiguas (las que están más abajo en el array/orden)
     if (activasGrandes.length > 7) {
-        // Ordenamos por su orden original descendente (las últimas agregadas primero)
         activasGrandes.sort((a,b) => b.orden - a.orden);
-        const aDesactivar = activasGrandes.slice(7); // Tomamos las que sobran
+        const aDesactivar = activasGrandes.slice(7); 
         aDesactivar.forEach(m => { m.estado = 0; encolarCambioMision(m.id); });
     }
 
@@ -45,7 +43,6 @@ export function asignarJugador(idMision, nombreJugador) {
     const m = misGlobal.find(mis => mis.id === idMision);
     if(!m) return;
     
-    // Normal no puede tocar Grandes/Normales
     if (!estadoUI.esAdmin && (m.tipo === 'Grande' || m.tipo === 'Normal')) {
         alert("Solo el OP puede modificar los cupos de misiones Grandes o Normales.");
         return;
@@ -93,9 +90,8 @@ export function eliminarPersonalizada(id) {
         if (m.tipo !== 'Personalizada' && !estadoUI.esAdmin) return alert("Solo puedes borrar personalizadas.");
         misGlobal.splice(idx, 1);
         
-        // Lo marcamos en cola para que se borre o pase a estado "Borrado" (Para CSV es mejor poner Estado = -1 o Inactiva)
         if(!estadoUI.colaCambios.misiones[id]) estadoUI.colaCambios.misiones[id] = {};
-        estadoUI.colaCambios.misiones[id]['Estado'] = 0; 
+        estadoUI.colaCambios.misiones[id]['Activa'] = 0; 
         
         actualizarBotonSync();
         dibujarTablero();
