@@ -1,4 +1,4 @@
-import { misGlobal, jugadoresActivos, estadoUI, dbExtra, RECOMPENSAS_CLASE } from './mis-state.js';
+import { misGlobal, jugadoresActivos, estadoUI, RECOMPENSAS_CLASE } from './mis-state.js';
 import { removerJugador, guardarMision, eliminarPersonalizada } from './mis-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'');
@@ -22,19 +22,6 @@ export function dibujarRoster() {
                       onerror="this.src='../img/imgobjetos/no_encontrado.png'">`;
     });
     container.innerHTML = html;
-}
-
-// Lector de hechizos a prueba de balas (ignora guiones y mayúsculas)
-function formatearRecompensa(texto) {
-    if (!texto) return '';
-    let t = texto;
-    dbExtra.hechizos.forEach(sp => {
-        if(!sp.Nombre || sp.Nombre.length < 3) return;
-        const spellRegexSpace = sp.Nombre.replace(/_/g, '[ _]'); // Cubre tanto guion como espacio
-        const regex = new RegExp(`(^|\\W)(${spellRegexSpace})(\\W|$)`, 'gi');
-        t = t.replace(regex, `$1<a href="../hechizos/index.html?spell=${sp.ID}" target="_blank" class="spell-link" title="Ver Hechizo">$2</a>$3`);
-    });
-    return t;
 }
 
 function renderBadgeEstado(estado) {
@@ -63,7 +50,7 @@ function generarHTMLMision(m) {
 
     const isReady = m.cupos > 0 && m.jugadores.length >= m.cupos;
     const cuposColor = isReady ? 'var(--green-ok)' : '#888';
-    const textCupo = m.cupos; // Ya no hay infinito, default es 2
+    const textCupo = m.cupos; 
 
     const notaHTML = (estadoUI.esAdmin && m.notaOP) ? `<div style="background:#2e004f; padding:5px; border-left:3px solid var(--purple-magic); font-size:0.75em; margin-bottom:5px;"><b>OP:</b> ${m.notaOP}</div>` : '';
 
@@ -80,9 +67,9 @@ function generarHTMLMision(m) {
         </div>
         
         <details class="mision-details">
-            <summary>▶ Ver Detalles y Recompensas</summary>
+            <summary>Ver Detalles y Recompensas</summary>
             <div class="mision-meta">Autor: <span style="color:#aaa">${m.autor}</span></div>
-            <div class="mision-desc">${formatearRecompensa(m.desc)}</div>
+            <div class="mision-desc">${m.desc}</div>
             ${notaHTML}
         </details>
         
@@ -102,10 +89,8 @@ export function dibujarTablero() {
     let htmlGrandes = ''; let htmlNormales = ''; let htmlPerso = ''; let htmlOP = '';
 
     misGlobal.forEach(m => {
-        // Ignoramos las Finalizadas (3) si el botón dice "NO", pero SÍ mostramos inactivas (0)
         if (!estadoUI.verFinalizadas && m.estado === 3) return; 
 
-        // Solo sumamos al contador (0/14) las que están Activas (1 Pendiente, 2 En Proceso)
         if (m.estado === 1 || m.estado === 2) {
             if (m.tipo.trim() === 'Grande') contGrandes++;
             if (m.tipo.trim() === 'Normal') contNormales++;
@@ -159,7 +144,7 @@ export function renderFormularioModal(mision = null) {
 
     const infoGuia = `
     <div class="modal-guide">
-        <h4>💡 Guía Aproximada de Recompensas</h4>
+        <h4>💡 Sugerencias de Recompensas por Clase</h4>
         <div class="guide-grid">
             <div><b>C1:</b> 600-1200 Hex<br>2 a 4 PA</div>
             <div><b>C2:</b> 1000-1800 Hex<br>3 a 6 PA</div>
@@ -167,7 +152,6 @@ export function renderFormularioModal(mision = null) {
             <div><b>C4:</b> 2000-3000 Hex<br>5 a 10 PA</div>
             <div><b>C5:</b> 2500-3600 Hex<br>6 a 12 PA</div>
         </div>
-        <p class="guide-warning">Recomendación: Usar hechizos como recompensa equivalentes a la clase de la misión.</p>
     </div>`;
 
     return `
@@ -199,25 +183,25 @@ export function renderFormularioModal(mision = null) {
         <div class="form-group" style="flex:1; min-width:120px;">
             <label>Estado Inicial</label>
             <select id="form-estado" class="form-input" ${estadoDisabled}>
-                <option value="0" ${m.estado === 0 ? 'selected' : ''}>Inactiva (Oculta)</option>
-                <option value="1" ${m.estado === 1 ? 'selected' : ''}>Pendiente</option>
+                <option value="0" ${m.estado === 0 ? 'selected' : ''}>Inactiva</option>
+                <option value="1" ${m.estado === 1 ? 'selected' : ''}>Pendiente (Activa)</option>
                 <option value="2" ${m.estado === 2 ? 'selected' : ''}>En Proceso</option>
                 <option value="3" ${m.estado === 3 ? 'selected' : ''}>Finalizada</option>
             </select>
         </div>
         <div class="form-group" style="flex:1; min-width:120px;">
-            <label>Umbral Detonador</label>
+            <label>Umbral Detonador (Inicio: 2)</label>
             <input type="number" id="form-cupos" class="form-input" value="${m.cupos || 2}" min="1">
         </div>
     </div>
 
     <div class="form-group">
-        <label>Autor / Patrocinador</label>
+        <label>Autor</label>
         <input type="text" id="form-autor" class="form-input" value="${m.autor}">
     </div>
 
     <div class="form-group">
-        <label>Descripción y Recompensa de la Tarea</label>
+        <label>Descripción de la Misión</label>
         <textarea id="form-desc" class="form-input">${m.desc}</textarea>
     </div>
 
