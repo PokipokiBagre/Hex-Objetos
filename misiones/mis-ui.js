@@ -33,17 +33,21 @@ function renderBadgeEstado(estado) {
 }
 
 function generarHTMLMision(m) {
+    // BLINDAJE CONTRA COMILLAS SIMPLES EN LOS TÍTULOS (Ej: "Howl's Moving Castle")
+    const safeId = m.id.replace(/'/g, "\\'"); 
+
     const btnEditar = (estadoUI.esAdmin || m.tipo === 'Personalizada') 
-        ? `<button onclick="window.abrirModalEditar('${m.id}')" style="background:#111; border:1px solid #555; color:var(--gold); padding:4px 8px; font-size:0.75em; cursor:pointer; border-radius:4px; font-family:'Cinzel';">✏️ Editar</button>` : '';
+        ? `<button onclick="window.abrirModalEditar('${safeId}')" style="background:#111; border:1px solid #555; color:var(--gold); padding:4px 8px; font-size:0.75em; cursor:pointer; border-radius:4px; font-family:'Cinzel';">✏️ Editar</button>` : '';
     const btnBorrar = (m.tipo === 'Personalizada' || estadoUI.esAdmin)
-        ? `<button onclick="window.eliminarMis('${m.id}')" style="background:#4a0000; border:1px solid #ff4444; padding:4px 8px; font-size:0.75em; color:white; cursor:pointer; border-radius:4px;">🗑️</button>` : '';
+        ? `<button onclick="window.eliminarMis('${safeId}')" style="background:#4a0000; border:1px solid #ff4444; padding:4px 8px; font-size:0.75em; color:white; cursor:pointer; border-radius:4px;">🗑️</button>` : '';
 
     let htmlJugadores = '';
     m.jugadores.forEach(j => {
         const targetJug = jugadoresActivos.find(jug => jug.nombre === j);
         const icon = targetJug?.icon || j;
         const color = getAfColor(targetJug?.afinidad);
-        htmlJugadores += `<div class="assigned-char" title="Clic o arrastrar fuera para quitar a ${j}" draggable="true" ondragstart="window.dragStart(event, '${j}', '${m.id}')" onclick="window.quitarJugador('${m.id}', '${j}')">
+        
+        htmlJugadores += `<div class="assigned-char" title="Clic o arrastrar fuera para quitar a ${j}" draggable="true" ondragstart="window.dragStart(event, '${j}', '${safeId}')" onclick="window.quitarJugador('${safeId}', '${j}')">
                             <img src="../img/imgpersonajes/${normalizar(icon)}icon.png" style="border-color:${color}" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                           </div>`;
     });
@@ -73,7 +77,7 @@ function generarHTMLMision(m) {
             ${notaHTML}
         </details>
         
-        <div class="drop-zone" ondragover="window.dragOver(event)" ondrop="window.dropPlayer(event, '${m.id}')" ondragleave="window.dragLeave(event)">
+        <div class="drop-zone" ondragover="window.dragOver(event)" ondrop="window.dropPlayer(event, '${safeId}')" ondragleave="window.dragLeave(event)">
             ${htmlJugadores}
         </div>
         
