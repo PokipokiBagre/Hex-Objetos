@@ -4,20 +4,41 @@ import { dibujarTablero, dibujarRoster, renderFormularioModal } from './mis-ui.j
 import { asignarJugador, removerJugador, guardarMision, eliminarPersonalizada } from './mis-logic.js';
 
 window.onload = async () => {
-    // Borrar cache si hace F5
     const perf = performance.getEntriesByType("navigation")[0];
     if (perf && perf.type === "reload") localStorage.removeItem('hex_mis_v1');
 
     await cargarDatos();
     dibujarRoster();
     dibujarTablero();
+    
+    // Lógica para Modal Arrastrable
+    const dragHeader = document.getElementById('modal-drag-header');
+    const modalContent = document.getElementById('modal-content-window');
+    let isDragging = false, startX, startY, initialX, initialY;
+
+    dragHeader.onmousedown = (e) => {
+        if(e.target.classList.contains('close-btn')) return;
+        isDragging = true; startX = e.clientX; startY = e.clientY;
+        const rect = modalContent.getBoundingClientRect();
+        modalContent.style.position = 'absolute';
+        modalContent.style.left = rect.left + 'px';
+        modalContent.style.top = rect.top + 'px';
+        modalContent.style.transform = 'none';
+        modalContent.style.margin = '0';
+        initialX = rect.left; initialY = rect.top;
+        e.preventDefault(); 
+    };
+    window.onmousemove = (e) => {
+        if (!isDragging) return;
+        modalContent.style.left = (initialX + (e.clientX - startX)) + 'px';
+        modalContent.style.top = (initialY + (e.clientY - startY)) + 'px';
+    };
+    window.onmouseup = () => { isDragging = false; };
 };
 
 window.abrirMenuOP = () => { 
     if (estadoUI.esAdmin) { estadoUI.esAdmin = false; alert("Modo OP Desactivado"); }
-    else {
-        if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) estadoUI.esAdmin = true;
-    }
+    else { if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) estadoUI.esAdmin = true; }
     dibujarTablero();
 };
 
@@ -31,8 +52,8 @@ window.cambiarFiltroFinalizadas = () => {
 };
 
 // DRAG & DROP LOGIC
-window.dragStart = (e, playerName) => {
-    e.dataTransfer.setData('text/plain', playerName);
+window.dragStart = (e, playerName, sourceId = 'roster') => {
+    e.dataTransfer.setData('application/json', JSON.stringify({ player: playerName, from: sourceId }));
 };
 window.dragOver = (e) => {
     e.preventDefault();
@@ -42,10 +63,27 @@ window.dragLeave = (e) => {
     e.currentTarget.classList.remove('drag-over');
 };
 window.dropPlayer = (e, misionId) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
-    const playerName = e.dataTransfer.getData('text/plain');
-    if (playerName) asignarJugador(misionId, playerName);
+    e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+    const dataStr = e.dataTransfer.getData('application/json');
+    if (!dataStr) return;
+    const data = JSON.parse(dataStr);
+    
+    // Si viene de otra misión, lo quitamos de la anterior primero
+    if (data.from !== 'roster' && data.from !== misionId) {
+        removerJugador(data.from, data.player);
+    }
+    asignarJugador(misionId, data.player);
+};
+window.dropToRoster = (e) => {
+    e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+    const dataStr = e.dataTransfer.getData('application/json');
+    if (!dataStr) return;
+    const data = JSON.parse(dataStr);
+    
+    // Lo sacamos de la misión de donde venía
+    if (data.from !== 'roster') {
+        removerJugador(data.from, data.player);
+    }
 };
 window.quitarJugador = (misionId, playerName) => {
     if(confirm(`¿Remover a ${playerName} de esta misión?`)) removerJugador(misionId, playerName);
@@ -56,7 +94,9 @@ window.abrirModalCrear = (tipoForzado = null) => {
     const title = document.getElementById('modal-title');
     const body = document.getElementById('modal-body');
     const modal = document.getElementById('modal-mision');
-    
+    const content = document.getElementById('modal-content-window');
+    content.style.position = 'relative'; content.style.left = 'auto'; content.style.top = 'auto'; content.style.transform = 'none';
+
     title.innerText = "FORJAR NUEVA MISIÓN";
     body.innerHTML = renderFormularioModal({ tipo: tipoForzado || 'Personalizada', clase:'1', estado:1, cupos:0, desc:'', autor:'', titulo:'', notaOP:'' });
     modal.classList.remove('oculto');
@@ -68,8 +108,10 @@ window.abrirModalEditar = (id) => {
     const title = document.getElementById('modal-title');
     const body = document.getElementById('modal-body');
     const modal = document.getElementById('modal-mision');
+    const content = document.getElementById('modal-content-window');
+    content.style.position = 'relative'; content.style.left = 'auto'; content.style.top = 'auto'; content.style.transform = 'none';
     
-    title.innerText = `EDITAR: ${m.titulo}`;
+    title.innerText = `EDITAR MISIÓN`;
     body.innerHTML = renderFormularioModal(m);
     modal.classList.remove('oculto');
 };
