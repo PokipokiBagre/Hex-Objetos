@@ -1,17 +1,17 @@
-export let misGlobal = []; // Array para respetar el orden exacto del CSV
-export let jugadoresActivos = []; // Nombres extraídos del CSV de Stats
+export let misGlobal = []; 
+export let jugadoresActivos = []; 
+export let dbExtra = { hechizos: [] }; // Para enlazar las recompensas
 
 export let estadoUI = {
     esAdmin: false,
     verFinalizadas: false,
-    colaCambios: { misiones: {} }, // Guarda los cambios para el Google Sheet
-    misionEditando: null
+    colaCambios: { misiones: {} }
 };
 
 export const RECOMPENSAS_CLASE = {
-    "1": "Recompensas Básicas (Materiales comunes, poco HEX).",
-    "2": "Recompensas Medias (Equipamiento estándar, HEX moderado).",
-    "3": "Recompensas Altas (Objetos raros, buen HEX).",
-    "4": "Recompensas Épicas (Artefactos únicos, gran cantidad de HEX).",
-    "5": "Recompensas Legendarias (Poder masivo, impacto en la trama)."
+    "1": "Rango Aprox: 600-1200 Hex / 2 a 4 PA",
+    "2": "Rango Aprox: 1000-1800 Hex / 3 a 6 PA",
+    "3": "Rango Aprox: 1500-2200 Hex / 4 a 8 PA",
+    "4": "Rango Aprox: 2000-3000 Hex / 5 a 10 PA",
+    "5": "Rango Aprox: 2500-3600 Hex / 6 a 12 PA"
 };
