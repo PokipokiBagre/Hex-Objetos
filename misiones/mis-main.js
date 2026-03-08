@@ -9,6 +9,15 @@ window.onload = async () => {
 
     await cargarDatos();
     dibujarRoster();
+    
+    // Restaurar orden de columnas si existe en caché
+    const savedOrder = localStorage.getItem('hex_col_order');
+    if (savedOrder) {
+        const orderArr = JSON.parse(savedOrder);
+        const parent = document.getElementById('tablon-misiones');
+        orderArr.forEach(id => { const el = document.getElementById(id); if(el) parent.appendChild(el); });
+    }
+    
     dibujarTablero();
     
     // Lógica para Modal Arrastrable
@@ -51,45 +60,81 @@ window.cambiarFiltroFinalizadas = () => {
     dibujarTablero();
 };
 
-// DRAG & DROP LOGIC
+// ================= DRAG & DROP: COLUMNAS =================
+window.dragColStart = (e, colId) => {
+    if(e.target.id !== colId) return; // Evita que se active arrastrando un hijo
+    e.dataTransfer.setData('text/column', colId);
+    setTimeout(() => document.getElementById(colId).classList.add('col-dragging'), 0);
+};
+window.dragColEnd = (e) => {
+    e.target.classList.remove('col-dragging');
+};
+window.dragColOver = (e) => {
+    e.preventDefault();
+};
+window.dropCol = (e, targetColId) => {
+    e.preventDefault();
+    const sourceColId = e.dataTransfer.getData('text/column');
+    if (sourceColId && sourceColId !== targetColId) {
+        const parent = document.getElementById('tablon-misiones');
+        const sourceEl = document.getElementById(sourceColId);
+        const targetEl = document.getElementById(targetColId);
+        
+        let siblings = Array.from(parent.children);
+        let sIdx = siblings.indexOf(sourceEl);
+        let tIdx = siblings.indexOf(targetEl);
+        
+        if (sIdx < tIdx) parent.insertBefore(sourceEl, targetEl.nextSibling);
+        else parent.insertBefore(sourceEl, targetEl);
+
+        // Guardar orden
+        const newOrder = Array.from(parent.children).map(c => c.id);
+        localStorage.setItem('hex_col_order', JSON.stringify(newOrder));
+    }
+};
+
+// ================= DRAG & DROP: JUGADORES =================
 window.dragStart = (e, playerName, sourceId = 'roster') => {
+    e.stopPropagation(); // Para no arrastrar la columna
+    document.body.classList.add('is-dragging-player');
     e.dataTransfer.setData('application/json', JSON.stringify({ player: playerName, from: sourceId }));
 };
 window.dragOver = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('drag-over');
+    e.preventDefault(); e.currentTarget.classList.add('drag-over');
 };
 window.dragLeave = (e) => {
     e.currentTarget.classList.remove('drag-over');
 };
 window.dropPlayer = (e, misionId) => {
     e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+    document.body.classList.remove('is-dragging-player');
+    
     const dataStr = e.dataTransfer.getData('application/json');
     if (!dataStr) return;
     const data = JSON.parse(dataStr);
     
-    // Si viene de otra misión, lo quitamos de la anterior primero
-    if (data.from !== 'roster' && data.from !== misionId) {
-        removerJugador(data.from, data.player);
-    }
+    if (data.from !== 'roster' && data.from !== misionId) removerJugador(data.from, data.player);
     asignarJugador(misionId, data.player);
 };
 window.dropToRoster = (e) => {
     e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+    document.body.classList.remove('is-dragging-player');
+    
     const dataStr = e.dataTransfer.getData('application/json');
     if (!dataStr) return;
     const data = JSON.parse(dataStr);
     
-    // Lo sacamos de la misión de donde venía
-    if (data.from !== 'roster') {
-        removerJugador(data.from, data.player);
-    }
+    if (data.from !== 'roster') removerJugador(data.from, data.player);
 };
+document.addEventListener("dragend", () => {
+    document.body.classList.remove('is-dragging-player');
+});
+
 window.quitarJugador = (misionId, playerName) => {
     if(confirm(`¿Remover a ${playerName} de esta misión?`)) removerJugador(misionId, playerName);
 };
 
-// MODALES
+// ================= MODALES =================
 window.abrirModalCrear = (tipoForzado = null) => {
     const title = document.getElementById('modal-title');
     const body = document.getElementById('modal-body');
@@ -97,8 +142,8 @@ window.abrirModalCrear = (tipoForzado = null) => {
     const content = document.getElementById('modal-content-window');
     content.style.position = 'relative'; content.style.left = 'auto'; content.style.top = 'auto'; content.style.transform = 'none';
 
-    title.innerText = "FORJAR NUEVA MISIÓN";
-    body.innerHTML = renderFormularioModal({ tipo: tipoForzado || 'Personalizada', clase:'1', estado:1, cupos:0, desc:'', autor:'', titulo:'', notaOP:'' });
+    title.innerText = "CREAR NUEVA MISIÓN";
+    body.innerHTML = renderFormularioModal({ tipo: tipoForzado || 'Personalizada', clase:'1', estado:1, cupos:2, desc:'', autor:'', titulo:'', notaOP:'' });
     modal.classList.remove('oculto');
 };
 
@@ -129,7 +174,7 @@ window.ejecutarGuardarMision = () => {
         id, titulo, tipo,
         clase: document.getElementById('form-clase').value,
         estado: parseInt(document.getElementById('form-estado').value) || 0,
-        cupos: parseInt(document.getElementById('form-cupos').value) || 0,
+        cupos: parseInt(document.getElementById('form-cupos').value) || 2, // Default 2
         autor: document.getElementById('form-autor').value.trim(),
         desc: document.getElementById('form-desc').value.trim(),
         notaOP: document.getElementById('form-notaOP') ? document.getElementById('form-notaOP').value.trim() : ''
