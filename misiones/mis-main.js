@@ -201,18 +201,29 @@ window.ejecutarSincronizacion = async () => {
     }
 };
 
-// ================= FORZAR SCROLL CON LA RUEDA DEL RATÓN AL ARRASTRAR =================
-document.addEventListener("wheel", (e) => {
-    // Verificamos si estamos arrastrando un jugador o una columna
+// ================= FIX DEFINITIVO: SCROLL Y CURSOR DE ERROR =================
+// En Windows/Chrome, si arrastras sobre un lugar vacío, sale el cursor de error (🚫) 
+// y el navegador BLOQUEA la rueda del ratón. Esto lo soluciona:
+
+document.addEventListener("dragover", (e) => {
+    const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
+    const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
+    
+    // Al prevenir el comportamiento por defecto en TODA la pantalla, 
+    // quitamos el icono de error (🚫) y el navegador libera la rueda del ratón.
+    if (arrastrandoJugador || arrastrandoColumna) {
+        e.preventDefault(); 
+        e.dataTransfer.dropEffect = "move"; // Fuerza el cursor a la manito
+    }
+});
+
+// Refuerzo agresivo para obligar al scroll con la rueda del ratón
+window.addEventListener("wheel", (e) => {
     const arrastrandoJugador = document.body.classList.contains('is-dragging-player');
     const arrastrandoColumna = document.querySelector('.col-dragging') !== null;
 
     if (arrastrandoJugador || arrastrandoColumna) {
-        // Fuerza el scroll de la página basado en el movimiento de tu rueda
-        window.scrollBy({
-            top: e.deltaY,
-            left: 0,
-            behavior: 'auto'
-        });
+        // Ejecutamos el scroll manualmente saltando las restricciones del navegador
+        window.scrollBy({ top: e.deltaY, left: 0, behavior: 'auto' });
     }
-}, { passive: true });
+}, { passive: true, capture: true });
