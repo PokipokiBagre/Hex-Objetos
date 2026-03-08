@@ -125,9 +125,10 @@ export function dibujarResumenVisual() {
         const pjNameLower = nombre.toLowerCase();
         const iconoGrande = normalizar(p.iconoOverride || nombre);
         const objCount = dbExtra.objetosCount[pjNameLower] || 0;
+        const countMis = dbExtra.misionesCount ? (dbExtra.misionesCount[pjNameLower] || 0) : 0;
         
         // Link directo al inventario
-        const linkObj = `https://pokipokibagre.github.io/Hexcraft-Heptagram/objetos/index.html?pj=${encodeURIComponent(nombre)}#inventario-${normalizar(nombre)}`;
+        const linkObj = `../objetos/index.html?pj=${encodeURIComponent(nombre)}#inventario-${normalizar(nombre)}`;
 
         const myItems = dbExtra.inventarios[pjNameLower] || [];
         const topItems = myItems.sort((a,b) => (raridadValor[dbExtra.infoObjetos[b]?.rar]||0) - (raridadValor[dbExtra.infoObjetos[a]?.rar]||0)).slice(0, 5);
@@ -194,6 +195,12 @@ export function dibujarResumenVisual() {
                         📖 Hcz: <b style="color:var(--cyan-magic)">${mySpells.length}</b>
                     </span>
                     ${spellsHtml}
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:5px; flex-wrap:wrap; align-items:center;">
+                    <span class="copy-wrap" style="background:#1a0a00; border:1px solid #ffaa00; padding:3px 6px; border-radius:4px; font-size:0.8em;" onclick="window.copySilently('Misiones Activas: ${countMis}', event)">
+                        📜 Mis: <b style="color:#ffaa00">${countMis}</b>
+                    </span>
                 </div>
             </div>
         </div>`;
@@ -624,6 +631,7 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
 
 
