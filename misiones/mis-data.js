@@ -1,8 +1,10 @@
 import { misGlobal, jugadoresActivos, estadoUI } from './mis-state.js';
 
-// --- REEMPLAZA ESTOS LINKS POR LOS TUYOS ---
-const CSV_MISIONES = 'https://script.google.com/macros/s/AKfycbyDBdYRAVyt1ZxgjXu7_MzLCXothXR_mtocQfctwA8vnSa8Qm_GGfsquq2jAAiyciUe/exec'; 
+// --- ENLACE PUBLICADO COMO CSV (Para Leer) ---
+const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/1I_0X5JJLcSb37dgkfSf459HkXQfpSB-P8DRDHdG_omc/pub?output=csv'; 
+// --- ENLACE DE PERSONAJES (Para Leer Jugadores) ---
 const CSV_STATS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
+// --- ENLACE DE TU APPS SCRIPT (Solo para Guardar) ---
 const API_MISIONES = 'https://script.google.com/macros/s/AKfycbyDBdYRAVyt1ZxgjXu7_MzLCXothXR_mtocQfctwA8vnSa8Qm_GGfsquq2jAAiyciUe/exec'; 
 
 export async function cargarDatos() {
