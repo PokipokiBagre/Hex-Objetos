@@ -210,12 +210,11 @@ export function dibujarDetalle() {
     let vexVisual = calcularVexMax(p);
     const vidas = generarVidasHTML(p);
 
-let estadosHTML = ''; 
+    let estadosHTML = ''; 
     if (p.iconoOverride) estadosHTML += `<div class="status-badge" style="background:#2e004f; border: 1px dashed var(--gold); color:var(--gold);" title="Este personaje es un clon visual.">COPIA DE: ${p.iconoOverride.toUpperCase()}</div>`;
     
     listaEstados.forEach(e => {
         let val = p.estados[e.id];
-        // Aquí agregué el atributo nativo title="${e.desc}" para que salga sí o sí
         if (e.tipo === 'numero' && val > 0) {
             estadosHTML += `<div class="status-badge" style="background:${e.bg}; border-color:${e.border}; color:#fff;" title="${e.desc}">${e.nombre} (${val})<span class="tooltiptext">${e.desc}</span></div>`;
         } else if (e.tipo === 'booleano' && val) { 
@@ -229,6 +228,7 @@ let estadosHTML = '';
     let asisUI = p.isPlayer ? `<div style="color:#aaa; font-size:0.8em; margin-top:5px; font-weight:bold;">ASISTENCIA: <span style="color:#b8860b;">${p.asistencia || 1}/7</span></div>` : '';
 
     const pjNameLower = nombre.toLowerCase();
+    const pjNorm = normalizar(nombre);
     const countObj = dbExtra.objetosCount[pjNameLower] || 0;
     const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower).sort((a,b) => a.Hechizo.localeCompare(b.Hechizo));
     
@@ -238,6 +238,10 @@ let estadosHTML = '';
     const calcAfT = (k) => (p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0);
     const valMayorAf = calcAfT(mKey);
 
+    // ENLACES DINÁMICOS HACIA LAS OTRAS PÁGINAS
+    const linkObjetos = `../objetos/index.html?pj=${encodeURIComponent(nombre)}#inventario-${pjNorm}`;
+    const linkHechizos = `../hechizos/index.html?pj=${encodeURIComponent(nombre)}`;
+
     let html = `
     <div style="display: flex; align-items: center; gap: 20px; border-bottom: 1px solid #d4af37; padding-bottom: 20px; opacity:${p.isActive ? '1' : '0.5'}; flex-wrap:wrap;">
         <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #d4af37; object-fit: cover; background:transparent;" onerror="${imgError}">
@@ -245,9 +249,19 @@ let estadosHTML = '';
             <h1 style="margin: 0;">${nombre.toUpperCase()} ${p.isNPC ? '<span style="font-size:0.4em; color:#aaa">[NPC]</span>' : ''} ${!p.isActive ? '<span style="font-size:0.4em; color:#ff0000">[INACTIVO]</span>' : ''}</h1>
             ${asisUI}
             <div class="status-container">${estadosHTML}</div>
-            <div style="background:#111; border:1px solid var(--gold-dim); padding:10px; border-radius:4px; margin-top:15px; display:flex; justify-content:space-around; flex-wrap:wrap; gap:10px;">
-               <span class="copy-wrap" onclick="window.copySilently('Objetos: ${countObj}', event)" style="padding:4px 8px;">🎒 OBJETOS: <b style="color:var(--gold)">${countObj}</b></span>
-               <span class="copy-wrap" onclick="window.copySilently('Hechizos: ${mySpells.length}', event)" style="padding:4px 8px;">📖 HECHIZOS: <b style="color:var(--cyan-magic)">${mySpells.length}</b></span>
+            
+            <div style="background:#111; border:1px solid var(--gold-dim); padding:10px; border-radius:4px; margin-top:15px; display:flex; justify-content:space-around; flex-wrap:wrap; gap:10px; align-items:center;">
+               
+               <div style="display:flex; align-items:center; gap:5px;">
+                   <span class="copy-wrap" onclick="window.copySilently('Objetos: ${countObj}', event)" style="padding:4px 8px; margin:0;">🎒 OBJETOS: <b style="color:var(--gold)">${countObj}</b></span>
+                   <a href="${linkObjetos}" target="_blank" onclick="event.stopPropagation();" title="Ir al Inventario" style="display:inline-block; background:#000; color:#aaa; border:1px solid #555; padding:2px 6px; font-size:0.8em; border-radius:4px; text-decoration:none; font-family:sans-serif;" onmouseover="this.style.borderColor='var(--gold)'; this.style.color='#fff';" onmouseout="this.style.borderColor='#555'; this.style.color='#aaa';">(IR)</a>
+               </div>
+
+               <div style="display:flex; align-items:center; gap:5px;">
+                   <span class="copy-wrap" onclick="window.copySilently('Hechizos: ${mySpells.length}', event)" style="padding:4px 8px; margin:0;">📖 HECHIZOS: <b style="color:var(--cyan-magic)">${mySpells.length}</b></span>
+                   <a href="${linkHechizos}" target="_blank" onclick="event.stopPropagation();" title="Ir al Grimorio" style="display:inline-block; background:#000; color:#aaa; border:1px solid #555; padding:2px 6px; font-size:0.8em; border-radius:4px; text-decoration:none; font-family:sans-serif;" onmouseover="this.style.borderColor='var(--cyan-magic)'; this.style.color='#fff';" onmouseout="this.style.borderColor='#555'; this.style.color='#aaa';">(IR)</a>
+               </div>
+
                <span class="copy-wrap" onclick="window.copySilently('Afinidad Primaria: ${mayorAf} (${valMayorAf})', event)" style="padding:4px 8px;">✨ AFIN. PRIMARIA: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b></span>
             </div>
         </div>
@@ -610,5 +624,6 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
 
