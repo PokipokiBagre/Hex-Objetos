@@ -1,25 +1,20 @@
-import { misGlobal, jugadoresActivos, estadoUI, dbExtra } from './mis-state.js';
+import { misGlobal, jugadoresActivos, estadoUI } from './mis-state.js';
 
 const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTI_7MnwczeHhMCuQ_YInOHBvVUFv7ZSp_bsvFqkTmC_GvSdINkoskGPk__u9dq9XHTeVo4AMAMQl7v/pub?output=csv'; 
 const CSV_STATS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
-const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 const API_MISIONES = 'https://script.google.com/macros/s/AKfycbyDBdYRAVyt1ZxgjXu7_MzLCXothXR_mtocQfctwA8vnSa8Qm_GGfsquq2jAAiyciUe/exec'; 
 
 export async function cargarDatos() {
     try {
-        const [resMis, resStats, resHz] = await Promise.all([
+        const [resMis, resStats] = await Promise.all([
             fetch(CSV_MISIONES + '&cb=' + new Date().getTime()),
-            fetch(CSV_STATS + '&cb=' + new Date().getTime()),
-            fetch(API_HECHIZOS)
+            fetch(CSV_STATS + '&cb=' + new Date().getTime())
         ]);
         
         parsearStats(await resStats.text());
         parsearMisiones(await resMis.text());
-        
-        const jsonHz = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
-        dbExtra.hechizos = [...(jsonHz.nodos||[]), ...(jsonHz.nodosOcultos||[])].sort((a,b) => (b.Nombre||'').length - (a.Nombre||'').length);
     } catch (e) {
-        console.error("Error cargando datos:", e);
+        console.error("Error cargando CSVs:", e);
     }
 }
 
@@ -79,7 +74,7 @@ function parsearMisiones(texto) {
             id: c[0], 
             titulo: c[0], 
             tipo: c[1] || 'Personalizada', 
-            cupos: !isNaN(parseInt(c[2])) ? parseInt(c[2]) : 2, // Si está vacío, por defecto es 2
+            cupos: !isNaN(parseInt(c[2])) ? parseInt(c[2]) : 2,
             estado: parseInt(c[3]) || 0, 
             clase: c[4] ? c[4].replace(/Clase/gi, '').trim() : '1', 
             desc: c[5] || '', 
