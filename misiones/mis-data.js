@@ -1,6 +1,5 @@
 import { misGlobal, jugadoresActivos, estadoUI } from './mis-state.js';
 
-// --- ENLACES DEFINITIVOS ---
 const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTI_7MnwczeHhMCuQ_YInOHBvVUFv7ZSp_bsvFqkTmC_GvSdINkoskGPk__u9dq9XHTeVo4AMAMQl7v/pub?output=csv'; 
 const CSV_STATS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 const API_MISIONES = 'https://script.google.com/macros/s/AKfycbyDBdYRAVyt1ZxgjXu7_MzLCXothXR_mtocQfctwA8vnSa8Qm_GGfsquq2jAAiyciUe/exec'; 
@@ -19,16 +18,24 @@ export async function cargarDatos() {
     }
 }
 
+function csvSplit(row) {
+    let result = []; let cur = ''; let inQuotes = false;
+    for (let i = 0; i < row.length; i++) {
+        let char = row[i];
+        if (char === '"') inQuotes = !inQuotes;
+        else if (char === ',' && !inQuotes) { result.push(cur); cur = ''; } 
+        else cur += char;
+    }
+    result.push(cur); return result;
+}
+
 function parsearStats(texto) {
     const filas = texto.split(/\r?\n/);
     jugadoresActivos.length = 0;
     
     filas.slice(1).forEach(f => {
         if(!f.trim()) return;
-        // Parseo seguro de comas
-        let matches = f.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
-        if(!matches) return;
-        const c = matches.map(m => m.replace(/^,/, '').replace(/^"|"$/g, '').trim());
+        const c = csvSplit(f).map(m => m.replace(/^"|"$/g, '').trim());
 
         if (c.length > 17) {
             const nombre = c[0];
@@ -36,37 +43,45 @@ function parsearStats(texto) {
             const isPlayer = idenParts[0] === '1';
             const isActive = idenParts[1] === '1';
             const icon = c[18] ? c[18] : nombre;
+
+            // Extraer afinidad para el borde del Roster
+            const f_val = parseInt((c[3]||'0').split('_')[0])||0;
+            const e_val = parseInt((c[4]||'0').split('_')[0])||0;
+            const s_val = parseInt((c[5]||'0').split('_')[0])||0;
+            const m_val = parseInt((c[6]||'0').split('_')[0])||0;
+            const p_val = parseInt((c[7]||'0').split('_')[0])||0;
+            const o_val = parseInt((c[8]||'0').split('_')[0])||0;
+
+            const afis = { 'Física': f_val, 'Energética': e_val, 'Espiritual': s_val, 'Mando': m_val, 'Psíquica': p_val, 'Oscura': o_val };
+            let max = -1; let mayor = "Física";
+            for(let key in afis) { if(afis[key] > max && afis[key] > 0) { max = afis[key]; mayor = key; } }
             
             if (isPlayer && isActive) {
-                jugadoresActivos.push({ nombre, icon });
+                jugadoresActivos.push({ nombre, icon, afinidad: mayor });
             }
         }
     });
 }
 
 function parsearMisiones(texto) {
-    const filas = texto.split(/\r?\n/).map(l => {
-        let matches = l.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
-        if(!matches) return []; 
-        return matches.map(m => m.replace(/^,/, '').replace(/^"|"$/g, '').trim());
-    });
-
+    const filas = texto.split(/\r?\n/);
     misGlobal.length = 0; 
-
-    filas.slice(1).forEach((c, index) => {
-        if(!c || c.length === 0 || !c[0]) return;
+    filas.slice(1).forEach((f, index) => {
+        if(!f.trim()) return;
+        const c = csvSplit(f).map(m => m.replace(/^"|"$/g, '').trim());
+        if(!c[0]) return;
         
         misGlobal.push({
-            id: c[0], // Columna A: Misiones
+            id: c[0], 
             titulo: c[0], 
-            tipo: c[1] || 'Personalizada', // Columna B: Tipo
-            cupos: parseInt(c[2]) || 0, // Columna C: Necesarios
-            estado: parseInt(c[3]) || 0, // Columna D: Activa (0,1,2,3)
-            clase: c[4] ? c[4].replace(/Clase/gi, '').trim() : '1', // Columna E: Clase
-            desc: c[5] || '', // Columna F: Recompensa
-            notaOP: c[6] || '', // Columna G: Nota OP
-            jugadores: c[7] ? c[7].split(',').map(j=>j.trim()).filter(j=>j) : [], // Columna H: Jugadores
-            autor: c[9] || 'OP', // Columna J: Autor
+            tipo: c[1] || 'Personalizada', 
+            cupos: parseInt(c[2]) || 0, 
+            estado: parseInt(c[3]) || 0, 
+            clase: c[4] ? c[4].replace(/Clase/gi, '').trim() : '1', 
+            desc: c[5] || '', 
+            notaOP: c[6] || '', 
+            jugadores: c[7] ? c[7].split(',').map(j=>j.trim()).filter(j=>j) : [], 
+            autor: c[9] || 'OP', 
             orden: index 
         });
     });
@@ -75,11 +90,7 @@ function parsearMisiones(texto) {
 export async function sincronizarBD() {
     try {
         const payload = { accion: 'sincronizar_misiones', misiones: estadoUI.colaCambios.misiones };
-        const res = await fetch(API_MISIONES, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-            body: JSON.stringify(payload) 
-        });
+        const res = await fetch(API_MISIONES, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
         const data = await res.json();
         return data.status === 'success';
     } catch(e) {
