@@ -244,7 +244,8 @@ export function dibujarDetalle() {
     const pjNorm = normalizar(nombre);
     
     const countObj = dbExtra.objetosCount[pjNameLower] || 0;
-    const countMis = dbExtra.misionesCount ? (dbExtra.misionesCount[pjNameLower] || 0) : 0;
+    const myMissions = dbExtra.misionesActivas ? (dbExtra.misionesActivas[pjNameLower] || []) : [];
+    const countMis = myMissions.length;
     const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower).sort((a,b) => a.Hechizo.localeCompare(b.Hechizo));
     
     const afiMap = { 'Física':'fisica', 'Energética':'energetica', 'Espiritual':'espiritual', 'Mando':'mando', 'Psíquica':'psiquica', 'Oscura':'oscura' };
@@ -645,6 +646,7 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
 
 
