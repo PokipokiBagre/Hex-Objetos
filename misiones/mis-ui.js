@@ -43,7 +43,7 @@ function generarHTMLMision(m) {
         const targetJug = jugadoresActivos.find(jug => jug.nombre === j);
         const icon = targetJug?.icon || j;
         const color = getAfColor(targetJug?.afinidad);
-        // AQUÍ SE RESTAURÓ EL ONCLICK:
+        // Evento onclick restaurado
         htmlJugadores += `<div class="assigned-char" title="Clic o arrastrar fuera para quitar a ${j}" draggable="true" ondragstart="window.dragStart(event, '${j}', '${m.id}')" onclick="window.quitarJugador('${m.id}', '${j}')">
                             <img src="../img/imgpersonajes/${normalizar(icon)}icon.png" style="border-color:${color}" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
                           </div>`;
@@ -68,9 +68,9 @@ function generarHTMLMision(m) {
         </div>
         
         <details class="mision-details">
-            <summary>▶ Ver Detalles y Recompensas</summary>
+            <summary>Ver Detalles y Recompensas</summary>
             <div class="mision-meta">Autor: <span style="color:#aaa">${m.autor}</span></div>
-            <div class="mision-desc">${formatearRecompensa(m.desc)}</div>
+            <div class="mision-desc">${m.desc}</div>
             ${notaHTML}
         </details>
         
@@ -143,7 +143,7 @@ export function renderFormularioModal(mision = null) {
 
     const estadoDisabled = (!estadoUI.esAdmin && !isEdit) ? 'disabled' : '';
 
-const infoGuia = `
+    const infoGuia = `
     <div class="modal-guide">
         <h4>💡 Sugerencias de Recompensas por Clase</h4>
         <div class="guide-grid">
