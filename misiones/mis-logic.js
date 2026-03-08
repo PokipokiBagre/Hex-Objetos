@@ -8,7 +8,6 @@ export function encolarCambioMision(idMision) {
     if(!estadoUI.colaCambios.misiones[idMision]) estadoUI.colaCambios.misiones[idMision] = {};
     const sync = estadoUI.colaCambios.misiones[idMision];
     
-    // NOMBRES EXACTOS DE LOS ENCABEZADOS DE TU EXCEL
     sync['Misiones'] = m.titulo;
     sync['Tipo'] = m.tipo;
     sync['Necesarios'] = m.cupos;
@@ -50,6 +49,12 @@ export function asignarJugador(idMision, nombreJugador) {
 
     if (!m.jugadores.includes(nombreJugador)) {
         m.jugadores.push(nombreJugador);
+        
+        // EL DETONADOR: Si está inactiva y cumple el cupo, pasa a Pendiente (1)
+        if (m.estado === 0 && m.cupos > 0 && m.jugadores.length >= m.cupos) {
+            m.estado = 1;
+        }
+        
         encolarCambioMision(idMision);
         dibujarTablero();
     }
@@ -65,6 +70,12 @@ export function removerJugador(idMision, nombreJugador) {
     }
 
     m.jugadores = m.jugadores.filter(j => j !== nombreJugador);
+    
+    // EL APAGADOR: Si estaba Pendiente (1) y baja del cupo, regresa a Inactiva (0)
+    if (m.estado === 1 && m.cupos > 0 && m.jugadores.length < m.cupos) {
+        m.estado = 0;
+    }
+    
     encolarCambioMision(idMision);
     dibujarTablero();
 }
