@@ -1,11 +1,11 @@
-import { misGlobal, jugadoresActivos, estadoUI, dbExtra } from './mis-state.js';
+import { misGlobal, jugadoresActivos, estadoUI, dbExtra, RECOMPENSAS_CLASE } from './mis-state.js';
 import { removerJugador, guardarMision, eliminarPersonalizada } from './mis-logic.js';
 
 const normalizar = (str) => str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'');
 
 function getAfColor(af) {
     const colors = { 'Física': '#e2a673', 'Energética': '#f3b67a', 'Espiritual': '#7df0a7', 'Mando': '#a4d3f2', 'Psíquica': '#dcb1f0', 'Oscura': '#c285ff' };
-    return colors[af] || '#fff';
+    return colors[af] || '#888';
 }
 
 export function dibujarRoster() {
@@ -16,7 +16,7 @@ export function dibujarRoster() {
         html += `<img src="../img/imgpersonajes/${normalizar(j.icon)}icon.png" 
                       class="drag-char" 
                       style="border-color:${color};"
-                      title="${j.nombre} (${j.afinidad})" 
+                      title="${j.nombre} (Af. Primaria: ${j.afinidad})" 
                       draggable="true" 
                       ondragstart="window.dragStart(event, '${j.nombre}', 'roster')" 
                       onerror="this.src='../img/imgobjetos/no_encontrado.png'">`;
@@ -24,12 +24,14 @@ export function dibujarRoster() {
     container.innerHTML = html;
 }
 
+// Lector de hechizos a prueba de balas (ignora guiones y mayúsculas)
 function formatearRecompensa(texto) {
     if (!texto) return '';
     let t = texto;
     dbExtra.hechizos.forEach(sp => {
         if(!sp.Nombre || sp.Nombre.length < 3) return;
-        const regex = new RegExp(`(^|[^a-zA-ZáéíóúÁÉÍÓÚñÑ])(${sp.Nombre})([^a-zA-ZáéíóúÁÉÍÓÚñÑ]|$)`, 'gi');
+        const spellRegexSpace = sp.Nombre.replace(/_/g, '[ _]'); // Cubre tanto guion como espacio
+        const regex = new RegExp(`(^|\\W)(${spellRegexSpace})(\\W|$)`, 'gi');
         t = t.replace(regex, `$1<a href="../hechizos/index.html?spell=${sp.ID}" target="_blank" class="spell-link" title="Ver Hechizo">$2</a>$3`);
     });
     return t;
@@ -61,7 +63,7 @@ function generarHTMLMision(m) {
 
     const isReady = m.cupos > 0 && m.jugadores.length >= m.cupos;
     const cuposColor = isReady ? 'var(--green-ok)' : '#888';
-    const textCupo = m.cupos === 0 ? '∞' : m.cupos;
+    const textCupo = m.cupos; // Ya no hay infinito, default es 2
 
     const notaHTML = (estadoUI.esAdmin && m.notaOP) ? `<div style="background:#2e004f; padding:5px; border-left:3px solid var(--purple-magic); font-size:0.75em; margin-bottom:5px;"><b>OP:</b> ${m.notaOP}</div>` : '';
 
@@ -69,7 +71,7 @@ function generarHTMLMision(m) {
     <div class="mision-card">
         <div class="mision-header">
             <h3 class="mision-titulo" title="${m.titulo}">${m.titulo}</h3>
-            <span class="mision-clase">C-${m.clase}</span>
+            <span class="mision-clase" title="Clase ${m.clase}">C-${m.clase}</span>
         </div>
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
@@ -78,7 +80,7 @@ function generarHTMLMision(m) {
         </div>
         
         <details class="mision-details">
-            <summary>Ver Detalles y Recompensas</summary>
+            <summary>▶ Ver Detalles y Recompensas</summary>
             <div class="mision-meta">Autor: <span style="color:#aaa">${m.autor}</span></div>
             <div class="mision-desc">${formatearRecompensa(m.desc)}</div>
             ${notaHTML}
@@ -100,11 +102,13 @@ export function dibujarTablero() {
     let htmlGrandes = ''; let htmlNormales = ''; let htmlPerso = ''; let htmlOP = '';
 
     misGlobal.forEach(m => {
+        // Ignoramos las Finalizadas (3) si el botón dice "NO", pero SÍ mostramos inactivas (0)
         if (!estadoUI.verFinalizadas && m.estado === 3) return; 
 
+        // Solo sumamos al contador (0/14) las que están Activas (1 Pendiente, 2 En Proceso)
         if (m.estado === 1 || m.estado === 2) {
-            if (m.tipo === 'Grande') contGrandes++;
-            if (m.tipo === 'Normal') contNormales++;
+            if (m.tipo.trim() === 'Grande') contGrandes++;
+            if (m.tipo.trim() === 'Normal') contNormales++;
         }
 
         const htmlCard = generarHTMLMision(m);
@@ -140,7 +144,7 @@ export function actualizarBotonSync() {
 
 export function renderFormularioModal(mision = null) {
     const isEdit = mision !== null;
-    const m = mision || { titulo:'', desc:'', autor:'', clase:'1', tipo:'Personalizada', estado:1, cupos:0, notaOP:'' };
+    const m = mision || { titulo:'', desc:'', autor:'', clase:'1', tipo:'Personalizada', estado:1, cupos:2, notaOP:'' };
     
     let tipoOptions = `<option value="Personalizada" ${m.tipo === 'Personalizada' ? 'selected' : ''}>Personalizada</option>`;
     if (estadoUI.esAdmin) {
@@ -157,11 +161,11 @@ export function renderFormularioModal(mision = null) {
     <div class="modal-guide">
         <h4>💡 Guía Aproximada de Recompensas</h4>
         <div class="guide-grid">
-            <div><b>C1:</b> 600-1200 Hex</div>
-            <div><b>C2:</b> 1000-1800 Hex</div>
-            <div><b>C3:</b> 1500-2200 Hex</div>
-            <div><b>C4:</b> 2000-3000 Hex</div>
-            <div><b>C5:</b> 2500-3600 Hex</div>
+            <div><b>C1:</b> 600-1200 Hex<br>2 a 4 PA</div>
+            <div><b>C2:</b> 1000-1800 Hex<br>3 a 6 PA</div>
+            <div><b>C3:</b> 1500-2200 Hex<br>4 a 8 PA</div>
+            <div><b>C4:</b> 2000-3000 Hex<br>5 a 10 PA</div>
+            <div><b>C5:</b> 2500-3600 Hex<br>6 a 12 PA</div>
         </div>
         <p class="guide-warning">Recomendación: Usar hechizos como recompensa equivalentes a la clase de la misión.</p>
     </div>`;
@@ -195,15 +199,15 @@ export function renderFormularioModal(mision = null) {
         <div class="form-group" style="flex:1; min-width:120px;">
             <label>Estado Inicial</label>
             <select id="form-estado" class="form-input" ${estadoDisabled}>
-                <option value="0" ${m.estado === 0 ? 'selected' : ''}>Inactiva (Visible sin Detonar)</option>
-                <option value="1" ${m.estado === 1 ? 'selected' : ''}>Pendiente (Activa)</option>
+                <option value="0" ${m.estado === 0 ? 'selected' : ''}>Inactiva (Oculta)</option>
+                <option value="1" ${m.estado === 1 ? 'selected' : ''}>Pendiente</option>
                 <option value="2" ${m.estado === 2 ? 'selected' : ''}>En Proceso</option>
                 <option value="3" ${m.estado === 3 ? 'selected' : ''}>Finalizada</option>
             </select>
         </div>
         <div class="form-group" style="flex:1; min-width:120px;">
-            <label>Umbral Detonador (0 = Infinito)</label>
-            <input type="number" id="form-cupos" class="form-input" value="${m.cupos}">
+            <label>Umbral Detonador</label>
+            <input type="number" id="form-cupos" class="form-input" value="${m.cupos || 2}" min="1">
         </div>
     </div>
 
