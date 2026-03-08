@@ -42,26 +42,35 @@ const normalizarNombre = (str) => str ? str.toString().trim().toLowerCase().repl
 
 export function dibujarGrillaPersonajes() {
     let html = `<h2 style="margin-top:0;">Inventarios</h2><div class="catalogo-grid">`;
+    
+    // Función de limpieza interna para no fallar
+    const norm = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
+
     Object.keys(invGlobal).sort().forEach(j => {
         let countComun = 0, countRaro = 0, countLeg = 0;
         Object.keys(invGlobal[j]).forEach(o => {
             if (invGlobal[j][o] > 0) {
-                const rar = objGlobal[o]?.rar;
+                const rar = objGlobal[o] ? objGlobal[o].rar : 'Común';
                 if (rar === 'Legendario') countLeg += invGlobal[j][o];
                 else if (rar === 'Raro') countRaro += invGlobal[j][o];
                 else countComun += invGlobal[j][o];
             }
         });
+        
+        const jSafe = j.replace(/'/g, "\\'"); // Protege nombres con apóstrofes
+        
         html += `
-        <div class="char-card player-card" onclick="window.abrirInventario('${j}')">
-            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+        <div class="char-card player-card" onclick="window.abrirInventario('${jSafe}')">
+            <img src="../img/imgpersonajes/${norm(j)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
             <h3>${j}</h3>
             <p>Comunes: <b style="color:white">${countComun}</b></p>
             <p>Raros: <b style="color:#8a2be2">${countRaro}</b> | Legendarios: <b style="color:var(--gold)">${countLeg}</b></p>
         </div>`;
     });
     html += `</div>`;
-    drawnHEXPreserveFocus('contenedor-grilla', html);
+    
+    const container = document.getElementById('contenedor-grilla');
+    if(container) container.innerHTML = html;
 }
 
 export function dibujarResumenVisual() {
@@ -125,14 +134,18 @@ export function dibujarInventarios() {
     const j = estadoUI.jugadorInv;
     const term = (estadoUI.busquedaInv || "").toLowerCase();
     
-    // ENLACE HACIA LA PÁGINA DE ESTADÍSTICAS
+    // Variables seguras dentro de la propia función
+    const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
+    const norm = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
+    
+    // ENLACE HACIA LA PÁGINA DE ESTADÍSTICAS (Abre en nueva pestaña)
     const linkStats = `../stats/index.html?pj=${encodeURIComponent(j)}`;
     
     let html = `
     <button onclick="window.volverAGrilla()" style="background:#444; margin-bottom: 20px;">⬅ Volver a Inventarios</button>
     <div class="player-header">
         <a href="${linkStats}" target="_blank" title="Ver ficha de estado de ${j}" style="display:flex;">
-            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+            <img src="../img/imgpersonajes/${norm(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
         </a>
         <div style="text-align:left; flex:1;">
             <a href="${linkStats}" target="_blank" style="text-decoration:none;" title="Ver ficha de estado de ${j}">
@@ -148,18 +161,19 @@ export function dibujarInventarios() {
 
     const destacados = frozenKeys
         .filter(o => invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term)))
-        .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
+        .sort((a, b) => (raridadValor[objGlobal[b]?.rar] || 0) - (raridadValor[objGlobal[a]?.rar] || 0))
         .slice(0, 5);
 
     if (destacados.length > 0) {
         html += `<div class="top-items-grid">`;
         destacados.forEach(o => {
-            const imgFile = normalizarNombre(o);
+            const imgFile = norm(o);
             const rarClase = objGlobal[o]?.rar === 'Raro' ? 'rarity-raro' : (objGlobal[o]?.rar === 'Legendario' ? 'rarity-legendario' : '');
+            const oSafe = o.replace(/'/g, "\\'");
             html += `
             <div class="top-item-card ${rarClase}">
                 <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <span style="font-size:0.65em; display:block; height:2.4em; overflow:hidden; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</span>
+                <span style="font-size:0.65em; display:block; height:2.4em; overflow:hidden; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${oSafe}')">${o}</span>
             </div>`;
         });
         html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
@@ -168,26 +182,40 @@ export function dibujarInventarios() {
     html += `<div class="table-responsive"><table><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
     frozenKeys.forEach(o => {
         if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
+            const oSafe = o.replace(/'/g, "\\'");
             
             // Si es OP, renderiza botones + y - al lado de la cantidad
             const cantHTML = estadoUI.esAdmin 
                 ? `<div style="display:flex; justify-content:center; align-items:center; gap:8px;">
-                     <button class="btn-inline-op minus" onclick="window.hexMod('${j}','${o}',-1)">-</button>
+                     <button class="btn-inline-op minus" onclick="window.hexMod('${j}','${oSafe}',-1)">-</button>
                      <b style="font-size:1.3em; width:20px;">${invGlobal[j][o]}</b>
-                     <button class="btn-inline-op plus" onclick="window.hexMod('${j}','${o}',1)">+</button>
+                     <button class="btn-inline-op plus" onclick="window.hexMod('${j}','${oSafe}',1)">+</button>
                    </div>`
                 : `<b style="font-size:1.2em">${invGlobal[j][o]}</b>`;
 
             html += `<tr>
-                <td><img src="../img/imgobjetos/${normalizarNombre(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
-                <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</td>
-                <td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff}</td>
+                <td><img src="../img/imgobjetos/${norm(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
+                <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${oSafe}')">${o}</td>
+                <td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff || ''}</td>
                 <td>${cantHTML}</td>
             </tr>`;
         }
     });
     html += "</table></div>";
-    drawnHEXPreserveFocus('contenedor-jugadores', html);
+    
+    // Inserción segura sin necesidad de funciones externas
+    const activeId = document.activeElement ? document.activeElement.id : null;
+    const start = document.activeElement ? document.activeElement.selectionStart : null;
+    const end = document.activeElement ? document.activeElement.selectionEnd : null;
+    
+    const container = document.getElementById('contenedor-jugadores');
+    if (container) {
+        container.innerHTML = html;
+        if (activeId && document.getElementById(activeId)) {
+            const el = document.getElementById(activeId);
+            el.focus(); if (el.setSelectionRange) el.setSelectionRange(start, end);
+        }
+    }
 }
 
 export function dibujarCatalogo() {
@@ -479,6 +507,7 @@ export function dibujarCreacionMulti() {
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
+
 
 
 
