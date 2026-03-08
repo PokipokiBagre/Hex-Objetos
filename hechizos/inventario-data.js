@@ -1,100 +1,124 @@
-import { misGlobal, jugadoresActivos, estadoUI } from './mis-state.js';
+import { db } from './inventario-state.js';
 
-const CSV_MISIONES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTI_7MnwczeHhMCuQ_YInOHBvVUFv7ZSp_bsvFqkTmC_GvSdINkoskGPk__u9dq9XHTeVo4AMAMQl7v/pub?output=csv'; 
-const CSV_STATS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
-const API_MISIONES = 'https://script.google.com/macros/s/AKfycbyDBdYRAVyt1ZxgjXu7_MzLCXothXR_mtocQfctwA8vnSa8Qm_GGfsquq2jAAiyciUe/exec'; 
+const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 
-export async function cargarDatos() {
+const API_ESTADISTICAS = 'https://script.google.com/macros/s/AKfycbwW4AXM9QSrPYR4vjXPdwSEhV1Q-t9S0exoskZQGoerVRJOsEMzReN1piMWzCfzW_RLmQ/exec'; 
+
+const CSV_PERSONAJES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
+
+export async function inicializarDatos(barraProgreso) {
     try {
-        const [resMis, resStats] = await Promise.all([
-            fetch(CSV_MISIONES + '&cb=' + new Date().getTime()),
-            fetch(CSV_STATS + '&cb=' + new Date().getTime())
-        ]);
-        
-        parsearStats(await resStats.text());
-        parsearMisiones(await resMis.text());
-    } catch (e) {
-        console.error("Error cargando CSVs:", e);
-    }
+        if(barraProgreso) barraProgreso.style.width = '30%';
+        const resPj = await fetch(CSV_PERSONAJES + '&cb=' + new Date().getTime());
+        parsearCSVPersonajes(await resPj.text());
+
+        if(barraProgreso) barraProgreso.style.width = '60%';
+        const resHz = await fetch(API_HECHIZOS);
+        db.hechizos = JSON.parse(decodeURIComponent(escape(window.atob(await resHz.text()))));
+
+        if(barraProgreso) barraProgreso.style.width = '100%';
+        return true;
+    } catch (e) { return false; }
 }
 
-function csvSplit(row) {
-    let result = []; let cur = ''; let inQuotes = false;
-    for (let i = 0; i < row.length; i++) {
-        let char = row[i];
-        if (char === '"') inQuotes = !inQuotes;
-        else if (char === ',' && !inQuotes) { result.push(cur); cur = ''; } 
-        else cur += char;
-    }
-    result.push(cur); return result;
-}
+function parsearCSVPersonajes(texto) {
+    const filas = texto.split(/\r?\n/).map(l => {
+        let matches = l.match(/(\s*"[^"]+"\s*|\s*[^,]+|,)(?=,|$)/g);
+        if(!matches) return []; return matches.map(m => m.replace(/^,/, '').replace(/^"|"$/g, '').trim());
+    });
+    db.csvHeadersPersonajes = filas[0];
+    for (let k in db.personajes) delete db.personajes[k];
 
-function parsearStats(texto) {
-    const filas = texto.split(/\r?\n/);
-    jugadoresActivos.length = 0;
-    
     filas.slice(1).forEach(f => {
-        if(!f.trim()) return;
-        const c = csvSplit(f).map(m => m.replace(/^"|"$/g, '').trim());
+        if(!f[0]) return;
+        const nombre = f[0]; const idenParts = (f[17] || '0_1').split('_');
+        const getBase = (idx) => parseInt((f[idx] || '0').split('_')[0]) || 0;
+        
+        const afis = { 'Física': getBase(3), 'Energética': getBase(4), 'Espiritual': getBase(5), 'Mando': getBase(6), 'Psíquica': getBase(7), 'Oscura': getBase(8) };
+        
+        let mayorAfinidad = 'Ninguna'; let maxVal = -1;
+        for (const [key, val] of Object.entries(afis)) { if(val > maxVal && val > 0) { maxVal = val; mayorAfinidad = key; } }
 
-        if (c.length > 17) {
-            const nombre = c[0];
-            const idenParts = (c[17] || '0_1').split('_');
-            const isPlayer = idenParts[0] === '1';
-            const isActive = idenParts[1] === '1';
-            const icon = c[18] ? c[18] : nombre;
+        db.personajes[nombre] = {
+            isPlayer: idenParts[0] === '1', isActive: idenParts[1] === '1',
+            iconoOverride: f[18] !== '' ? f[18] : nombre,
+            hex: f[1] ? parseInt(f[1].split('_')[0]) || 0 : 0,
+            mayorAfinidad: mayorAfinidad, 
+            afinidades: afis, 
+            rawRow: f 
+        };
+    });
+}
 
-            // Extraer afinidad para el borde del Roster
-            const f_val = parseInt((c[3]||'0').split('_')[0])||0;
-            const e_val = parseInt((c[4]||'0').split('_')[0])||0;
-            const s_val = parseInt((c[5]||'0').split('_')[0])||0;
-            const m_val = parseInt((c[6]||'0').split('_')[0])||0;
-            const p_val = parseInt((c[7]||'0').split('_')[0])||0;
-            const o_val = parseInt((c[8]||'0').split('_')[0])||0;
+// Nueva función de guardado dual
+export async function sincronizarColaBD(cola) {
+    try {
+        let successHechizos = true;
+        let successStats = true;
 
-            const afis = { 'Física': f_val, 'Energética': e_val, 'Espiritual': s_val, 'Mando': m_val, 'Psíquica': p_val, 'Oscura': o_val };
-            let max = -1; let mayor = "Física";
-            for(let key in afis) { if(afis[key] > max && afis[key] > 0) { max = afis[key]; mayor = key; } }
-            
-            if (isPlayer && isActive) {
-                jugadoresActivos.push({ nombre, icon, afinidad: mayor });
+        // 1. Enviar datos de Inventario a API Hechizos (Si hay cambios)
+        if (cola.agregar.length > 0 || cola.quitar.length > 0 || cola.toggleConocido.length > 0) {
+            console.log("Enviando Inventario a API Hechizos...");
+            const resHechizos = await fetch(API_HECHIZOS, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ 
+                    accion: 'sincronizar_inventario', 
+                    agregar: cola.agregar, 
+                    quitar: cola.quitar, 
+                    toggleConocido: cola.toggleConocido 
+                }) 
+            });
+            const textHechizos = await resHechizos.text();
+            try {
+                const jsonHechizos = JSON.parse(textHechizos);
+                if (jsonHechizos.status !== 'success') {
+                    alert("Error en API Hechizos:\n" + jsonHechizos.message);
+                    successHechizos = false;
+                }
+            } catch(e) {
+                console.error("Error parseando resHechizos:", textHechizos);
+                successHechizos = false;
             }
         }
-    });
-}
 
-function parsearMisiones(texto) {
-    const filas = texto.split(/\r?\n/);
-    misGlobal.length = 0; 
-    filas.slice(1).forEach((f, index) => {
-        if(!f.trim()) return;
-        const c = csvSplit(f).map(m => m.replace(/^"|"$/g, '').trim());
-        if(!c[0]) return;
-        
-        misGlobal.push({
-            id: c[0], 
-            titulo: c[0], 
-            tipo: c[1] || 'Personalizada', 
-            cupos: parseInt(c[2]) || 0, 
-            estado: parseInt(c[3]) || 0, 
-            clase: c[4] ? c[4].replace(/Clase/gi, '').trim() : '1', 
-            desc: c[5] || '', 
-            notaOP: c[6] || '', 
-            jugadores: c[7] ? c[7].split(',').map(j=>j.trim()).filter(j=>j) : [], 
-            autor: c[9] || 'OP', 
-            orden: index 
-        });
-    });
-}
+        // 2. Enviar datos de Estadísticas a API Estadísticas (Si hay cambios)
+        if (cola.stats && Object.keys(cola.stats).length > 0) {
+            console.log("Enviando Estadísticas (Z) a API Estadísticas...", cola.stats);
+            const resStats = await fetch(API_ESTADISTICAS, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ 
+                    accion: 'sincronizar_stats', 
+                    stats: cola.stats 
+                }) 
+            });
+            const textStats = await resStats.text();
+            try {
+                const jsonStats = JSON.parse(textStats);
+                if (jsonStats.status !== 'success') {
+                    alert("Error en API Estadísticas:\n" + jsonStats.message);
+                    successStats = false;
+                }
+            } catch(e) {
+                console.error("Error parseando resStats:", textStats);
+                successStats = false;
+            }
+        }
 
-export async function sincronizarBD() {
-    try {
-        const payload = { accion: 'sincronizar_misiones', misiones: estadoUI.colaCambios.misiones };
-        const res = await fetch(API_MISIONES, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-        const data = await res.json();
-        return data.status === 'success';
-    } catch(e) {
-        console.error("Error en sincronización:", e);
-        return false;
+        return successHechizos && successStats;
+
+    } catch (e) { 
+        alert("Fallo crítico de Red al intentar contactar a los servidores.");
+        return false; 
     }
+}
+
+export function exportarCSVPersonajes() {
+    let csv = db.csvHeadersPersonajes.join(",") + "\n";
+    Object.keys(db.personajes).sort().forEach(n => {
+        csv += db.personajes[n].rawRow.map((v, i) => (i===0||i===1||i===2||i===9) ? String(v) : `"${v}"`).join(",") + "\n";
+    });
+    const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }));
+    link.download = "HEX_PERSONAJES_MODIFICADO.csv"; link.click();
 }
