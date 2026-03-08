@@ -142,16 +142,17 @@ export function renderFormularioModal(mision = null) {
 
     const estadoDisabled = (!estadoUI.esAdmin && !isEdit) ? 'disabled' : '';
 
-    const infoGuia = `
+const infoGuia = `
     <div class="modal-guide">
         <h4>💡 Sugerencias de Recompensas por Clase</h4>
         <div class="guide-grid">
-            <div><b>C1:</b> 600-1200 Hex<br>2 a 4 PA</div>
-            <div><b>C2:</b> 1000-1800 Hex<br>3 a 6 PA</div>
-            <div><b>C3:</b> 1500-2200 Hex<br>4 a 8 PA</div>
-            <div><b>C4:</b> 2000-3000 Hex<br>5 a 10 PA</div>
-            <div><b>C5:</b> 2500-3600 Hex<br>6 a 12 PA</div>
+            <div><b>Clase 1:</b> 600-1200 Hex<br>2 a 4 Puntos de Afinidad</div>
+            <div><b>Clase 2:</b> 1000-1800 Hex<br>3 a 6 Puntos de Afinidad</div>
+            <div><b>Clase 3:</b> 1500-2200 Hex<br>4 a 8 Puntos de Afinidad</div>
+            <div><b>Clase 4:</b> 2000-3000 Hex<br>5 a 10 Puntos de Afinidad</div>
+            <div><b>Clase 5:</b> 2500-3600 Hex<br>6 a 12 Puntos de Afinidad</div>
         </div>
+        <p class="guide-warning">Recomendación: Se sugiere que la clase del hechizo a brindar sea igual que la de la misión.</p>
     </div>`;
 
     return `
