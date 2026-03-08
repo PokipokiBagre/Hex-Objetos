@@ -52,10 +52,18 @@ export function dibujarGrillaPersonajes() {
                 else countComun += invGlobal[j][o];
             }
         });
+        
+        // Enlace mágico hacia la página de Estadísticas del jugador
+        const linkStats = `../stats/index.html?pj=${encodeURIComponent(j)}`;
+
         html += `
         <div class="char-card player-card" onclick="window.abrirInventario('${j}')">
-            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-            <h3>${j}</h3>
+            <a href="${linkStats}" target="_blank" onclick="event.stopPropagation();" title="Ver ficha de estado de ${j}">
+                <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+            </a>
+            <a href="${linkStats}" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; color:inherit;">
+                <h3 title="Ver ficha de estado de ${j}">${j}</h3>
+            </a>
             <p>Comunes: <b style="color:white">${countComun}</b></p>
             <p>Raros: <b style="color:#8a2be2">${countRaro}</b> | Legendarios: <b style="color:var(--gold)">${countLeg}</b></p>
         </div>`;
@@ -125,38 +133,23 @@ export function dibujarInventarios() {
     const j = estadoUI.jugadorInv;
     const term = (estadoUI.busquedaInv || "").toLowerCase();
     
+    // Enlace mágico hacia la página de Estadísticas del jugador
+    const linkStats = `../stats/index.html?pj=${encodeURIComponent(j)}`;
+    
     let html = `
     <button onclick="window.volverAGrilla()" style="background:#444; margin-bottom: 20px;">⬅ Volver a Inventarios</button>
     <div class="player-header">
-        <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+        <a href="${linkStats}" target="_blank" title="Ver ficha de estado de ${j}">
+            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+        </a>
         <div style="text-align:left; flex:1;">
-            <h1 style="margin: 0; color:var(--gold);">${j.toUpperCase()}</h1>
+            <a href="${linkStats}" target="_blank" style="text-decoration:none;" title="Ver ficha de estado de ${j}">
+                <h1 style="margin: 0; color:var(--gold);">${j.toUpperCase()}</h1>
+            </a>
         </div>
         ${estadoUI.esAdmin ? `<button onclick="window.mostrarPagina('control')" style="background:#4a004a; border-color:var(--gold);">⚙️ Panel Control Masivo</button>` : ''}
     </div>
     <input type="text" id="busq-inv" class="search-bar" placeholder="🔍 Filtrar equipo..." value="${estadoUI.busquedaInv}" oninput="window.setBusquedaInv(this.value)">`;
-
-    let frozenKeys = estadoUI.cachedInvOrders[j] || [];
-    Object.keys(invGlobal[j]).forEach(k => { if (invGlobal[j][k] > 0 && !frozenKeys.includes(k)) frozenKeys.push(k); });
-
-    const destacados = frozenKeys
-        .filter(o => invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term)))
-        .sort((a, b) => raridadValor[objGlobal[b]?.rar] - raridadValor[objGlobal[a]?.rar])
-        .slice(0, 5);
-
-    if (destacados.length > 0) {
-        html += `<div class="top-items-grid">`;
-        destacados.forEach(o => {
-            const imgFile = normalizarNombre(o);
-            const rarClase = objGlobal[o]?.rar === 'Raro' ? 'rarity-raro' : (objGlobal[o]?.rar === 'Legendario' ? 'rarity-legendario' : '');
-            html += `
-            <div class="top-item-card ${rarClase}">
-                <img src="../img/imgobjetos/${imgFile}.png" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                <span style="font-size:0.65em; display:block; height:2.4em; overflow:hidden; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</span>
-            </div>`;
-        });
-        html += `</div><hr style="border:0; border-top:1px solid rgba(212,175,55,0.2); margin:20px 0;">`;
-    }
 
     html += `<div class="table-responsive"><table><tr><th>Imagen</th><th>Objeto</th><th>Efecto</th><th>Cant</th></tr>`;
     frozenKeys.forEach(o => {
@@ -472,3 +465,4 @@ export function dibujarCreacionMulti() {
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
+
