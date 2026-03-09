@@ -8,6 +8,7 @@ window.onload = async () => {
     const loadScreen = document.getElementById('loader');
 
     await cargarDatos(barra);
+    centrarCamara(); // Hace auto-zoom y auto-encuadre a todos los nodos
     
     setTimeout(() => {
         loadScreen.style.opacity = '0';
@@ -31,10 +32,33 @@ window.abrirMenuOP = () => {
     } 
 };
 
+function centrarCamara() {
+    if (estadoMapa.nodos.length === 0) return;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    estadoMapa.nodos.forEach(n => {
+        if (n.x < minX) minX = n.x;
+        if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+    });
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const mapWidth = Math.max(maxX - minX, 1000);
+    const mapHeight = Math.max(maxY - minY, 1000);
+
+    const padding = 500;
+    const zoomX = window.innerWidth / (mapWidth + padding);
+    const zoomY = window.innerHeight / (mapHeight + padding);
+    
+    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.5);
+    estadoMapa.camara.x = (window.innerWidth / 2) - (centerX * estadoMapa.camara.zoom);
+    estadoMapa.camara.y = (window.innerHeight / 2) - (centerY * estadoMapa.camara.zoom);
+}
+
 function iniciarEventosInput() {
     const canvas = document.getElementById('mapa-canvas');
 
-    // CONVERTIR RATÓN A MUNDO
     const getPosicionMundo = (clientX, clientY) => {
         const { camara } = estadoMapa;
         return {
@@ -43,9 +67,7 @@ function iniciarEventosInput() {
         };
     };
 
-    // DETECTAR NODO BAJO EL CURSOR
     const obtenerNodoEnCursor = (worldX, worldY) => {
-        // Recorremos en reversa para agarrar el de más arriba si se solapan
         for (let i = estadoMapa.nodos.length - 1; i >= 0; i--) {
             const n = estadoMapa.nodos[i];
             const dist = Math.hypot(n.x - worldX, n.y - worldY);
@@ -54,12 +76,10 @@ function iniciarEventosInput() {
         return null;
     };
 
-   // EVENTOS DE RATÓN
     canvas.addEventListener('mousedown', (e) => {
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
 
-        // SOLO SE PUEDE ARRASTRAR SI SE ES ADMIN
         if (nodo && estadoMapa.esAdmin) {
             estadoMapa.interaccion.draggedNode = nodo;
         } else {
@@ -72,22 +92,18 @@ function iniciarEventosInput() {
     canvas.addEventListener('mousemove', (e) => {
         const dx = e.clientX - estadoMapa.interaccion.lastMouseX;
         const dy = e.clientY - estadoMapa.interaccion.lastMouseY;
-        
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
 
-        // 1. Lógica de Paneo (Arrastrar fondo)
         if (estadoMapa.interaccion.isDraggingBg) {
             estadoMapa.camara.x += dx;
             estadoMapa.camara.y += dy;
         } 
-        // 2. Lógica de Arrastre de Nodo
         else if (estadoMapa.interaccion.draggedNode) {
             estadoMapa.interaccion.draggedNode.x += dx / estadoMapa.camara.zoom;
             estadoMapa.interaccion.draggedNode.y += dy / estadoMapa.camara.zoom;
             estadoMapa.cambiosPendientes = true;
             document.getElementById('btn-save-positions').classList.remove('oculto');
         } 
-        // 3. Lógica de Hover (Ratón libre)
         else {
             const nodoBajoCursor = obtenerNodoEnCursor(worldPos.x, worldPos.y);
             if (estadoMapa.interaccion.hoveredNode !== nodoBajoCursor) {
@@ -107,15 +123,12 @@ function iniciarEventosInput() {
         canvas.style.cursor = estadoMapa.interaccion.hoveredNode ? 'pointer' : 'grab';
     });
 
-    // EVENTO DE ZOOM CON LA RUEDA
     canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         const { camara } = estadoMapa;
+        const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
+        const nuevoZoom = Math.max(0.01, Math.min(camara.zoom * zoomDelta, 4)); 
         
-        const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1; // Suavidad del zoom
-        const nuevoZoom = Math.max(0.1, Math.min(camara.zoom * zoomDelta, 4)); // Limites de zoom (10% a 400%)
-        
-        // Matemáticas para hacer zoom hacia el puntero del ratón, no hacia la esquina superior izquierda
         const mouseX = e.clientX;
         const mouseY = e.clientY;
         
@@ -125,7 +138,6 @@ function iniciarEventosInput() {
     }, { passive: false });
 }
 
-// Bucle continuo a 60fps
 function bucleRender() {
     dibujarFrame();
     requestAnimationFrame(bucleRender);
