@@ -26,16 +26,115 @@ window.onload = async () => {
 window.abrirMenuOP = () => { 
     if (estadoMapa.esAdmin) { 
         estadoMapa.esAdmin = false; 
-        alert("Modo OP Desactivado. El mapa está bloqueado para edición."); 
+        alert("Modo OP Desactivado."); 
         document.getElementById('btn-save-map').classList.add('oculto');
+        document.getElementById('btn-ordenar').classList.add('oculto');
+        estadoMapa.interaccion.selectedNode = null;
         actualizarPanelInfo(); 
     } else { 
         if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) { 
             estadoMapa.esAdmin = true; 
-            alert("Modo OP Activado.\n- Puedes arrastrar nodos.\n- Al poner el ratón sobre un nodo verás un menú para Descubrir/Sellar.");
+            document.getElementById('btn-ordenar').classList.remove('oculto');
+            alert("Modo OP Activado.\n- Haz CLIC en un nodo para fijar su menú.\n- Usa el botón 'Auto-Ordenar' para que la IA desenrede el mapa.");
             actualizarPanelInfo(); 
         } 
     } 
+};
+
+// ==========================================
+// ALGORITMO DE FÍSICA (YIFAN HU / FRUCHTERMAN)
+// ==========================================
+window.ordenarMapaYifanHu = () => {
+    const nodos = estadoMapa.nodos;
+    const enlaces = estadoMapa.enlaces;
+    const math = estadoMapa.math;
+    
+    const K = 280; // Constante de distancia ideal
+    let iteraciones = 150; // Veces que se ejecuta la simulación
+    let temp = 200; // Temperatura (qué tan brusco se mueven)
+
+    nodos.forEach(n => n.modificado = true);
+    document.getElementById('btn-save-map').classList.remove('oculto');
+
+    function iterarFisica() {
+        if(iteraciones <= 0) {
+            alert("¡Mapa ordenado! Si te gusta, pulsa Guardar Cambios.");
+            return;
+        }
+
+        const disp = new Map();
+        nodos.forEach(n => disp.set(n.id, {x:0, y:0}));
+
+        // 1. REPULSIÓN (Todos los nodos se alejan entre sí)
+        for(let i=0; i<nodos.length; i++) {
+            for(let j=i+1; j<nodos.length; j++) {
+                const u = nodos[i]; const v = nodos[j];
+                let dx = u.x - v.x;
+                let dy = u.y - v.y;
+                let dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                
+                const f = (K * K) / dist;
+                // Multiplicador X (x2.5) para que se empujen más a los lados y no pisen textos
+                const fx = (dx / dist) * f * 2.5; 
+                const fy = (dy / dist) * f;
+
+                disp.get(u.id).x += fx; disp.get(u.id).y += fy;
+                disp.get(v.id).x -= fx; disp.get(v.id).y -= fy;
+            }
+        }
+
+        // 2. ATRACCIÓN (Los enlaces tiran de los nodos para unirlos)
+        enlaces.forEach(link => {
+            const u = link.source; const v = link.target;
+            let dx = u.x - v.x;
+            let dy = u.y - v.y;
+            let dist = Math.sqrt(dx*dx + dy*dy) || 1;
+
+            const f = (dist * dist) / K;
+            const fx = (dx / dist) * f;
+            const fy = (dy / dist) * f;
+
+            disp.get(u.id).x -= fx; disp.get(u.id).y -= fy;
+            disp.get(v.id).x += fx; disp.get(v.id).y += fy;
+        });
+
+        // 3. GRAVEDAD CENTRAL (Atraídos hacia HEX en el 0,0)
+        nodos.forEach(u => {
+            if(!u.isHexNode) {
+                let distCentro = Math.sqrt(u.x*u.x + u.y*u.y) || 1;
+                const fG = (distCentro * distCentro) / (K * 4); // Gravedad suave
+                disp.get(u.id).x -= (u.x / distCentro) * fG;
+                disp.get(u.id).y -= (u.y / distCentro) * fG;
+            }
+        });
+
+        // 4. APLICAR MOVIMIENTO
+        nodos.forEach(u => {
+            if(u.isHexNode) { 
+                u.x = 0; u.y = 0; 
+                u._rawX = math.originX; u._rawY = math.originY; 
+                return; 
+            }
+
+            const d = disp.get(u.id);
+            const dLen = Math.sqrt(d.x*d.x + d.y*d.y);
+            if(dLen > 0) {
+                const limit = Math.min(dLen, temp); // Limita el caos térmico
+                u.x += (d.x / dLen) * limit;
+                u.y += (d.y / dLen) * limit;
+                
+                // Actualiza matemática para el botón Guardar
+                u._rawX = (u.x / 2000) * math.maxDist + math.originX;
+                u._rawY = -(u.y / 2000) * math.maxDist + math.originY;
+            }
+        });
+
+        temp *= 0.95; // El sistema se enfría en cada frame
+        iteraciones--;
+        requestAnimationFrame(iterarFisica); // Anima el movimiento fotograma a fotograma
+    }
+
+    iterarFisica();
 };
 
 window.cambiarEstadoNodo = (id, valor) => {
@@ -89,11 +188,11 @@ window.guardarCambiosMapa = async () => {
         const data = await res.json();
         
         if (data.status === 'success') {
-            alert("¡Cambios del mapa guardados con éxito!");
+            alert("¡Cambios guardados! Tu constelación está a salvo.");
             estadoMapa.nodos.forEach(n => n.modificado = false);
             btn.classList.add('oculto');
         } else {
-            alert("El servidor no pudo guardar: " + (data.message || 'Error desconocido'));
+            alert("El servidor falló: " + (data.message || 'Error desconocido'));
         }
     } catch(e) {
         alert("Fallo de red al intentar guardar en el servidor.");
@@ -135,11 +234,18 @@ function iniciarEventosInput() {
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
 
-        if (nodo && estadoMapa.esAdmin) {
-            estadoMapa.interaccion.draggedNode = nodo;
+        // NUEVO: SISTEMA DE CLIC FIJO
+        if (nodo) {
+            estadoMapa.interaccion.selectedNode = nodo;
+            if (estadoMapa.esAdmin) {
+                estadoMapa.interaccion.draggedNode = nodo;
+            }
         } else {
+            estadoMapa.interaccion.selectedNode = null; // Clic al fondo = Deseleccionar
             estadoMapa.interaccion.isDraggingBg = true;
         }
+        
+        actualizarPanelInfo(); // Forzar update visual
         estadoMapa.interaccion.lastMouseX = e.clientX;
         estadoMapa.interaccion.lastMouseY = e.clientY;
     });
@@ -158,7 +264,6 @@ function iniciarEventosInput() {
             n.x += dx / estadoMapa.camara.zoom;
             n.y += dy / estadoMapa.camara.zoom;
             
-            // LÓGICA MATEMÁTICA CORREGIDA: Usamos 2000 al igual que en mapa-data.js
             const math = estadoMapa.math;
             n._rawX = (n.x / 2000) * math.maxDist + math.originX;
             n._rawY = -(n.y / 2000) * math.maxDist + math.originY;
@@ -170,7 +275,11 @@ function iniciarEventosInput() {
             const nodoBajoCursor = obtenerNodoEnCursor(worldPos.x, worldPos.y);
             if (estadoMapa.interaccion.hoveredNode !== nodoBajoCursor) {
                 estadoMapa.interaccion.hoveredNode = nodoBajoCursor;
-                actualizarPanelInfo();
+                
+                // Actualiza solo si no hay ninguno fijo con clic
+                if (!estadoMapa.interaccion.selectedNode) {
+                    actualizarPanelInfo();
+                }
                 canvas.style.cursor = nodoBajoCursor ? 'pointer' : 'grab';
             }
         }
