@@ -18,6 +18,19 @@ window.onload = async () => {
     bucleRender();
 };
 
+window.abrirMenuOP = () => { 
+    if (estadoMapa.esAdmin) { 
+        estadoMapa.esAdmin = false; 
+        alert("Modo OP Desactivado. El mapa está bloqueado para edición."); 
+        document.getElementById('btn-save-positions').classList.add('oculto');
+    } else { 
+        if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) { 
+            estadoMapa.esAdmin = true; 
+            alert("Modo OP Activado. Puedes arrastrar los nodos para reubicarlos.");
+        } 
+    } 
+};
+
 function iniciarEventosInput() {
     const canvas = document.getElementById('mapa-canvas');
 
@@ -41,12 +54,13 @@ function iniciarEventosInput() {
         return null;
     };
 
-    // EVENTOS DE RATÓN
+   // EVENTOS DE RATÓN
     canvas.addEventListener('mousedown', (e) => {
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
 
-        if (nodo) {
+        // SOLO SE PUEDE ARRASTRAR SI SE ES ADMIN
+        if (nodo && estadoMapa.esAdmin) {
             estadoMapa.interaccion.draggedNode = nodo;
         } else {
             estadoMapa.interaccion.isDraggingBg = true;
@@ -54,7 +68,7 @@ function iniciarEventosInput() {
         estadoMapa.interaccion.lastMouseX = e.clientX;
         estadoMapa.interaccion.lastMouseY = e.clientY;
     });
-
+    
     canvas.addEventListener('mousemove', (e) => {
         const dx = e.clientX - estadoMapa.interaccion.lastMouseX;
         const dy = e.clientY - estadoMapa.interaccion.lastMouseY;
