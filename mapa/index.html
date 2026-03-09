@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa de Hechizos | HEX</title>
     <link rel="icon" type="image/png" href="../img/icon.png">
-    <link rel="stylesheet" href="../stylemapa.css?v=2.1">
+    <link rel="stylesheet" href="../stylemapa.css">
 </head>
 <body>
     <div id="ui-overlay" style="pointer-events: none;">
@@ -13,7 +13,7 @@
             <button onclick="window.location.href='../index.html'" class="btn-basic">⬅ Volver</button>
             <h2 style="margin:0; color:var(--gold); text-shadow:0 0 10px rgba(212,175,55,0.5);">MAPA DE HECHIZOS</h2>
             <div style="display:flex; gap:10px;">
-                <button id="btn-save-positions" class="btn-action oculto">💾 Guardar Posiciones</button>
+                <button id="btn-save-map" class="btn-action oculto" onclick="window.guardarCambiosMapa()">💾 Guardar Cambios</button>
                 <button onclick="window.abrirMenuOP()" style="background:#2e004f; color:var(--gold); border:1px dashed var(--gold); padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold; font-family:'Cinzel';">⚙️ Acceso OP</button>
                 <span class="badge-conectado">🟢 CONECTADO</span>
             </div>
@@ -24,6 +24,7 @@
             <div id="info-tags" class="tags-container"></div>
             <p id="info-desc" class="desc-text"></p>
             <p id="info-efecto" class="efecto-text"></p>
+            <div id="info-op"></div>
         </div>
     </div>
 
