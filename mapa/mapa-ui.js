@@ -34,14 +34,17 @@ export function dibujarFrame() {
     ctx.translate(camara.x, camara.y);
     ctx.scale(camara.zoom, camara.zoom);
 
+    // FIX ESCALA: Limita el engrosamiento cuando te alejas demasiado
+    const scaleFactor = Math.max(camara.zoom, 0.4);
+
     // 1. DIBUJAR ENLACES CON FLECHAS
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
         const angle = Math.atan2(dy, dx);
         
-        const targetX = link.target.x - Math.cos(angle) * (link.target.radio + (4/camara.zoom));
-        const targetY = link.target.y - Math.sin(angle) * (link.target.radio + (4/camara.zoom));
+        const targetX = link.target.x - Math.cos(angle) * (link.target.radio + (4/scaleFactor));
+        const targetY = link.target.y - Math.sin(angle) * (link.target.radio + (4/scaleFactor));
 
         ctx.beginPath();
         ctx.moveTo(link.source.x, link.source.y);
@@ -49,15 +52,15 @@ export function dibujarFrame() {
         
         if (interaccion.hoveredNode === link.source || interaccion.hoveredNode === link.target) {
             ctx.strokeStyle = 'rgba(0, 255, 255, 1)';
-            ctx.lineWidth = 6 / camara.zoom; // Más gruesa al hacer hover
+            ctx.lineWidth = 6 / scaleFactor;
         } else {
             ctx.strokeStyle = link.target.arrowColor; 
-            ctx.lineWidth = 2.5 / camara.zoom; // Líneas un poco más gruesas
+            ctx.lineWidth = 2 / scaleFactor; 
         }
         ctx.stroke();
 
-        // Punta de la flecha
-        const headlen = 16 / camara.zoom;
+        // Punta de la flecha dinámica
+        const headlen = 14 / scaleFactor;
         ctx.beginPath();
         ctx.moveTo(targetX, targetY);
         ctx.lineTo(targetX - headlen * Math.cos(angle - Math.PI / 7), targetY - headlen * Math.sin(angle - Math.PI / 7));
@@ -92,25 +95,27 @@ export function dibujarFrame() {
         ctx.fill();
         ctx.shadowBlur = 0;
         
-        ctx.lineWidth = (isHovered ? 4 : 2) / camara.zoom;
+        ctx.lineWidth = (isHovered ? 4 : 2) / scaleFactor;
         ctx.strokeStyle = colorAf;
         
         if (!nodo.esConocido && !nodo.isHexNode) {
-            ctx.setLineDash([5 / camara.zoom, 5 / camara.zoom]);
+            ctx.setLineDash([5 / scaleFactor, 5 / scaleFactor]);
         }
         ctx.stroke();
         ctx.setLineDash([]); 
 
         // 3. TEXTOS
         if (camara.zoom > 0.25 || isHovered || nodo.isHexNode) {
-            const fontSize = nodo.isHexNode ? 24 : (isHovered ? 16 : (nodo.esConocido ? 14 : 11));
+            let fontSize = nodo.isHexNode ? 28 : (nodo.esConocido ? 15 : 12);
+            if (isHovered) fontSize += 4;
+
             ctx.font = "bold " + fontSize + "px sans-serif";
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             
-            const textY = nodo.y + nodo.radio + (5 / camara.zoom);
+            const textY = nodo.y + nodo.radio + (5 / scaleFactor);
 
-            ctx.lineWidth = 3 / camara.zoom;
+            ctx.lineWidth = 3 / scaleFactor;
             ctx.strokeStyle = 'rgba(0,0,0,0.9)';
             ctx.strokeText(nodo.nombre, nodo.x, textY);
             
@@ -141,13 +146,14 @@ export function actualizarPanelInfo() {
             '<span class="tag" style="border-color:' + (COLOR_AFINIDAD[nodo.afinidad] || '#888') + '; color:' + (COLOR_AFINIDAD[nodo.afinidad] || '#888') + '">' + nodo.afinidad + '</span>' +
             '<span class="tag">HEX: ' + nodo.hex + '</span>' +
             '<span class="tag">C-' + nodo.clase + '</span>';
+        
+        document.getElementById('info-desc').innerText = nodo.resumen;
     } else {
         document.getElementById('info-titulo').style.color = '#888';
         document.getElementById('info-tags').innerHTML = '<span class="tag" style="border-color:#555; color:#888;">Requisitos Insuficientes</span>';
+        document.getElementById('info-desc').innerText = 'El conocimiento de este nodo permanece sellado.';
     }
         
-    document.getElementById('info-desc').innerText = nodo.resumen;
-    
     const efectoEl = document.getElementById('info-efecto');
     if (nodo.efecto && nodo.esConocido) {
         efectoEl.innerText = "Efecto: " + nodo.efecto; 
@@ -155,5 +161,21 @@ export function actualizarPanelInfo() {
     } else { 
         efectoEl.style.display = 'none'; 
     }
+
+    // CONTROLES MÁSTER (Dropdown)
+    const opDiv = document.getElementById('info-op');
+    if (estadoMapa.esAdmin && !nodo.isHexNode) {
+        opDiv.innerHTML = `
+            <hr style="border-color: #444; margin: 15px 0 10px 0;">
+            <label style="color:var(--gold); font-size:0.85em; font-weight:bold; font-family:'Cinzel';">🛠️ ESTADO (MÁSTER):</label>
+            <select onchange="window.cambiarEstadoNodo('${nodo.id}', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid var(--gold); padding:8px; margin-top:5px; cursor:pointer;">
+                <option value="si" ${nodo.esConocido ? 'selected' : ''}>👁️ SÍ (Descubierto)</option>
+                <option value="no" ${!nodo.esConocido ? 'selected' : ''}>🔒 NO (Sellado)</option>
+            </select>
+        `;
+    } else {
+        opDiv.innerHTML = '';
+    }
+
     panel.classList.remove('oculto');
 }
