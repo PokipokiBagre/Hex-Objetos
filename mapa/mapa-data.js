@@ -22,10 +22,11 @@ export async function cargarDatos(barra) {
     }
 }
 
-// Extractor a prueba de balas: Ignora puntos y comas para evitar que los números colapsen la escala
+// Extractor a prueba de espacios y formatos raros de Excel
 function parseGephiCoord(val) {
     if (val === undefined || val === null || val === '') return null;
-    let str = String(val).replace(/[^0-9\-]/g, ''); 
+    // Eliminamos todo menos números y el signo negativo
+    let str = String(val).replace(/[^0-9\-]/g, '');
     let num = parseInt(str, 10);
     return isNaN(num) ? null : num;
 }
@@ -37,13 +38,19 @@ function procesarNodos(json) {
     
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
-    // 1. Recopilar coordenadas en bruto
+    // 1. Extraer X e Y de forma infalible (incluso si tienen espacios invisibles "X ")
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
         
-        let rawX = parseGephiCoord(n.X) ?? parseGephiCoord(n.x) ?? (Math.random() * 100);
-        let rawY = parseGephiCoord(n.Y) ?? parseGephiCoord(n.y) ?? (Math.random() * 100);
+        const keyX = Object.keys(n).find(k => k.trim().toLowerCase() === 'x');
+        const keyY = Object.keys(n).find(k => k.trim().toLowerCase() === 'y');
+        
+        let rawX = keyX ? parseGephiCoord(n[keyX]) : null;
+        let rawY = keyY ? parseGephiCoord(n[keyY]) : null;
 
+        if (rawX === null) rawX = 0;
+        if (rawY === null) rawY = 0;
+        
         if (rawX < minX) minX = rawX; 
         if (rawX > maxX) maxX = rawX;
         if (rawY < minY) minY = rawY; 
@@ -53,7 +60,6 @@ function procesarNodos(json) {
         n._rawY = rawY;
     });
 
-    // 2. Calcular el centro del círculo de Gephi
     let rangeX = maxX - minX;
     let rangeY = maxY - minY;
     let maxRange = Math.max(rangeX, rangeY);
@@ -62,7 +68,7 @@ function procesarNodos(json) {
     let centerX = minX + rangeX / 2;
     let centerY = minY + rangeY / 2;
 
-    // 3. Normalizar y Enmascarar
+    // 2. Crear los nodos y enmascarar
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
 
@@ -75,26 +81,28 @@ function procesarNodos(json) {
 
         const esConocido = n.Conocido && n.Conocido.toString().trim().toLowerCase() === 'si';
         const hexCost = parseInt(n.HEX) || 0;
-        const isHexNode = (idUnico === 'hex');
+        const isHexNode = (idUnico === 'hex' || idUnico === 'hechizo hex');
 
-        // LÓGICA DE ENMASCARAMIENTO (Sellado)
+        // Evitar el "CIEN (100) (100)": Quitamos el costo en HEX si ya venía en el nombre original
+        let baseName = nombreReal.replace(/\s*\(\d+\)$/, '').trim(); 
+        
         let nombreMostrar = "";
         if (esConocido || isHexNode) {
-            nombreMostrar = isHexNode ? "HEX" : `${nombreReal} (${hexCost})`;
+            nombreMostrar = isHexNode ? "HEX" : `${baseName} (${hexCost})`;
         } else {
             let maskName = idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`;
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        // TRASLADAR GEPHI A NUESTRA PANTALLA (Conservando la forma de círculo perfecto)
-        const x = ((n._rawX - centerX) / maxRange) * 4000;
-        const y = ((n._rawY - centerY) / maxRange) * 4000;
+        // Ajuste perfecto a Gephi (Canvas invierte la Y, así que la multiplicamos por -1 para arreglarlo)
+        const x = ((n._rawX - centerX) / maxRange) * 5000;
+        const y = -((n._rawY - centerY) / maxRange) * 5000; 
 
-        let radio = esConocido ? 22 : 12;
-        if (isHexNode) radio = 40; // El centro es más grande
+        let radio = esConocido ? 20 : 12;
+        if (isHexNode) radio = 40;
 
         estadoMapa.nodos.push({
-            id: idReal || nombreReal,
+            id: idReal,
             nombreOriginal: nombreReal,
             nombre: nombreMostrar,
             afinidad: esConocido ? (n.Afinidad || 'Desconocida') : 'Sellada',
@@ -106,25 +114,57 @@ function procesarNodos(json) {
             isHexNode: isHexNode,
             x: x,
             y: y,
-            radio: radio
+            radio: radio,
+            incomingSources: [] // Array para rastrear las dependencias y colorear la flecha
         });
     });
 }
 
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
+    
+    const norm = (s) => String(s).trim().toLowerCase();
+    
+    // Buscador infalible: Relaciona "Hechizo 1" de la pestaña String con el ID "1"
+    const findNode = (val) => {
+        const s = norm(val);
+        const sNum = s.replace('hechizo ', '');
+        return estadoMapa.nodos.find(n => 
+            norm(n.id) === s || 
+            norm(n.nombreOriginal) === s || 
+            norm("hechizo " + n.id) === s ||
+            norm(n.id) === sNum
+        );
+    };
+
     arrayStrings.forEach(rel => {
         if(!rel.Source || !rel.Target) return;
-        
-        const norm = (s) => String(s).trim().toLowerCase();
-        const srcVal = norm(rel.Source);
-        const tgtVal = norm(rel.Target);
 
-        const sourceNode = estadoMapa.nodos.find(n => norm(n.id) === srcVal || norm(n.nombreOriginal) === srcVal);
-        const targetNode = estadoMapa.nodos.find(n => norm(n.id) === tgtVal || norm(n.nombreOriginal) === tgtVal);
+        const sourceNode = findNode(rel.Source);
+        const targetNode = findNode(rel.Target);
 
         if (sourceNode && targetNode && sourceNode !== targetNode) {
             estadoMapa.enlaces.push({ source: sourceNode, target: targetNode });
+            targetNode.incomingSources.push(sourceNode); // Guardamos quién le apunta
+        }
+    });
+
+    // 3. CALCULAR EL COLOR DE LAS FLECHAS PARA CADA NODO
+    estadoMapa.nodos.forEach(nodo => {
+        if (nodo.incomingSources.length === 0) {
+            nodo.arrowColor = 'rgba(255, 255, 255, 0.4)'; // Sin dependencias
+            return;
+        }
+        
+        const total = nodo.incomingSources.length;
+        const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
+        
+        if (conocidos === total) {
+            nodo.arrowColor = 'rgba(255, 255, 255, 0.95)'; // BLANCO: Todo descubierto
+        } else if (conocidos > 0 && conocidos < total) {
+            nodo.arrowColor = 'rgba(255, 215, 0, 0.9)'; // MOSTAZA: Parcialmente descubierto
+        } else {
+            nodo.arrowColor = 'rgba(255, 100, 100, 0.7)'; // ROSA/ROJO: Ninguno descubierto
         }
     });
 }
