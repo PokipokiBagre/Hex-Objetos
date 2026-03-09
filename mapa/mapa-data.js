@@ -22,12 +22,11 @@ export async function cargarDatos(barra) {
     }
 }
 
-// Extractor a prueba de espacios y formatos raros de Excel
+// Lector de coordenadas a prueba de formatos extraños
 function parseGephiCoord(val) {
     if (val === undefined || val === null || val === '') return null;
-    // Eliminamos todo menos números y el signo negativo
-    let str = String(val).replace(/[^0-9\-]/g, '');
-    let num = parseInt(str, 10);
+    let str = String(val).trim().replace(/,/g, '.').replace(/[^0-9\.\-]/g, '');
+    let num = parseFloat(str);
     return isNaN(num) ? null : num;
 }
 
@@ -36,39 +35,43 @@ function procesarNodos(json) {
     estadoMapa.nodos = [];
     const nodosProcesados = new Set();
     
+    // 1. Recopilamos datos crudos
+    let hexNodeRaw = null;
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
-    // 1. Extraer X e Y de forma infalible (incluso si tienen espacios invisibles "X ")
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
         
         const keyX = Object.keys(n).find(k => k.trim().toLowerCase() === 'x');
         const keyY = Object.keys(n).find(k => k.trim().toLowerCase() === 'y');
         
-        let rawX = keyX ? parseGephiCoord(n[keyX]) : null;
-        let rawY = keyY ? parseGephiCoord(n[keyY]) : null;
+        n._rawX = keyX ? parseGephiCoord(n[keyX]) : null;
+        n._rawY = keyY ? parseGephiCoord(n[keyY]) : null;
 
-        if (rawX === null) rawX = 0;
-        if (rawY === null) rawY = 0;
-        
-        if (rawX < minX) minX = rawX; 
-        if (rawX > maxX) maxX = rawX;
-        if (rawY < minY) minY = rawY; 
-        if (rawY > maxY) maxY = rawY;
+        if (n._rawX === null) n._rawX = Math.random() * 500;
+        if (n._rawY === null) n._rawY = Math.random() * 500;
 
-        n._rawX = rawX; 
-        n._rawY = rawY;
+        const idStr = String(n.ID || '').trim().toLowerCase();
+        const nomStr = String(n.Nombre || '').trim().toLowerCase();
+        if (idStr === 'hex' || nomStr === 'hex' || idStr === 'hechizo hex') {
+            hexNodeRaw = n; // Detectamos el nodo central!
+        }
     });
 
-    let rangeX = maxX - minX;
-    let rangeY = maxY - minY;
-    let maxRange = Math.max(rangeX, rangeY);
-    if (maxRange === 0 || isNaN(maxRange)) maxRange = 1;
+    // 2. Establecer el Origen del Universo en el Nodo HEX
+    let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
+    let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
 
-    let centerX = minX + rangeX / 2;
-    let centerY = minY + rangeY / 2;
+    // Calcular el rango máximo desde el origen para escalar proporcionalmente
+    let maxDist = 1;
+    todos.forEach(n => {
+        let dx = Math.abs(n._rawX - originX);
+        let dy = Math.abs(n._rawY - originY);
+        if (dx > maxDist) maxDist = dx;
+        if (dy > maxDist) maxDist = dy;
+    });
 
-    // 2. Crear los nodos y enmascarar
+    // 3. Crear Nodos Normalizados
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
 
@@ -83,7 +86,6 @@ function procesarNodos(json) {
         const hexCost = parseInt(n.HEX) || 0;
         const isHexNode = (idUnico === 'hex' || idUnico === 'hechizo hex');
 
-        // Evitar el "CIEN (100) (100)": Quitamos el costo en HEX si ya venía en el nombre original
         let baseName = nombreReal.replace(/\s*\(\d+\)$/, '').trim(); 
         
         let nombreMostrar = "";
@@ -94,9 +96,9 @@ function procesarNodos(json) {
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        // Ajuste perfecto a Gephi (Canvas invierte la Y, así que la multiplicamos por -1 para arreglarlo)
-        const x = ((n._rawX - centerX) / maxRange) * 5000;
-        const y = -((n._rawY - centerY) / maxRange) * 5000; 
+        // Anclamos al HEX y multiplicamos por -1 la Y (Canvas dibuja la Y al revés)
+        const x = ((n._rawX - originX) / maxDist) * 5000;
+        const y = -((n._rawY - originY) / maxDist) * 5000; 
 
         let radio = esConocido ? 20 : 12;
         if (isHexNode) radio = 40;
@@ -115,7 +117,7 @@ function procesarNodos(json) {
             x: x,
             y: y,
             radio: radio,
-            incomingSources: [] // Array para rastrear las dependencias y colorear la flecha
+            incomingSources: [] // Guardará los nodos que apuntan hacia este
         });
     });
 }
@@ -123,36 +125,38 @@ function procesarNodos(json) {
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
     
-    const norm = (s) => String(s).trim().toLowerCase();
-    
-    // Buscador infalible: Relaciona "Hechizo 1" de la pestaña String con el ID "1"
+    // Buscador Inteligente: Conecta "Hechizo 1" con "1" sin importar mayúsculas
     const findNode = (val) => {
-        const s = norm(val);
-        const sNum = s.replace('hechizo ', '');
-        return estadoMapa.nodos.find(n => 
-            norm(n.id) === s || 
-            norm(n.nombreOriginal) === s || 
-            norm("hechizo " + n.id) === s ||
-            norm(n.id) === sNum
-        );
+        if (!val) return null;
+        const s = String(val).trim().toLowerCase();
+        const sNumMatch = s.match(/^hechizo\s+(\d+)$/);
+        const sNum = sNumMatch ? sNumMatch[1] : s;
+
+        return estadoMapa.nodos.find(n => {
+            const nid = String(n.id).trim().toLowerCase();
+            const nnom = String(n.nombreOriginal).trim().toLowerCase();
+            return nid === s || nnom === s || nid === sNum || nnom === sNum || `hechizo ${nid}` === s || `hechizo ${nnom}` === s;
+        });
     };
 
     arrayStrings.forEach(rel => {
-        if(!rel.Source || !rel.Target) return;
+        const srcKey = Object.keys(rel).find(k => k.trim().toLowerCase() === 'source');
+        const tgtKey = Object.keys(rel).find(k => k.trim().toLowerCase() === 'target');
+        if(!srcKey || !tgtKey) return;
 
-        const sourceNode = findNode(rel.Source);
-        const targetNode = findNode(rel.Target);
+        const sourceNode = findNode(rel[srcKey]);
+        const targetNode = findNode(rel[tgtKey]);
 
         if (sourceNode && targetNode && sourceNode !== targetNode) {
             estadoMapa.enlaces.push({ source: sourceNode, target: targetNode });
-            targetNode.incomingSources.push(sourceNode); // Guardamos quién le apunta
+            targetNode.incomingSources.push(sourceNode);
         }
     });
 
-    // 3. CALCULAR EL COLOR DE LAS FLECHAS PARA CADA NODO
+    // 4. LÓGICA DE COLOR DE FLECHAS BASADA EN REQUISITOS
     estadoMapa.nodos.forEach(nodo => {
         if (nodo.incomingSources.length === 0) {
-            nodo.arrowColor = 'rgba(255, 255, 255, 0.4)'; // Sin dependencias
+            nodo.arrowColor = 'rgba(255, 255, 255, 0.4)'; 
             return;
         }
         
@@ -160,11 +164,11 @@ function procesarEnlaces(arrayStrings) {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = 'rgba(255, 255, 255, 0.95)'; // BLANCO: Todo descubierto
-        } else if (conocidos > 0 && conocidos < total) {
-            nodo.arrowColor = 'rgba(255, 215, 0, 0.9)'; // MOSTAZA: Parcialmente descubierto
+            nodo.arrowColor = 'rgba(255, 255, 255, 0.9)'; // BLANCAS: Todos los requisitos descubiertos
+        } else if (conocidos > 0) {
+            nodo.arrowColor = 'rgba(255, 200, 0, 0.8)'; // MOSTAZA: Parcialmente descubiertos
         } else {
-            nodo.arrowColor = 'rgba(255, 100, 100, 0.7)'; // ROSA/ROJO: Ninguno descubierto
+            nodo.arrowColor = 'rgba(255, 100, 150, 0.7)'; // ROSA/ROJO: Ninguno descubierto
         }
     });
 }
