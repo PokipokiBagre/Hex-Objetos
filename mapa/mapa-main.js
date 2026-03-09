@@ -8,7 +8,7 @@ window.onload = async () => {
     const loadScreen = document.getElementById('loader');
 
     await cargarDatos(barra);
-    centrarCamara(); // Hace auto-zoom y auto-encuadre a todos los nodos
+    centrarCamara(); // Calcula el zoom perfecto para ver el mapa entero
     
     setTimeout(() => {
         loadScreen.style.opacity = '0';
@@ -27,33 +27,26 @@ window.abrirMenuOP = () => {
     } else { 
         if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) { 
             estadoMapa.esAdmin = true; 
-            alert("Modo OP Activado. Puedes arrastrar los nodos para reubicarlos.");
+            alert("Modo OP Activado. Puedes arrastrar los nodos.");
         } 
     } 
 };
 
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    estadoMapa.nodos.forEach(n => {
-        if (n.x < minX) minX = n.x;
-        if (n.x > maxX) maxX = n.x;
-        if (n.y < minY) minY = n.y;
-        if (n.y > maxY) maxY = n.y;
-    });
-
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-    const mapWidth = Math.max(maxX - minX, 1000);
-    const mapHeight = Math.max(maxY - minY, 1000);
-
-    const padding = 500;
-    const zoomX = window.innerWidth / (mapWidth + padding);
-    const zoomY = window.innerHeight / (mapHeight + padding);
     
-    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.5);
-    estadoMapa.camara.x = (window.innerWidth / 2) - (centerX * estadoMapa.camara.zoom);
-    estadoMapa.camara.y = (window.innerHeight / 2) - (centerY * estadoMapa.camara.zoom);
+    // Los nodos ahora están fijos en un grid de -2000 a 2000
+    const mapWidth = 4500;
+    const mapHeight = 4500;
+
+    const zoomX = window.innerWidth / mapWidth;
+    const zoomY = window.innerHeight / mapHeight;
+    
+    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.2);
+    
+    // Centrar en el origen (0,0) que es el centro de nuestra nube
+    estadoMapa.camara.x = window.innerWidth / 2;
+    estadoMapa.camara.y = window.innerHeight / 2;
 }
 
 function iniciarEventosInput() {
@@ -88,7 +81,7 @@ function iniciarEventosInput() {
         estadoMapa.interaccion.lastMouseX = e.clientX;
         estadoMapa.interaccion.lastMouseY = e.clientY;
     });
-    
+
     canvas.addEventListener('mousemove', (e) => {
         const dx = e.clientX - estadoMapa.interaccion.lastMouseX;
         const dy = e.clientY - estadoMapa.interaccion.lastMouseY;
@@ -123,11 +116,12 @@ function iniciarEventosInput() {
         canvas.style.cursor = estadoMapa.interaccion.hoveredNode ? 'pointer' : 'grab';
     });
 
+    // Zoom bloqueando el scroll de la página
     canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
         const { camara } = estadoMapa;
         const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
-        const nuevoZoom = Math.max(0.01, Math.min(camara.zoom * zoomDelta, 4)); 
+        const nuevoZoom = Math.max(0.05, Math.min(camara.zoom * zoomDelta, 4)); 
         
         const mouseX = e.clientX;
         const mouseY = e.clientY;
