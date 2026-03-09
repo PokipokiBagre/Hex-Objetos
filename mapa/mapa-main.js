@@ -39,17 +39,12 @@ window.abrirMenuOP = () => {
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
     
-    // Al haber normalizado el mapa, sabemos que su tamaño máximo es de 4000x4000 
-    // y su centro matemático exacto está en (0,0).
-    const mapWidth = 4400; 
-    const mapHeight = 4400;
-
-    const zoomX = window.innerWidth / mapWidth;
-    const zoomY = window.innerHeight / mapHeight;
+    // Al haber forzado al nodo HEX a ser el origen en mapa-data.js,
+    // el centro matemático del universo está exactamente en 0,0.
     
-    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.2);
+    estadoMapa.camara.zoom = window.innerWidth > 1000 ? 0.3 : 0.15; // Zoom inicial cómodo
     
-    // Al fijar la cámara en window / 2, el punto (0,0) del mapa quedará exactamente en el centro de tu pantalla
+    // Posicionamos el punto (0,0) del mapa en el medio de la pantalla
     estadoMapa.camara.x = window.innerWidth / 2;
     estadoMapa.camara.y = window.innerHeight / 2;
 }
