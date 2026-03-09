@@ -22,67 +22,64 @@ export async function cargarDatos(barra) {
     }
 }
 
-// Limpiador seguro para extraer los números de Gephi sin que los puntos rompan el valor
+// Extractor puro de decimales para Gephi
 function parseGephiCoord(val) {
     if (val === undefined || val === null || val === '') return null;
-    let str = String(val).replace(/[^0-9\-]/g, '');
-    let num = parseInt(str, 10);
+    let str = String(val).replace(',', '.'); 
+    let num = parseFloat(str);
     return isNaN(num) ? null : num;
 }
 
 function procesarNodos(json) {
     const todos = [].concat(json.nodos || []).concat(json.nodosOcultos || []);
     estadoMapa.nodos = [];
-    
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const nodosProcesados = new Set();
 
-    // 1. Extraer coordenadas en bruto
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
-        
-        let rawX = parseGephiCoord(n.X) || parseGephiCoord(n.x);
-        let rawY = parseGephiCoord(n.Y) || parseGephiCoord(n.y);
 
-        if (rawX === null) rawX = Math.random() * 1000 - 500;
-        if (rawY === null) rawY = Math.random() * 1000 - 500;
-        
-        if (rawX < minX) minX = rawX; 
-        if (rawX > maxX) maxX = rawX;
-        if (rawY < minY) minY = rawY; 
-        if (rawY > maxY) maxY = rawY;
+        const idReal = n.ID ? n.ID.toString().trim() : '';
+        const nombreReal = n.Nombre && n.Nombre.trim() !== "" ? n.Nombre.trim() : idReal;
 
-        n._rawX = rawX; 
-        n._rawY = rawY;
-    });
+        const idUnico = (idReal || nombreReal).toLowerCase();
+        if (nodosProcesados.has(idUnico)) return;
+        nodosProcesados.add(idUnico);
 
-    let rangeX = maxX - minX;
-    let rangeY = maxY - minY;
-    
-    // USAR EL RANGO MÁXIMO PARA NO DEFORMAR EL CÍRCULO (Preserva el Aspect Ratio de Gephi)
-    let maxRange = Math.max(rangeX, rangeY);
-    if (maxRange === 0 || isNaN(maxRange)) maxRange = 1;
-
-    // 2. Escalar proporcionalmente a un espacio de trabajo amigable
-    todos.forEach(n => {
-        if (!n.ID && !n.Nombre) return;
-        const nombreReal = n.Nombre && n.Nombre.trim() !== "" ? n.Nombre : n.ID;
         const esConocido = n.Conocido && n.Conocido.toString().trim().toLowerCase() === 'si';
-        
-        const x = ((n._rawX - minX) / maxRange) * 4000 - 2000;
-        const y = ((n._rawY - minY) / maxRange) * 4000 - 2000;
-        
+        const hexCost = parseInt(n.HEX) || 0;
+
+        // LÓGICA DE ENMASCARAMIENTO (Niebla de Guerra)
+        let nombreMostrar = "";
+        if (esConocido) {
+            nombreMostrar = `${nombreReal} (${hexCost})`;
+        } else {
+            // Si el ID ya dice "Hechizo X", lo dejamos, si no, se lo ponemos.
+            let maskName = idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`;
+            nombreMostrar = `${maskName} (${hexCost})`;
+        }
+
+        // Mantenemos la pureza matemática de tu Gephi
+        let rawX = parseGephiCoord(n.X) ?? parseGephiCoord(n.x);
+        let rawY = parseGephiCoord(n.Y) ?? parseGephiCoord(n.y);
+
+        if (rawX === null) rawX = Math.random() * 500;
+        if (rawY === null) rawY = Math.random() * 500;
+
+        const escalaGephi = 4; // Ampliamos la red para que no se pisen los nombres
+
         estadoMapa.nodos.push({
-            id: n.ID ? n.ID.toString().trim() : nombreReal,
-            nombre: nombreReal,
-            afinidad: n.Afinidad || 'Desconocida',
+            id: idReal || nombreReal, // Fundamental para que las líneas sepan a quién conectarse
+            nombreOriginal: nombreReal, // Guardado interno
+            nombre: nombreMostrar, // Lo que ve el usuario
+            afinidad: esConocido ? (n.Afinidad || 'Desconocida') : 'Sellada',
             clase: n.Clase || '-',
-            hex: parseInt(n.HEX) || 0,
-            resumen: n.Resumen || (esConocido ? 'Sin descripción' : 'Información Sellada'),
-            efecto: n.Efecto || '',
+            hex: hexCost,
+            resumen: esConocido ? (n.Resumen || 'Sin descripción') : 'El conocimiento de este nodo permanece sellado.',
+            efecto: esConocido ? (n.Efecto || '') : '',
             esConocido: esConocido,
-            x: x,
-            y: y,
-            radio: esConocido ? 30 : 12 // Destaca los descubiertos
+            x: rawX * escalaGephi,
+            y: rawY * escalaGephi,
+            radio: esConocido ? 24 : 12 // Más pequeños para denotar que no están descubiertos
         });
     });
 }
@@ -96,10 +93,10 @@ function procesarEnlaces(arrayStrings) {
         const srcVal = norm(rel.Source);
         const tgtVal = norm(rel.Target);
 
-        const sourceNode = estadoMapa.nodos.find(n => norm(n.id) === srcVal || norm(n.nombre) === srcVal);
-        const targetNode = estadoMapa.nodos.find(n => norm(n.id) === tgtVal || norm(n.nombre) === tgtVal);
+        // Buscamos coincidencias usando el ID o el Nombre Original (ignorando la máscara)
+        const sourceNode = estadoMapa.nodos.find(n => norm(n.id) === srcVal || norm(n.nombreOriginal) === srcVal);
+        const targetNode = estadoMapa.nodos.find(n => norm(n.id) === tgtVal || norm(n.nombreOriginal) === tgtVal);
 
-        // Evitar que un nodo apunte a sí mismo por error
         if (sourceNode && targetNode && sourceNode !== targetNode) {
             estadoMapa.enlaces.push({ source: sourceNode, target: targetNode });
         }
