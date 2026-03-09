@@ -12,11 +12,11 @@ export function inicializarCanvas() {
 
 function redimensionar() {
     if(!canvas) return;
-    canvas.width = window.innerWidth * window.devicePixelRatio;
-    canvas.height = window.innerHeight * window.devicePixelRatio;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
     canvas.style.width = window.innerWidth + 'px';
     canvas.style.height = window.innerHeight + 'px';
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
     dibujarFrame();
 }
 
@@ -27,35 +27,42 @@ export function dibujarFrame() {
     const camara = estadoMapa.camara;
     const interaccion = estadoMapa.interaccion;
 
+    // 1. SOLUCIÓN AL GHOSTING: Resetear la matriz para limpiar la pantalla completa correctamente
+    ctx.resetTransform();
     ctx.fillStyle = '#05000a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.save();
+    // 2. Aplicar la cámara y la resolución de pantalla
+    const dpr = window.devicePixelRatio || 1;
+    ctx.scale(dpr, dpr);
     ctx.translate(camara.x, camara.y);
     ctx.scale(camara.zoom, camara.zoom);
 
+    // 3. DIBUJAR ENLACES CON FLECHAS
     ctx.lineWidth = 2 / camara.zoom;
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
         const angle = Math.atan2(dy, dx);
         
-        const targetX = link.target.x - Math.cos(angle) * (link.target.radio + (2/camara.zoom));
-        const targetY = link.target.y - Math.sin(angle) * (link.target.radio + (2/camara.zoom));
+        // Detener la línea en el borde del nodo objetivo, no en su centro
+        const targetX = link.target.x - Math.cos(angle) * (link.target.radio + (3/camara.zoom));
+        const targetY = link.target.y - Math.sin(angle) * (link.target.radio + (3/camara.zoom));
 
         ctx.beginPath();
         ctx.moveTo(link.source.x, link.source.y);
         ctx.lineTo(targetX, targetY);
         
         if (interaccion.hoveredNode === link.source || interaccion.hoveredNode === link.target) {
-            ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
-            ctx.lineWidth = 5 / camara.zoom;
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)'; // Línea brillante al hacer hover
+            ctx.lineWidth = 4 / camara.zoom;
         } else {
-            ctx.strokeStyle = 'rgba(100, 100, 100, 0.4)';
+            ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)';
             ctx.lineWidth = 1.5 / camara.zoom;
         }
         ctx.stroke();
 
+        // DIBUJO DE LA FLECHA
         const headlen = 12 / camara.zoom;
         ctx.beginPath();
         ctx.moveTo(targetX, targetY);
@@ -66,6 +73,7 @@ export function dibujarFrame() {
         ctx.fill();
     });
 
+    // 4. DIBUJAR NODOS
     nodos.forEach(nodo => {
         const colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         const isHovered = interaccion.hoveredNode === nodo;
@@ -81,7 +89,7 @@ export function dibujarFrame() {
         ctx.fill();
 
         ctx.shadowBlur = 0;
-        ctx.lineWidth = (isHovered ? 5 : 2) / camara.zoom;
+        ctx.lineWidth = (isHovered ? 4 : 2) / camara.zoom;
         ctx.strokeStyle = colorAf;
         
         if (!nodo.esConocido) {
@@ -91,7 +99,8 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        if (camara.zoom > 0.3 || isHovered || nodo.radio > 20) {
+        // Textos (Ocultos si la cámara está muy lejos para evitar caos visual)
+        if (camara.zoom > 0.4 || isHovered || nodo.radio > 20) {
             const fontSize = isHovered ? 18 : 14;
             ctx.font = "bold " + fontSize + "px sans-serif";
             ctx.textAlign = 'center';
@@ -100,7 +109,7 @@ export function dibujarFrame() {
             const textY = nodo.y + nodo.radio + (5 / camara.zoom);
 
             ctx.lineWidth = 3 / camara.zoom;
-            ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+            ctx.strokeStyle = 'rgba(0,0,0,0.9)';
             ctx.strokeText(nodo.nombre, nodo.x, textY);
             
             ctx.fillStyle = nodo.esConocido ? '#fff' : '#888';
@@ -108,8 +117,6 @@ export function dibujarFrame() {
             ctx.fillText(nodo.nombre, nodo.x, textY);
         }
     });
-
-    ctx.restore();
 }
 
 export function actualizarPanelInfo() {
