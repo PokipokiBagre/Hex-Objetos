@@ -22,11 +22,12 @@ export async function cargarDatos(barra) {
     }
 }
 
-function cleanCoord(val) {
+// Limpiador seguro para extraer los números de Gephi sin que los puntos rompan el valor
+function parseGephiCoord(val) {
     if (val === undefined || val === null || val === '') return null;
     let str = String(val).replace(/[^0-9\-]/g, '');
-    let parsed = parseFloat(str);
-    return isNaN(parsed) ? null : parsed;
+    let num = parseInt(str, 10);
+    return isNaN(num) ? null : num;
 }
 
 function procesarNodos(json) {
@@ -35,15 +36,15 @@ function procesarNodos(json) {
     
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
-    // Primer paso: Recopilar coordenadas crudas y hallar límites
+    // 1. Extraer coordenadas en bruto
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
         
-        let rawX = cleanCoord(n.X) || cleanCoord(n.x);
-        let rawY = cleanCoord(n.Y) || cleanCoord(n.y);
+        let rawX = parseGephiCoord(n.X) || parseGephiCoord(n.x);
+        let rawY = parseGephiCoord(n.Y) || parseGephiCoord(n.y);
 
-        if (rawX === null) rawX = Math.random() * 1000;
-        if (rawY === null) rawY = Math.random() * 1000;
+        if (rawX === null) rawX = Math.random() * 1000 - 500;
+        if (rawY === null) rawY = Math.random() * 1000 - 500;
         
         if (rawX < minX) minX = rawX; 
         if (rawX > maxX) maxX = rawX;
@@ -57,17 +58,18 @@ function procesarNodos(json) {
     let rangeX = maxX - minX;
     let rangeY = maxY - minY;
     
-    if (rangeX === 0 || isNaN(rangeX)) rangeX = 1;
-    if (rangeY === 0 || isNaN(rangeY)) rangeY = 1;
+    // USAR EL RANGO MÁXIMO PARA NO DEFORMAR EL CÍRCULO (Preserva el Aspect Ratio de Gephi)
+    let maxRange = Math.max(rangeX, rangeY);
+    if (maxRange === 0 || isNaN(maxRange)) maxRange = 1;
 
-    // Segundo paso: Normalizar a un mapa perfecto de 4000x4000
+    // 2. Escalar proporcionalmente a un espacio de trabajo amigable
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
         const nombreReal = n.Nombre && n.Nombre.trim() !== "" ? n.Nombre : n.ID;
         const esConocido = n.Conocido && n.Conocido.toString().trim().toLowerCase() === 'si';
         
-        const x = ((n._rawX - minX) / rangeX) * 4000 - 2000;
-        const y = ((n._rawY - minY) / rangeY) * 4000 - 2000;
+        const x = ((n._rawX - minX) / maxRange) * 4000 - 2000;
+        const y = ((n._rawY - minY) / maxRange) * 4000 - 2000;
         
         estadoMapa.nodos.push({
             id: n.ID ? n.ID.toString().trim() : nombreReal,
@@ -80,7 +82,7 @@ function procesarNodos(json) {
             esConocido: esConocido,
             x: x,
             y: y,
-            radio: esConocido ? 30 : 12
+            radio: esConocido ? 30 : 12 // Destaca los descubiertos
         });
     });
 }
@@ -97,6 +99,7 @@ function procesarEnlaces(arrayStrings) {
         const sourceNode = estadoMapa.nodos.find(n => norm(n.id) === srcVal || norm(n.nombre) === srcVal);
         const targetNode = estadoMapa.nodos.find(n => norm(n.id) === tgtVal || norm(n.nombre) === tgtVal);
 
+        // Evitar que un nodo apunte a sí mismo por error
         if (sourceNode && targetNode && sourceNode !== targetNode) {
             estadoMapa.enlaces.push({ source: sourceNode, target: targetNode });
         }
