@@ -1,6 +1,6 @@
 import { estadoMapa } from './mapa-state.js';
 
-const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
+export const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 
 export async function cargarDatos(barra) {
     try {
@@ -12,8 +12,7 @@ export async function cargarDatos(barra) {
         const json = JSON.parse(decodeURIComponent(escape(window.atob(jsonText))));
         
         procesarNodos(json);
-        // Soporte para variaciones de nombre en la pestaña
-        procesarEnlaces(json.String || json.string || json.Strings || []);
+        procesarEnlaces(json.String || []);
         
         if(barra) barra.style.width = '100%';
         return true;
@@ -68,6 +67,11 @@ function procesarNodos(json) {
         if (dy > maxDist) maxDist = dy;
     });
 
+    // Guardamos la matemática para poder hacer el cálculo inverso al arrastrar
+    estadoMapa.math.originX = originX;
+    estadoMapa.math.originY = originY;
+    estadoMapa.math.maxDist = maxDist;
+
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
 
@@ -92,29 +96,27 @@ function procesarNodos(json) {
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        // COMPACTACIÓN: Reducido de 5000 a 2000 para que estén más juntos
-        const x = ((n._rawX - originX) / maxDist) * 2000;
-        const y = -((n._rawY - originY) / maxDist) * 2000; 
-
-        // Nodos ligeramente más grandes
-        let radio = esConocido ? 24 : 14;
-        if (isHexNode) radio = 45;
+        const x = ((n._rawX - originX) / maxDist) * 5000;
+        const y = -((n._rawY - originY) / maxDist) * 5000; 
 
         estadoMapa.nodos.push({
             id: idReal,
             nombreOriginal: nombreReal,
             nombre: nombreMostrar,
-            afinidad: esConocido ? (n.Afinidad || 'Desconocida') : 'Sellada',
+            afinidad: n.Afinidad || 'Desconocida', // Guardamos la real para pintar
             clase: n.Clase || '-',
             hex: hexCost,
-            resumen: esConocido ? (n.Resumen || 'Sin descripción') : 'El conocimiento de este nodo permanece sellado.',
-            efecto: esConocido ? (n.Efecto || '') : '',
+            resumen: n.Resumen || 'Sin descripción',
+            efecto: n.Efecto || '',
             esConocido: esConocido,
             isHexNode: isHexNode,
             x: x,
             y: y,
-            radio: radio,
-            incomingSources: [] 
+            _rawX: n._rawX, // Coord original de Excel
+            _rawY: n._rawY,
+            radio: isHexNode ? 40 : (esConocido ? 20 : 12),
+            incomingSources: [],
+            modificado: false // Bandera para API
         });
     });
 }
@@ -122,11 +124,9 @@ function procesarNodos(json) {
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
     
-    // Buscador Ultra-Agresivo
     const findNode = (val) => {
         if (!val) return null;
         const original = String(val).trim().toLowerCase();
-        // Extrae solo la parte fundamental (ej. "Hechizo 1" -> "1")
         const coreVal = original.replace(/hechizo/g, '').replace(/_/g, ' ').trim();
 
         return estadoMapa.nodos.find(n => {
@@ -143,7 +143,6 @@ function procesarEnlaces(arrayStrings) {
         if (!rel) return;
         let srcVal, tgtVal;
 
-        // Soporta si el Excel lo mandó como Array o como Objeto
         if (Array.isArray(rel)) {
             srcVal = rel[0]; tgtVal = rel[1];
         } else {
@@ -164,7 +163,10 @@ function procesarEnlaces(arrayStrings) {
         }
     });
 
-    // LÓGICA DE COLOR DE FLECHAS
+    actualizarColoresFlechas();
+}
+
+export function actualizarColoresFlechas() {
     estadoMapa.nodos.forEach(nodo => {
         if (nodo.incomingSources.length === 0) {
             nodo.arrowColor = 'rgba(255, 255, 255, 0.4)'; 
