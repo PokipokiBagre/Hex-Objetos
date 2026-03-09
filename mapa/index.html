@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="../stylemapa.css">
 </head>
 <body>
-    <div id="ui-overlay">
-        <div class="nav-bar">
+    <div id="ui-overlay" style="pointer-events: none;">
+        <div class="nav-bar" style="pointer-events: auto;">
             <button onclick="window.location.href='../index.html'" class="btn-basic">⬅ Volver</button>
             <h2 style="margin:0; color:var(--gold); text-shadow:0 0 10px rgba(212,175,55,0.5);">MAPA DE HECHIZOS</h2>
             <div style="display:flex; gap:10px;">
@@ -19,7 +19,7 @@
             </div>
         </div>
 
-        <div id="panel-info" class="panel-info oculto">
+        <div id="panel-info" class="panel-info oculto" style="pointer-events: auto;">
             <h3 id="info-titulo">Nombre Hechizo</h3>
             <div id="info-tags" class="tags-container"></div>
             <p id="info-desc" class="desc-text"></p>
