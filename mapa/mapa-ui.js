@@ -24,7 +24,6 @@ export function dibujarFrame() {
     if(!ctx) return;
     const { nodos, enlaces, camara, interaccion } = estadoMapa;
 
-    // LIMPIEZA ABSOLUTA (Solución al efecto fantasma/pantalla cortada)
     ctx.setTransform(1, 0, 0, 1, 0, 0); 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#05000a';
@@ -35,7 +34,7 @@ export function dibujarFrame() {
     ctx.translate(camara.x, camara.y);
     ctx.scale(camara.zoom, camara.zoom);
 
-    // 1. DIBUJAR ENLACES CON FLECHAS CALCULADAS
+    // 1. DIBUJAR ENLACES CON FLECHAS
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -50,11 +49,10 @@ export function dibujarFrame() {
         
         if (interaccion.hoveredNode === link.source || interaccion.hoveredNode === link.target) {
             ctx.strokeStyle = 'rgba(0, 255, 255, 1)';
-            ctx.lineWidth = 5 / camara.zoom;
+            ctx.lineWidth = 6 / camara.zoom; // Más gruesa al hacer hover
         } else {
-            // Aplicamos el color de flecha calculado en mapa-data.js
             ctx.strokeStyle = link.target.arrowColor; 
-            ctx.lineWidth = 2 / camara.zoom;
+            ctx.lineWidth = 2.5 / camara.zoom; // Líneas un poco más gruesas
         }
         ctx.stroke();
 
