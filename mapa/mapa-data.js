@@ -20,6 +20,13 @@ export async function cargarDatos(barra) {
     }
 }
 
+// Lector de coordenadas a prueba de errores de Excel
+function cleanCoord(val) {
+    if (val === undefined || val === null || val === '') return null;
+    let str = val.toString().replace(/[\.,]/g, ''); // Quita puntos y comas
+    return parseFloat(str);
+}
+
 function procesarNodos(json) {
     const todos = [...(json.nodos || []), ...(json.nodosOcultos || [])];
     estadoMapa.nodos = [];
@@ -29,11 +36,9 @@ function procesarNodos(json) {
         const nombreReal = n.Nombre && n.Nombre.trim() !== "" ? n.Nombre : n.ID;
         const esConocido = n.Conocido && n.Conocido.toString().trim().toLowerCase() === 'si';
         
-        // Coordenadas base (si no tienen, las centramos al azar levemente)
-        const x = parseFloat(n.X) || (Math.random() * 400 - 200);
-        const y = parseFloat(n.Y) || (Math.random() * 400 - 200);
+        const x = cleanCoord(n.X) ?? cleanCoord(n.x) ?? (Math.random() * 5000 - 2500);
+        const y = cleanCoord(n.Y) ?? cleanCoord(n.y) ?? (Math.random() * 5000 - 2500);
         
-        // Tamaño dinámico
         const radio = esConocido ? 35 : 15;
 
         estadoMapa.nodos.push({
