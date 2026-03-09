@@ -36,30 +36,22 @@ window.abrirMenuOP = () => {
     } 
 };
 
-// AUTO-ENFOQUE DINÁMICO
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
     
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    estadoMapa.nodos.forEach(n => {
-        if (n.x < minX) minX = n.x;
-        if (n.x > maxX) maxX = n.x;
-        if (n.y < minY) minY = n.y;
-        if (n.y > maxY) maxY = n.y;
-    });
+    // Al haber normalizado el mapa, sabemos que su tamaño máximo es de 4000x4000 
+    // y su centro matemático exacto está en (0,0).
+    const mapWidth = 4400; 
+    const mapHeight = 4400;
 
-    const mapWidth = (maxX - minX) || 1000;
-    const mapHeight = (maxY - minY) || 1000;
-    const centerX = minX + mapWidth / 2;
-    const centerY = minY + mapHeight / 2;
-
-    // Calculamos el zoom para que entre todo con un 20% de margen
-    const zoomX = window.innerWidth / (mapWidth * 1.2);
-    const zoomY = window.innerHeight / (mapHeight * 1.2);
+    const zoomX = window.innerWidth / mapWidth;
+    const zoomY = window.innerHeight / mapHeight;
     
-    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.5);
-    estadoMapa.camara.x = (window.innerWidth / 2) - (centerX * estadoMapa.camara.zoom);
-    estadoMapa.camara.y = (window.innerHeight / 2) - (centerY * estadoMapa.camara.zoom);
+    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.2);
+    
+    // Al fijar la cámara en window / 2, el punto (0,0) del mapa quedará exactamente en el centro de tu pantalla
+    estadoMapa.camara.x = window.innerWidth / 2;
+    estadoMapa.camara.y = window.innerHeight / 2;
 }
 
 function iniciarEventosInput() {
@@ -134,7 +126,7 @@ function iniciarEventosInput() {
         e.preventDefault();
         const camara = estadoMapa.camara;
         const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
-        const nuevoZoom = Math.max(0.02, Math.min(camara.zoom * zoomDelta, 4)); 
+        const nuevoZoom = Math.max(0.05, Math.min(camara.zoom * zoomDelta, 4)); 
         
         const mouseX = e.clientX;
         const mouseY = e.clientY;
