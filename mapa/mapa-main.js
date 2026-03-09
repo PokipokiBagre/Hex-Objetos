@@ -158,9 +158,10 @@ function iniciarEventosInput() {
             n.x += dx / estadoMapa.camara.zoom;
             n.y += dy / estadoMapa.camara.zoom;
             
+            // LÓGICA MATEMÁTICA CORREGIDA: Usamos 2000 al igual que en mapa-data.js
             const math = estadoMapa.math;
-            n._rawX = (n.x / 5000) * math.maxDist + math.originX;
-            n._rawY = -(n.y / 5000) * math.maxDist + math.originY;
+            n._rawX = (n.x / 2000) * math.maxDist + math.originX;
+            n._rawY = -(n.y / 2000) * math.maxDist + math.originY;
 
             n.modificado = true;
             document.getElementById('btn-save-map').classList.remove('oculto');
