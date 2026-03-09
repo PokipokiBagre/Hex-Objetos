@@ -1,5 +1,5 @@
 import { estadoMapa } from './mapa-state.js';
-import { cargarDatos } from './mapa-data.js';
+import { cargarDatos, actualizarColoresFlechas, API_HECHIZOS } from './mapa-data.js';
 import { inicializarCanvas, dibujarFrame, actualizarPanelInfo } from './mapa-ui.js';
 
 window.onload = async () => {
@@ -27,22 +27,83 @@ window.abrirMenuOP = () => {
     if (estadoMapa.esAdmin) { 
         estadoMapa.esAdmin = false; 
         alert("Modo OP Desactivado. El mapa está bloqueado para edición."); 
-        document.getElementById('btn-save-positions').classList.add('oculto');
+        document.getElementById('btn-save-map').classList.add('oculto');
+        actualizarPanelInfo(); // Recargar panel para quitar el dropdown
     } else { 
         if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) { 
             estadoMapa.esAdmin = true; 
-            alert("Modo OP Activado. Puedes arrastrar los nodos para reubicarlos.");
+            alert("Modo OP Activado.\n- Puedes arrastrar nodos.\n- Al poner el ratón sobre un nodo verás un menú para Descubrir/Sellar.");
+            actualizarPanelInfo(); 
         } 
     } 
 };
 
+// FUNCIÓN GLOBAL: Cambia el estado del Dropdown
+window.cambiarEstadoNodo = (id, valor) => {
+    const nodo = estadoMapa.nodos.find(n => n.id === id);
+    if(nodo) {
+        const nuevoEstado = (valor === 'si');
+        if (nodo.esConocido !== nuevoEstado) {
+            nodo.esConocido = nuevoEstado;
+            nodo.modificado = true;
+            
+            // Recalcular la estética del nodo
+            nodo.radio = nodo.esConocido ? 20 : 12;
+            let baseName = nodo.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim();
+            if (nodo.esConocido) {
+                nodo.nombre = `${baseName} (${nodo.hex})`;
+            } else {
+                let maskName = nodo.id.toLowerCase().includes('hechizo') ? nodo.id : `Hechizo ${nodo.id}`;
+                nodo.nombre = `${maskName} (${nodo.hex})`;
+            }
+
+            actualizarColoresFlechas(); // Recalcula las dependencias de los demás
+            actualizarPanelInfo(); // Refresca los textos en el panel
+            document.getElementById('btn-save-map').classList.remove('oculto');
+        }
+    }
+};
+
+// FUNCIÓN GLOBAL: Llama a la API para guardar los cambios
+window.guardarCambiosMapa = async () => {
+    const btn = document.getElementById('btn-save-map');
+    btn.innerText = "Guardando..."; btn.disabled = true;
+
+    // Solo enviamos los que cambiaron
+    const cambios = estadoMapa.nodos.filter(n => n.modificado).map(n => ({
+        id: n.id,
+        x: n._rawX,
+        y: n._rawY,
+        conocido: n.esConocido ? 'si' : 'no'
+    }));
+
+    try {
+        // En tu Google Apps Script deberás atrapar la acción 'guardar_mapa'
+        const res = await fetch(API_HECHIZOS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ accion: 'guardar_mapa', cambios: cambios }) 
+        });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+            alert("¡Cambios del mapa guardados con éxito!");
+            estadoMapa.nodos.forEach(n => n.modificado = false);
+            btn.classList.add('oculto');
+        } else {
+            alert("El servidor no pudo guardar: " + (data.message || 'Error desconocido'));
+        }
+    } catch(e) {
+        alert("Fallo de red al intentar guardar en el servidor.");
+    }
+
+    btn.innerText = "💾 Guardar Cambios";
+    btn.disabled = false;
+};
+
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
-    
-    // Zoom inicial ajustado para que no se vea tan pequeño y disperso
     estadoMapa.camara.zoom = window.innerWidth > 1000 ? 0.6 : 0.3; 
-    
-    // Centro absoluto
     estadoMapa.camara.x = window.innerWidth / 2;
     estadoMapa.camara.y = window.innerHeight / 2;
 }
@@ -91,10 +152,17 @@ function iniciarEventosInput() {
             estadoMapa.camara.y += dy;
         } 
         else if (estadoMapa.interaccion.draggedNode) {
-            estadoMapa.interaccion.draggedNode.x += dx / estadoMapa.camara.zoom;
-            estadoMapa.interaccion.draggedNode.y += dy / estadoMapa.camara.zoom;
-            estadoMapa.cambiosPendientes = true;
-            document.getElementById('btn-save-positions').classList.remove('oculto');
+            const n = estadoMapa.interaccion.draggedNode;
+            n.x += dx / estadoMapa.camara.zoom;
+            n.y += dy / estadoMapa.camara.zoom;
+            
+            // Reversa matemática para que guarde las coordenadas originales
+            const math = estadoMapa.math;
+            n._rawX = (n.x / 5000) * math.maxDist + math.originX;
+            n._rawY = -(n.y / 5000) * math.maxDist + math.originY;
+
+            n.modificado = true;
+            document.getElementById('btn-save-map').classList.remove('oculto');
         } 
         else {
             const nodoBajoCursor = obtenerNodoEnCursor(worldPos.x, worldPos.y);
