@@ -4,12 +4,14 @@ let canvas, ctx;
 
 export function inicializarCanvas() {
     canvas = document.getElementById('mapa-canvas');
+    if(!canvas) return;
     ctx = canvas.getContext('2d', { alpha: false });
     redimensionar();
     window.addEventListener('resize', redimensionar);
 }
 
 function redimensionar() {
+    if(!canvas) return;
     canvas.width = window.innerWidth * window.devicePixelRatio;
     canvas.height = window.innerHeight * window.devicePixelRatio;
     canvas.style.width = window.innerWidth + 'px';
@@ -20,9 +22,11 @@ function redimensionar() {
 
 export function dibujarFrame() {
     if(!ctx) return;
-    const { nodos, enlaces, camara, interaccion } = estadoMapa;
+    const nodos = estadoMapa.nodos;
+    const enlaces = estadoMapa.enlaces;
+    const camara = estadoMapa.camara;
+    const interaccion = estadoMapa.interaccion;
 
-    // Fondo Oscuro
     ctx.fillStyle = '#05000a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -30,14 +34,12 @@ export function dibujarFrame() {
     ctx.translate(camara.x, camara.y);
     ctx.scale(camara.zoom, camara.zoom);
 
-    // 1. DIBUJAR ENLACES CON FLECHAS
     ctx.lineWidth = 2 / camara.zoom;
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
         const angle = Math.atan2(dy, dx);
         
-        // Detener la línea en el borde del nodo, no en el centro
         const targetX = link.target.x - Math.cos(angle) * (link.target.radio + (2/camara.zoom));
         const targetY = link.target.y - Math.sin(angle) * (link.target.radio + (2/camara.zoom));
 
@@ -46,7 +48,7 @@ export function dibujarFrame() {
         ctx.lineTo(targetX, targetY);
         
         if (interaccion.hoveredNode === link.source || interaccion.hoveredNode === link.target) {
-            ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)'; // Brillo de selección
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
             ctx.lineWidth = 5 / camara.zoom;
         } else {
             ctx.strokeStyle = 'rgba(100, 100, 100, 0.4)';
@@ -54,7 +56,6 @@ export function dibujarFrame() {
         }
         ctx.stroke();
 
-        // Cabeza de la Flecha
         const headlen = 12 / camara.zoom;
         ctx.beginPath();
         ctx.moveTo(targetX, targetY);
@@ -65,7 +66,6 @@ export function dibujarFrame() {
         ctx.fill();
     });
 
-    // 2. DIBUJAR NODOS
     nodos.forEach(nodo => {
         const colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         const isHovered = interaccion.hoveredNode === nodo;
@@ -73,7 +73,6 @@ export function dibujarFrame() {
         ctx.beginPath();
         ctx.arc(nodo.x, nodo.y, nodo.radio, 0, Math.PI * 2);
         
-        // Estilo Cosmograph: Glow Exterior
         ctx.shadowBlur = isHovered ? 25 : 10;
         ctx.shadowColor = colorAf;
 
@@ -81,7 +80,7 @@ export function dibujarFrame() {
         if (isHovered) ctx.fillStyle = '#333';
         ctx.fill();
 
-        ctx.shadowBlur = 0; // Apagar glow para el borde
+        ctx.shadowBlur = 0;
         ctx.lineWidth = (isHovered ? 5 : 2) / camara.zoom;
         ctx.strokeStyle = colorAf;
         
@@ -92,22 +91,20 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. ETIQUETAS (Textos con contorno oscuro para legibilidad)
         if (camara.zoom > 0.3 || isHovered || nodo.radio > 20) {
             const fontSize = isHovered ? 18 : 14;
-            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.font = "bold " + fontSize + "px sans-serif";
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             
             const textY = nodo.y + nodo.radio + (5 / camara.zoom);
 
-            // Contorno negro para que se lea en cualquier fondo
             ctx.lineWidth = 3 / camara.zoom;
             ctx.strokeStyle = 'rgba(0,0,0,0.8)';
             ctx.strokeText(nodo.nombre, nodo.x, textY);
             
             ctx.fillStyle = nodo.esConocido ? '#fff' : '#888';
-            if (isHovered) ctx.fillStyle = '#00ffff'; // ERROR SOLUCIONADO AQUÍ
+            if (isHovered) ctx.fillStyle = '#00ffff'; 
             ctx.fillText(nodo.nombre, nodo.x, textY);
         }
     });
@@ -117,6 +114,7 @@ export function dibujarFrame() {
 
 export function actualizarPanelInfo() {
     const panel = document.getElementById('panel-info');
+    if(!panel) return;
     const nodo = estadoMapa.interaccion.hoveredNode;
 
     if (!nodo) { panel.classList.add('oculto'); return; }
@@ -124,15 +122,19 @@ export function actualizarPanelInfo() {
     document.getElementById('info-titulo').innerText = nodo.nombre;
     document.getElementById('info-titulo').style.color = COLOR_AFINIDAD[nodo.afinidad] || '#fff';
     
-    document.getElementById('info-tags').innerHTML = `
-        <span class="tag" style="border-color:${COLOR_AFINIDAD[nodo.afinidad]}; color:${COLOR_AFINIDAD[nodo.afinidad]}">${nodo.afinidad}</span>
-        <span class="tag">HEX: ${nodo.hex}</span>
-        <span class="tag">C-${nodo.clase}</span>
-    `;
+    document.getElementById('info-tags').innerHTML = 
+        '<span class="tag" style="border-color:' + (COLOR_AFINIDAD[nodo.afinidad] || '#888') + '; color:' + (COLOR_AFINIDAD[nodo.afinidad] || '#888') + '">' + nodo.afinidad + '</span>' +
+        '<span class="tag">HEX: ' + nodo.hex + '</span>' +
+        '<span class="tag">C-' + nodo.clase + '</span>';
+        
     document.getElementById('info-desc').innerText = nodo.resumen;
+    
     const efectoEl = document.getElementById('info-efecto');
     if (nodo.efecto && nodo.esConocido) {
-        efectoEl.innerText = "Efecto: " + nodo.efecto; efectoEl.style.display = 'block';
-    } else { efectoEl.style.display = 'none'; }
+        efectoEl.innerText = "Efecto: " + nodo.efecto; 
+        efectoEl.style.display = 'block';
+    } else { 
+        efectoEl.style.display = 'none'; 
+    }
     panel.classList.remove('oculto');
 }
