@@ -28,7 +28,7 @@ window.abrirMenuOP = () => {
         estadoMapa.esAdmin = false; 
         alert("Modo OP Desactivado. El mapa está bloqueado para edición."); 
         document.getElementById('btn-save-map').classList.add('oculto');
-        actualizarPanelInfo(); // Recargar panel para quitar el dropdown
+        actualizarPanelInfo(); 
     } else { 
         if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) { 
             estadoMapa.esAdmin = true; 
@@ -38,7 +38,6 @@ window.abrirMenuOP = () => {
     } 
 };
 
-// FUNCIÓN GLOBAL: Cambia el estado del Dropdown
 window.cambiarEstadoNodo = (id, valor) => {
     const nodo = estadoMapa.nodos.find(n => n.id === id);
     if(nodo) {
@@ -47,7 +46,6 @@ window.cambiarEstadoNodo = (id, valor) => {
             nodo.esConocido = nuevoEstado;
             nodo.modificado = true;
             
-            // Recalcular la estética del nodo
             nodo.radio = nodo.esConocido ? 20 : 12;
             let baseName = nodo.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim();
             if (nodo.esConocido) {
@@ -57,28 +55,32 @@ window.cambiarEstadoNodo = (id, valor) => {
                 nodo.nombre = `${maskName} (${nodo.hex})`;
             }
 
-            actualizarColoresFlechas(); // Recalcula las dependencias de los demás
-            actualizarPanelInfo(); // Refresca los textos en el panel
+            actualizarColoresFlechas(); 
+            actualizarPanelInfo(); 
             document.getElementById('btn-save-map').classList.remove('oculto');
         }
     }
 };
 
-// FUNCIÓN GLOBAL: Llama a la API para guardar los cambios
 window.guardarCambiosMapa = async () => {
     const btn = document.getElementById('btn-save-map');
     btn.innerText = "Guardando..."; btn.disabled = true;
 
-    // Solo enviamos los que cambiaron
     const cambios = estadoMapa.nodos.filter(n => n.modificado).map(n => ({
-        id: n.id,
+        id: n.id || n.nombreOriginal, 
         x: n._rawX,
         y: n._rawY,
         conocido: n.esConocido ? 'si' : 'no'
     }));
 
+    if(cambios.length === 0) {
+        alert("No hay cambios para guardar.");
+        btn.classList.add('oculto');
+        btn.disabled = false;
+        return;
+    }
+
     try {
-        // En tu Google Apps Script deberás atrapar la acción 'guardar_mapa'
         const res = await fetch(API_HECHIZOS, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -97,7 +99,7 @@ window.guardarCambiosMapa = async () => {
         alert("Fallo de red al intentar guardar en el servidor.");
     }
 
-    btn.innerText = "💾 Guardar Cambios";
+    btn.innerText = "💾 GUARDAR CAMBIOS";
     btn.disabled = false;
 };
 
@@ -156,7 +158,6 @@ function iniciarEventosInput() {
             n.x += dx / estadoMapa.camara.zoom;
             n.y += dy / estadoMapa.camara.zoom;
             
-            // Reversa matemática para que guarde las coordenadas originales
             const math = estadoMapa.math;
             n._rawX = (n.x / 5000) * math.maxDist + math.originX;
             n._rawY = -(n.y / 5000) * math.maxDist + math.originY;
