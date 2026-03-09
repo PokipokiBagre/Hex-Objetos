@@ -55,11 +55,11 @@ export function dibujarFrame() {
             ctx.lineWidth = 6 / scaleFactor;
         } else {
             ctx.strokeStyle = link.target.arrowColor || 'rgba(255, 255, 255, 0.5)'; 
-            ctx.lineWidth = 2 / scaleFactor; 
+            ctx.lineWidth = 2.5 / scaleFactor; 
         }
         ctx.stroke();
 
-        const headlen = 14 / scaleFactor;
+        const headlen = 16 / scaleFactor;
         ctx.beginPath();
         ctx.moveTo(targetX, targetY);
         ctx.lineTo(targetX - headlen * Math.cos(angle - Math.PI / 7), targetY - headlen * Math.sin(angle - Math.PI / 7));
@@ -78,7 +78,6 @@ export function dibujarFrame() {
         const isHovered = interaccion.hoveredNode === nodo;
         const isSelected = interaccion.selectedNode === nodo;
         
-        // Círculo indicador si está "Seleccionado por Clic"
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(nodo.x, nodo.y, nodo.radio + (8/scaleFactor), 0, Math.PI * 2);
@@ -117,14 +116,15 @@ export function dibujarFrame() {
 
         // 3. TEXTOS
         if (camara.zoom > 0.25 || isHovered || isSelected || nodo.isHexNode) {
-            let fontSize = nodo.isHexNode ? 28 : (nodo.esConocido ? 15 : 12);
+            let fontSize = nodo.isHexNode ? 28 : (nodo.esConocido ? 16 : 13);
             if (isHovered || isSelected) fontSize += 4;
 
             ctx.font = "bold " + fontSize + "px sans-serif";
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             
-            const textY = nodo.y + nodo.radio + (5 / scaleFactor);
+            // Texto se posiciona respetando el nuevo radio gigante
+            const textY = nodo.y + nodo.radio + (8 / scaleFactor);
 
             ctx.lineWidth = 3 / scaleFactor;
             ctx.strokeStyle = 'rgba(0,0,0,0.9)';
@@ -135,7 +135,7 @@ export function dibujarFrame() {
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? '#00ffff' : '#fff';
             } else {
-                ctx.fillStyle = (isHovered || isSelected) ? '#aaa' : '#666'; 
+                ctx.fillStyle = (isHovered || isSelected) ? '#aaa' : '#888'; 
             }
             ctx.fillText(nodo.nombre, nodo.x, textY);
         }
@@ -146,7 +146,6 @@ export function actualizarPanelInfo() {
     const panel = document.getElementById('panel-info');
     if(!panel) return;
     
-    // PRIORIDAD ABSOLUTA AL NODO SELECCIONADO (CLIC) sobre el HOVER
     const nodo = estadoMapa.interaccion.selectedNode || estadoMapa.interaccion.hoveredNode;
 
     if (!nodo) { panel.classList.add('oculto'); return; }
@@ -185,7 +184,7 @@ export function actualizarPanelInfo() {
                 <option value="si" ${nodo.esConocido ? 'selected' : ''}>👁️ SÍ (Descubierto)</option>
                 <option value="no" ${!nodo.esConocido ? 'selected' : ''}>🔒 NO (Sellado)</option>
             </select>
-            <div style="font-size:0.7em; color:#888; margin-top:5px;">(Haz clic en otro lugar para deseleccionar)</div>
+            <div style="font-size:0.7em; color:#888; margin-top:5px;">(Haz clic en el fondo oscuro para deseleccionar)</div>
         `;
     } else {
         opDiv.innerHTML = '';
