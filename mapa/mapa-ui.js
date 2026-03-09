@@ -107,7 +107,7 @@ export function dibujarFrame() {
             ctx.strokeText(nodo.nombre, nodo.x, textY);
             
             ctx.fillStyle = nodo.esConocido ? '#fff' : '#888';
-            if(isHovered) ctx.fillStyle = var(--cyan-magic);
+            if (isHovered) ctx.fillStyle = '#00ffff'; // <--- ¡AQUÍ ESTABA EL ERROR! CORREGIDO
             ctx.fillText(nodo.nombre, nodo.x, textY);
         }
     });
