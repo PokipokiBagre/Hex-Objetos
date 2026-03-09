@@ -12,7 +12,8 @@ export async function cargarDatos(barra) {
         const json = JSON.parse(decodeURIComponent(escape(window.atob(jsonText))));
         
         procesarNodos(json);
-        procesarEnlaces(json.String || []);
+        // Soporte para variaciones de nombre en la pestaña
+        procesarEnlaces(json.String || json.string || json.Strings || []);
         
         if(barra) barra.style.width = '100%';
         return true;
@@ -22,7 +23,6 @@ export async function cargarDatos(barra) {
     }
 }
 
-// Lector de coordenadas a prueba de formatos extraños
 function parseGephiCoord(val) {
     if (val === undefined || val === null || val === '') return null;
     let str = String(val).trim().replace(/,/g, '.').replace(/[^0-9\.\-]/g, '');
@@ -35,7 +35,6 @@ function procesarNodos(json) {
     estadoMapa.nodos = [];
     const nodosProcesados = new Set();
     
-    // 1. Recopilamos datos crudos
     let hexNodeRaw = null;
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
@@ -54,15 +53,13 @@ function procesarNodos(json) {
         const idStr = String(n.ID || '').trim().toLowerCase();
         const nomStr = String(n.Nombre || '').trim().toLowerCase();
         if (idStr === 'hex' || nomStr === 'hex' || idStr === 'hechizo hex') {
-            hexNodeRaw = n; // Detectamos el nodo central!
+            hexNodeRaw = n; 
         }
     });
 
-    // 2. Establecer el Origen del Universo en el Nodo HEX
     let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
     let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
 
-    // Calcular el rango máximo desde el origen para escalar proporcionalmente
     let maxDist = 1;
     todos.forEach(n => {
         let dx = Math.abs(n._rawX - originX);
@@ -71,7 +68,6 @@ function procesarNodos(json) {
         if (dy > maxDist) maxDist = dy;
     });
 
-    // 3. Crear Nodos Normalizados
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
 
@@ -96,12 +92,13 @@ function procesarNodos(json) {
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        // Anclamos al HEX y multiplicamos por -1 la Y (Canvas dibuja la Y al revés)
-        const x = ((n._rawX - originX) / maxDist) * 5000;
-        const y = -((n._rawY - originY) / maxDist) * 5000; 
+        // COMPACTACIÓN: Reducido de 5000 a 2000 para que estén más juntos
+        const x = ((n._rawX - originX) / maxDist) * 2000;
+        const y = -((n._rawY - originY) / maxDist) * 2000; 
 
-        let radio = esConocido ? 20 : 12;
-        if (isHexNode) radio = 40;
+        // Nodos ligeramente más grandes
+        let radio = esConocido ? 24 : 14;
+        if (isHexNode) radio = 45;
 
         estadoMapa.nodos.push({
             id: idReal,
@@ -117,7 +114,7 @@ function procesarNodos(json) {
             x: x,
             y: y,
             radio: radio,
-            incomingSources: [] // Guardará los nodos que apuntan hacia este
+            incomingSources: [] 
         });
     });
 }
@@ -125,27 +122,41 @@ function procesarNodos(json) {
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
     
-    // Buscador Inteligente: Conecta "Hechizo 1" con "1" sin importar mayúsculas
+    // Buscador Ultra-Agresivo
     const findNode = (val) => {
         if (!val) return null;
-        const s = String(val).trim().toLowerCase();
-        const sNumMatch = s.match(/^hechizo\s+(\d+)$/);
-        const sNum = sNumMatch ? sNumMatch[1] : s;
+        const original = String(val).trim().toLowerCase();
+        // Extrae solo la parte fundamental (ej. "Hechizo 1" -> "1")
+        const coreVal = original.replace(/hechizo/g, '').replace(/_/g, ' ').trim();
 
         return estadoMapa.nodos.find(n => {
             const nid = String(n.id).trim().toLowerCase();
-            const nnom = String(n.nombreOriginal).trim().toLowerCase();
-            return nid === s || nnom === s || nid === sNum || nnom === sNum || `hechizo ${nid}` === s || `hechizo ${nnom}` === s;
+            const nnom = String(n.nombreOriginal).trim().toLowerCase().replace(/_/g, ' ');
+            const coreId = nid.replace(/hechizo/g, '').trim();
+            const coreNom = nnom.replace(/hechizo/g, '').trim();
+
+            return nid === original || nnom === original || coreId === coreVal || coreNom === coreVal;
         });
     };
 
     arrayStrings.forEach(rel => {
-        const srcKey = Object.keys(rel).find(k => k.trim().toLowerCase() === 'source');
-        const tgtKey = Object.keys(rel).find(k => k.trim().toLowerCase() === 'target');
-        if(!srcKey || !tgtKey) return;
+        if (!rel) return;
+        let srcVal, tgtVal;
 
-        const sourceNode = findNode(rel[srcKey]);
-        const targetNode = findNode(rel[tgtKey]);
+        // Soporta si el Excel lo mandó como Array o como Objeto
+        if (Array.isArray(rel)) {
+            srcVal = rel[0]; tgtVal = rel[1];
+        } else {
+            const srcKey = Object.keys(rel).find(k => k.trim().toLowerCase() === 'source');
+            const tgtKey = Object.keys(rel).find(k => k.trim().toLowerCase() === 'target');
+            srcVal = srcKey ? rel[srcKey] : Object.values(rel)[0];
+            tgtVal = tgtKey ? rel[tgtKey] : Object.values(rel)[1];
+        }
+
+        if (!srcVal || !tgtVal) return;
+
+        const sourceNode = findNode(srcVal);
+        const targetNode = findNode(tgtVal);
 
         if (sourceNode && targetNode && sourceNode !== targetNode) {
             estadoMapa.enlaces.push({ source: sourceNode, target: targetNode });
@@ -153,7 +164,7 @@ function procesarEnlaces(arrayStrings) {
         }
     });
 
-    // 4. LÓGICA DE COLOR DE FLECHAS BASADA EN REQUISITOS
+    // LÓGICA DE COLOR DE FLECHAS
     estadoMapa.nodos.forEach(nodo => {
         if (nodo.incomingSources.length === 0) {
             nodo.arrowColor = 'rgba(255, 255, 255, 0.4)'; 
@@ -164,11 +175,11 @@ function procesarEnlaces(arrayStrings) {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = 'rgba(255, 255, 255, 0.9)'; // BLANCAS: Todos los requisitos descubiertos
+            nodo.arrowColor = 'rgba(255, 255, 255, 0.95)'; // BLANCAS
         } else if (conocidos > 0) {
-            nodo.arrowColor = 'rgba(255, 200, 0, 0.8)'; // MOSTAZA: Parcialmente descubiertos
+            nodo.arrowColor = 'rgba(255, 200, 0, 0.9)'; // MOSTAZA
         } else {
-            nodo.arrowColor = 'rgba(255, 100, 150, 0.7)'; // ROSA/ROJO: Ninguno descubierto
+            nodo.arrowColor = 'rgba(255, 100, 150, 0.7)'; // ROSA
         }
     });
 }
