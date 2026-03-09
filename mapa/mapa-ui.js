@@ -27,7 +27,6 @@ export function dibujarFrame() {
     const camara = estadoMapa.camara;
     const interaccion = estadoMapa.interaccion;
 
-    // Reseteo limpio para evitar el efecto fantasma (ghosting)
     ctx.resetTransform();
     ctx.fillStyle = '#05000a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -37,34 +36,33 @@ export function dibujarFrame() {
     ctx.translate(camara.x, camara.y);
     ctx.scale(camara.zoom, camara.zoom);
 
-    // 1. DIBUJAR ENLACES CON FLECHAS
+    // 1. DIBUJAR ENLACES CON FLECHAS INTELIGENTES
     ctx.lineWidth = 2 / camara.zoom;
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
         const angle = Math.atan2(dy, dx);
         
-        const targetX = link.target.x - Math.cos(angle) * (link.target.radio + (3/camara.zoom));
-        const targetY = link.target.y - Math.sin(angle) * (link.target.radio + (3/camara.zoom));
+        // La línea se detiene en el borde del nodo, no en el centro
+        const targetX = link.target.x - Math.cos(angle) * (link.target.radio + (4/camara.zoom));
+        const targetY = link.target.y - Math.sin(angle) * (link.target.radio + (4/camara.zoom));
 
         ctx.beginPath();
         ctx.moveTo(link.source.x, link.source.y);
         ctx.lineTo(targetX, targetY);
         
+        // Brillo al hacer hover, de lo contrario usamos el color calculado (Blanco, Mostaza o Rosa)
         if (interaccion.hoveredNode === link.source || interaccion.hoveredNode === link.target) {
-            ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
-            ctx.lineWidth = 4 / camara.zoom;
-        } else if (!link.source.esConocido || !link.target.esConocido) {
-            ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)'; // Líneas tenues hacia nodos sellados
-            ctx.lineWidth = 1 / camara.zoom;
+            ctx.strokeStyle = 'rgba(0, 255, 255, 1)';
+            ctx.lineWidth = 5 / camara.zoom;
         } else {
-            ctx.strokeStyle = 'rgba(100, 100, 100, 0.5)';
-            ctx.lineWidth = 1.5 / camara.zoom;
+            ctx.strokeStyle = link.target.arrowColor; 
+            ctx.lineWidth = 2 / camara.zoom;
         }
         ctx.stroke();
 
-        // Punta de Flecha
-        const headlen = 12 / camara.zoom;
+        // Cabeza de la flecha
+        const headlen = 14 / camara.zoom;
         ctx.beginPath();
         ctx.moveTo(targetX, targetY);
         ctx.lineTo(targetX - headlen * Math.cos(angle - Math.PI / 6), targetY - headlen * Math.sin(angle - Math.PI / 6));
@@ -78,7 +76,7 @@ export function dibujarFrame() {
     nodos.forEach(nodo => {
         let colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         if (!nodo.esConocido) colorAf = '#555';
-        if (nodo.isHexNode) colorAf = '#ff4444'; // El centro destaca en rojo/naranja
+        if (nodo.isHexNode) colorAf = '#ff4444'; 
         
         const isHovered = interaccion.hoveredNode === nodo;
         
@@ -93,7 +91,7 @@ export function dibujarFrame() {
         } else if (nodo.esConocido) {
             ctx.fillStyle = isHovered ? '#333' : '#111';
         } else {
-            ctx.fillStyle = isHovered ? '#222' : '#000'; // Sellado
+            ctx.fillStyle = isHovered ? '#222' : '#000'; 
         }
         
         ctx.fill();
@@ -108,9 +106,9 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. TEXTOS ENMASCARADOS
-        if (camara.zoom > 0.3 || isHovered || nodo.esConocido || nodo.isHexNode) {
-            const fontSize = nodo.isHexNode ? 24 : (isHovered ? 16 : (nodo.esConocido ? 12 : 10));
+        // 3. TEXTOS
+        if (camara.zoom > 0.25 || isHovered || nodo.esConocido || nodo.isHexNode) {
+            const fontSize = nodo.isHexNode ? 24 : (isHovered ? 16 : (nodo.esConocido ? 14 : 11));
             ctx.font = "bold " + fontSize + "px sans-serif";
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
