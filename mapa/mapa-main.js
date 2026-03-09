@@ -3,20 +3,24 @@ import { cargarDatos } from './mapa-data.js';
 import { inicializarCanvas, dibujarFrame, actualizarPanelInfo } from './mapa-ui.js';
 
 window.onload = async () => {
-    inicializarCanvas();
-    const barra = document.getElementById('carga-progreso');
-    const loadScreen = document.getElementById('loader');
+    try {
+        inicializarCanvas();
+        const barra = document.getElementById('carga-progreso');
+        const loadScreen = document.getElementById('loader');
 
-    await cargarDatos(barra);
-    centrarCamara(); // AUTO ZOOM PARA VER TODO EL MAPA
-    
-    setTimeout(() => {
-        loadScreen.style.opacity = '0';
-        setTimeout(() => loadScreen.remove(), 500);
-    }, 500);
+        await cargarDatos(barra);
+        centrarCamara(); 
+        
+        if (loadScreen) {
+            loadScreen.style.opacity = '0';
+            setTimeout(() => loadScreen.remove(), 500);
+        }
 
-    iniciarEventosInput();
-    bucleRender();
+        iniciarEventosInput();
+        bucleRender();
+    } catch (error) {
+        console.error("Error fatal iniciando el mapa:", error);
+    }
 };
 
 window.abrirMenuOP = () => { 
@@ -35,7 +39,6 @@ window.abrirMenuOP = () => {
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
     
-    // Los nodos ahora están en un grid de -2000 a 2000 gracias a mapa-data.js
     const mapWidth = 4500;
     const mapHeight = 4500;
 
@@ -49,9 +52,10 @@ function centrarCamara() {
 
 function iniciarEventosInput() {
     const canvas = document.getElementById('mapa-canvas');
+    if(!canvas) return;
 
     const getPosicionMundo = (clientX, clientY) => {
-        const { camara } = estadoMapa;
+        const camara = estadoMapa.camara;
         return {
             x: (clientX - camara.x) / camara.zoom,
             y: (clientY - camara.y) / camara.zoom
@@ -116,7 +120,7 @@ function iniciarEventosInput() {
 
     canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
-        const { camara } = estadoMapa;
+        const camara = estadoMapa.camara;
         const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
         const nuevoZoom = Math.max(0.05, Math.min(camara.zoom * zoomDelta, 4)); 
         
