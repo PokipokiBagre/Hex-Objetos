@@ -22,11 +22,11 @@ export async function cargarDatos(barra) {
     }
 }
 
-// Extractor puro de decimales para Gephi
+// Extractor a prueba de balas: Ignora puntos y comas para evitar que los números colapsen la escala
 function parseGephiCoord(val) {
     if (val === undefined || val === null || val === '') return null;
-    let str = String(val).replace(',', '.'); 
-    let num = parseFloat(str);
+    let str = String(val).replace(/[^0-9\-]/g, ''); 
+    let num = parseInt(str, 10);
     return isNaN(num) ? null : num;
 }
 
@@ -34,7 +34,35 @@ function procesarNodos(json) {
     const todos = [].concat(json.nodos || []).concat(json.nodosOcultos || []);
     estadoMapa.nodos = [];
     const nodosProcesados = new Set();
+    
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
+    // 1. Recopilar coordenadas en bruto
+    todos.forEach(n => {
+        if (!n.ID && !n.Nombre) return;
+        
+        let rawX = parseGephiCoord(n.X) ?? parseGephiCoord(n.x) ?? (Math.random() * 100);
+        let rawY = parseGephiCoord(n.Y) ?? parseGephiCoord(n.y) ?? (Math.random() * 100);
+
+        if (rawX < minX) minX = rawX; 
+        if (rawX > maxX) maxX = rawX;
+        if (rawY < minY) minY = rawY; 
+        if (rawY > maxY) maxY = rawY;
+
+        n._rawX = rawX; 
+        n._rawY = rawY;
+    });
+
+    // 2. Calcular el centro del círculo de Gephi
+    let rangeX = maxX - minX;
+    let rangeY = maxY - minY;
+    let maxRange = Math.max(rangeX, rangeY);
+    if (maxRange === 0 || isNaN(maxRange)) maxRange = 1;
+
+    let centerX = minX + rangeX / 2;
+    let centerY = minY + rangeY / 2;
+
+    // 3. Normalizar y Enmascarar
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
 
@@ -47,39 +75,38 @@ function procesarNodos(json) {
 
         const esConocido = n.Conocido && n.Conocido.toString().trim().toLowerCase() === 'si';
         const hexCost = parseInt(n.HEX) || 0;
+        const isHexNode = (idUnico === 'hex');
 
-        // LÓGICA DE ENMASCARAMIENTO (Niebla de Guerra)
+        // LÓGICA DE ENMASCARAMIENTO (Sellado)
         let nombreMostrar = "";
-        if (esConocido) {
-            nombreMostrar = `${nombreReal} (${hexCost})`;
+        if (esConocido || isHexNode) {
+            nombreMostrar = isHexNode ? "HEX" : `${nombreReal} (${hexCost})`;
         } else {
-            // Si el ID ya dice "Hechizo X", lo dejamos, si no, se lo ponemos.
             let maskName = idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`;
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        // Mantenemos la pureza matemática de tu Gephi
-        let rawX = parseGephiCoord(n.X) ?? parseGephiCoord(n.x);
-        let rawY = parseGephiCoord(n.Y) ?? parseGephiCoord(n.y);
+        // TRASLADAR GEPHI A NUESTRA PANTALLA (Conservando la forma de círculo perfecto)
+        const x = ((n._rawX - centerX) / maxRange) * 4000;
+        const y = ((n._rawY - centerY) / maxRange) * 4000;
 
-        if (rawX === null) rawX = Math.random() * 500;
-        if (rawY === null) rawY = Math.random() * 500;
-
-        const escalaGephi = 4; // Ampliamos la red para que no se pisen los nombres
+        let radio = esConocido ? 22 : 12;
+        if (isHexNode) radio = 40; // El centro es más grande
 
         estadoMapa.nodos.push({
-            id: idReal || nombreReal, // Fundamental para que las líneas sepan a quién conectarse
-            nombreOriginal: nombreReal, // Guardado interno
-            nombre: nombreMostrar, // Lo que ve el usuario
+            id: idReal || nombreReal,
+            nombreOriginal: nombreReal,
+            nombre: nombreMostrar,
             afinidad: esConocido ? (n.Afinidad || 'Desconocida') : 'Sellada',
             clase: n.Clase || '-',
             hex: hexCost,
             resumen: esConocido ? (n.Resumen || 'Sin descripción') : 'El conocimiento de este nodo permanece sellado.',
             efecto: esConocido ? (n.Efecto || '') : '',
             esConocido: esConocido,
-            x: rawX * escalaGephi,
-            y: rawY * escalaGephi,
-            radio: esConocido ? 24 : 12 // Más pequeños para denotar que no están descubiertos
+            isHexNode: isHexNode,
+            x: x,
+            y: y,
+            radio: radio
         });
     });
 }
@@ -93,7 +120,6 @@ function procesarEnlaces(arrayStrings) {
         const srcVal = norm(rel.Source);
         const tgtVal = norm(rel.Target);
 
-        // Buscamos coincidencias usando el ID o el Nombre Original (ignorando la máscara)
         const sourceNode = estadoMapa.nodos.find(n => norm(n.id) === srcVal || norm(n.nombreOriginal) === srcVal);
         const targetNode = estadoMapa.nodos.find(n => norm(n.id) === tgtVal || norm(n.nombreOriginal) === tgtVal);
 
