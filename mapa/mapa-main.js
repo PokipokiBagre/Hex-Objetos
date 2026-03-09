@@ -41,17 +41,14 @@ window.abrirMenuOP = () => {
     } 
 };
 
-// ==========================================
-// ALGORITMO DE FÍSICA (YIFAN HU / FRUCHTERMAN)
-// ==========================================
 window.ordenarMapaYifanHu = () => {
     const nodos = estadoMapa.nodos;
     const enlaces = estadoMapa.enlaces;
     const math = estadoMapa.math;
     
-    const K = 280; // Constante de distancia ideal
-    let iteraciones = 150; // Veces que se ejecuta la simulación
-    let temp = 200; // Temperatura (qué tan brusco se mueven)
+    const K = 350; // Constante aumentada por el nuevo tamaño de nodos
+    let iteraciones = 150; 
+    let temp = 250; 
 
     nodos.forEach(n => n.modificado = true);
     document.getElementById('btn-save-map').classList.remove('oculto');
@@ -65,7 +62,7 @@ window.ordenarMapaYifanHu = () => {
         const disp = new Map();
         nodos.forEach(n => disp.set(n.id, {x:0, y:0}));
 
-        // 1. REPULSIÓN (Todos los nodos se alejan entre sí)
+        // 1. REPULSIÓN (Se empujan más a lo ancho para no pisar textos)
         for(let i=0; i<nodos.length; i++) {
             for(let j=i+1; j<nodos.length; j++) {
                 const u = nodos[i]; const v = nodos[j];
@@ -74,7 +71,6 @@ window.ordenarMapaYifanHu = () => {
                 let dist = Math.sqrt(dx*dx + dy*dy) || 1;
                 
                 const f = (K * K) / dist;
-                // Multiplicador X (x2.5) para que se empujen más a los lados y no pisen textos
                 const fx = (dx / dist) * f * 2.5; 
                 const fy = (dy / dist) * f;
 
@@ -83,7 +79,7 @@ window.ordenarMapaYifanHu = () => {
             }
         }
 
-        // 2. ATRACCIÓN (Los enlaces tiran de los nodos para unirlos)
+        // 2. ATRACCIÓN
         enlaces.forEach(link => {
             const u = link.source; const v = link.target;
             let dx = u.x - v.x;
@@ -98,17 +94,17 @@ window.ordenarMapaYifanHu = () => {
             disp.get(v.id).x += fx; disp.get(v.id).y += fy;
         });
 
-        // 3. GRAVEDAD CENTRAL (Atraídos hacia HEX en el 0,0)
+        // 3. GRAVEDAD HACIA EL HEX
         nodos.forEach(u => {
             if(!u.isHexNode) {
                 let distCentro = Math.sqrt(u.x*u.x + u.y*u.y) || 1;
-                const fG = (distCentro * distCentro) / (K * 4); // Gravedad suave
+                const fG = (distCentro * distCentro) / (K * 4); 
                 disp.get(u.id).x -= (u.x / distCentro) * fG;
                 disp.get(u.id).y -= (u.y / distCentro) * fG;
             }
         });
 
-        // 4. APLICAR MOVIMIENTO
+        // 4. APLICAR
         nodos.forEach(u => {
             if(u.isHexNode) { 
                 u.x = 0; u.y = 0; 
@@ -119,19 +115,19 @@ window.ordenarMapaYifanHu = () => {
             const d = disp.get(u.id);
             const dLen = Math.sqrt(d.x*d.x + d.y*d.y);
             if(dLen > 0) {
-                const limit = Math.min(dLen, temp); // Limita el caos térmico
+                const limit = Math.min(dLen, temp); 
                 u.x += (d.x / dLen) * limit;
                 u.y += (d.y / dLen) * limit;
                 
-                // Actualiza matemática para el botón Guardar
-                u._rawX = (u.x / 2000) * math.maxDist + math.originX;
-                u._rawY = -(u.y / 2000) * math.maxDist + math.originY;
+                // ACTUALIZACIÓN MATEMÁTICA AL RADIO 2500
+                u._rawX = (u.x / 2500) * math.maxXDist + math.originX;
+                u._rawY = -(u.y / 2500) * math.maxYDist + math.originY;
             }
         });
 
-        temp *= 0.95; // El sistema se enfría en cada frame
+        temp *= 0.95; 
         iteraciones--;
-        requestAnimationFrame(iterarFisica); // Anima el movimiento fotograma a fotograma
+        requestAnimationFrame(iterarFisica); 
     }
 
     iterarFisica();
@@ -145,7 +141,7 @@ window.cambiarEstadoNodo = (id, valor) => {
             nodo.esConocido = nuevoEstado;
             nodo.modificado = true;
             
-            nodo.radio = nodo.esConocido ? 20 : 12;
+            nodo.radio = nodo.esConocido ? 35 : 20;
             let baseName = nodo.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim();
             if (nodo.esConocido) {
                 nodo.nombre = `${baseName} (${nodo.hex})`;
@@ -204,7 +200,7 @@ window.guardarCambiosMapa = async () => {
 
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
-    estadoMapa.camara.zoom = window.innerWidth > 1000 ? 0.6 : 0.3; 
+    estadoMapa.camara.zoom = window.innerWidth > 1000 ? 0.3 : 0.15; 
     estadoMapa.camara.x = window.innerWidth / 2;
     estadoMapa.camara.y = window.innerHeight / 2;
 }
@@ -234,18 +230,17 @@ function iniciarEventosInput() {
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
 
-        // NUEVO: SISTEMA DE CLIC FIJO
         if (nodo) {
             estadoMapa.interaccion.selectedNode = nodo;
             if (estadoMapa.esAdmin) {
                 estadoMapa.interaccion.draggedNode = nodo;
             }
         } else {
-            estadoMapa.interaccion.selectedNode = null; // Clic al fondo = Deseleccionar
+            estadoMapa.interaccion.selectedNode = null; 
             estadoMapa.interaccion.isDraggingBg = true;
         }
         
-        actualizarPanelInfo(); // Forzar update visual
+        actualizarPanelInfo(); 
         estadoMapa.interaccion.lastMouseX = e.clientX;
         estadoMapa.interaccion.lastMouseY = e.clientY;
     });
@@ -265,8 +260,9 @@ function iniciarEventosInput() {
             n.y += dy / estadoMapa.camara.zoom;
             
             const math = estadoMapa.math;
-            n._rawX = (n.x / 2000) * math.maxDist + math.originX;
-            n._rawY = -(n.y / 2000) * math.maxDist + math.originY;
+            // ACTUALIZACIÓN MATEMÁTICA AL RADIO 2500
+            n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
+            n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
 
             n.modificado = true;
             document.getElementById('btn-save-map').classList.remove('oculto');
@@ -276,7 +272,6 @@ function iniciarEventosInput() {
             if (estadoMapa.interaccion.hoveredNode !== nodoBajoCursor) {
                 estadoMapa.interaccion.hoveredNode = nodoBajoCursor;
                 
-                // Actualiza solo si no hay ninguno fijo con clic
                 if (!estadoMapa.interaccion.selectedNode) {
                     actualizarPanelInfo();
                 }
