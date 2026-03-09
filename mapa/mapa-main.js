@@ -39,12 +39,10 @@ window.abrirMenuOP = () => {
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
     
-    // Al haber forzado al nodo HEX a ser el origen en mapa-data.js,
-    // el centro matemático del universo está exactamente en 0,0.
+    // Zoom inicial ajustado para que no se vea tan pequeño y disperso
+    estadoMapa.camara.zoom = window.innerWidth > 1000 ? 0.6 : 0.3; 
     
-    estadoMapa.camara.zoom = window.innerWidth > 1000 ? 0.3 : 0.15; // Zoom inicial cómodo
-    
-    // Posicionamos el punto (0,0) del mapa en el medio de la pantalla
+    // Centro absoluto
     estadoMapa.camara.x = window.innerWidth / 2;
     estadoMapa.camara.y = window.innerHeight / 2;
 }
