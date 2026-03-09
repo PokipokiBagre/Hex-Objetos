@@ -36,7 +36,7 @@ export function dibujarFrame() {
 
     const scaleFactor = Math.max(camara.zoom, 0.4);
 
-    // 1. DIBUJAR ENLACES CON FLECHAS
+    // 1. DIBUJAR ENLACES
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -49,7 +49,8 @@ export function dibujarFrame() {
         ctx.moveTo(link.source.x, link.source.y);
         ctx.lineTo(targetX, targetY);
         
-        if (interaccion.hoveredNode === link.source || interaccion.hoveredNode === link.target) {
+        if (interaccion.hoveredNode === link.source || interaccion.hoveredNode === link.target || 
+            interaccion.selectedNode === link.source || interaccion.selectedNode === link.target) {
             ctx.strokeStyle = 'rgba(0, 255, 255, 1)';
             ctx.lineWidth = 6 / scaleFactor;
         } else {
@@ -75,25 +76,37 @@ export function dibujarFrame() {
         if (nodo.isHexNode) colorAf = '#ff4444'; 
         
         const isHovered = interaccion.hoveredNode === nodo;
+        const isSelected = interaccion.selectedNode === nodo;
         
+        // Círculo indicador si está "Seleccionado por Clic"
+        if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(nodo.x, nodo.y, nodo.radio + (8/scaleFactor), 0, Math.PI * 2);
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2 / scaleFactor;
+            ctx.setLineDash([5/scaleFactor, 5/scaleFactor]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
         ctx.beginPath();
         ctx.arc(nodo.x, nodo.y, nodo.radio, 0, Math.PI * 2);
         
-        ctx.shadowBlur = isHovered ? 25 : (nodo.isHexNode ? 30 : 5);
+        ctx.shadowBlur = (isHovered || isSelected) ? 25 : (nodo.isHexNode ? 30 : 5);
         ctx.shadowColor = colorAf;
 
         if (nodo.isHexNode) {
             ctx.fillStyle = '#4a0000';
         } else if (nodo.esConocido) {
-            ctx.fillStyle = isHovered ? '#333' : '#111';
+            ctx.fillStyle = (isHovered || isSelected) ? '#333' : '#111';
         } else {
-            ctx.fillStyle = isHovered ? '#222' : '#000'; 
+            ctx.fillStyle = (isHovered || isSelected) ? '#222' : '#000'; 
         }
         
         ctx.fill();
         ctx.shadowBlur = 0;
         
-        ctx.lineWidth = (isHovered ? 4 : 2) / scaleFactor;
+        ctx.lineWidth = ((isHovered || isSelected) ? 4 : 2) / scaleFactor;
         ctx.strokeStyle = colorAf;
         
         if (!nodo.esConocido && !nodo.isHexNode) {
@@ -103,9 +116,9 @@ export function dibujarFrame() {
         ctx.setLineDash([]); 
 
         // 3. TEXTOS
-        if (camara.zoom > 0.25 || isHovered || nodo.isHexNode) {
+        if (camara.zoom > 0.25 || isHovered || isSelected || nodo.isHexNode) {
             let fontSize = nodo.isHexNode ? 28 : (nodo.esConocido ? 15 : 12);
-            if (isHovered) fontSize += 4;
+            if (isHovered || isSelected) fontSize += 4;
 
             ctx.font = "bold " + fontSize + "px sans-serif";
             ctx.textAlign = 'center';
@@ -120,9 +133,9 @@ export function dibujarFrame() {
             if (nodo.isHexNode) {
                 ctx.fillStyle = '#ffaaaa';
             } else if (nodo.esConocido) {
-                ctx.fillStyle = isHovered ? '#00ffff' : '#fff';
+                ctx.fillStyle = (isHovered || isSelected) ? '#00ffff' : '#fff';
             } else {
-                ctx.fillStyle = isHovered ? '#aaa' : '#666'; 
+                ctx.fillStyle = (isHovered || isSelected) ? '#aaa' : '#666'; 
             }
             ctx.fillText(nodo.nombre, nodo.x, textY);
         }
@@ -132,7 +145,9 @@ export function dibujarFrame() {
 export function actualizarPanelInfo() {
     const panel = document.getElementById('panel-info');
     if(!panel) return;
-    const nodo = estadoMapa.interaccion.hoveredNode;
+    
+    // PRIORIDAD ABSOLUTA AL NODO SELECCIONADO (CLIC) sobre el HOVER
+    const nodo = estadoMapa.interaccion.selectedNode || estadoMapa.interaccion.hoveredNode;
 
     if (!nodo) { panel.classList.add('oculto'); return; }
 
@@ -160,17 +175,17 @@ export function actualizarPanelInfo() {
         efectoEl.style.display = 'none'; 
     }
 
-    // EL MENÚ DESPLEGABLE OP (Cambiado a un botón limpio para asegurar compatibilidad HTML)
     const opDiv = document.getElementById('info-op');
     if (estadoMapa.esAdmin && !nodo.isHexNode) {
         const safeId = nodo.id.replace(/'/g, "\\'");
         opDiv.innerHTML = `
             <hr style="border-color: #444; margin: 15px 0 10px 0;">
             <label style="color:var(--gold); font-size:0.85em; font-weight:bold; font-family:'Cinzel';">🛠️ ESTADO (MÁSTER):</label>
-            <select onchange="window.cambiarEstadoNodo('${safeId}', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid var(--gold); padding:8px; margin-top:5px; cursor:pointer;">
+            <select onchange="window.cambiarEstadoNodo('${safeId}', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid var(--gold); padding:8px; margin-top:5px; cursor:pointer; pointer-events:auto;">
                 <option value="si" ${nodo.esConocido ? 'selected' : ''}>👁️ SÍ (Descubierto)</option>
                 <option value="no" ${!nodo.esConocido ? 'selected' : ''}>🔒 NO (Sellado)</option>
             </select>
+            <div style="font-size:0.7em; color:#888; margin-top:5px;">(Haz clic en otro lugar para deseleccionar)</div>
         `;
     } else {
         opDiv.innerHTML = '';
