@@ -36,20 +36,30 @@ window.abrirMenuOP = () => {
     } 
 };
 
+// AUTO-ENFOQUE DINÁMICO
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
     
-    // Como normalizamos las coordenadas en un cuadrado de ~4000x4000
-    const mapWidth = 4500;
-    const mapHeight = 4500;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    estadoMapa.nodos.forEach(n => {
+        if (n.x < minX) minX = n.x;
+        if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+    });
 
-    const zoomX = window.innerWidth / mapWidth;
-    const zoomY = window.innerHeight / mapHeight;
+    const mapWidth = (maxX - minX) || 1000;
+    const mapHeight = (maxY - minY) || 1000;
+    const centerX = minX + mapWidth / 2;
+    const centerY = minY + mapHeight / 2;
+
+    // Calculamos el zoom para que entre todo con un 20% de margen
+    const zoomX = window.innerWidth / (mapWidth * 1.2);
+    const zoomY = window.innerHeight / (mapHeight * 1.2);
     
-    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.2);
-    // Centramos la cámara en el origen (0,0) del canvas (el centro del círculo de Gephi)
-    estadoMapa.camara.x = window.innerWidth / 2;
-    estadoMapa.camara.y = window.innerHeight / 2;
+    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.5);
+    estadoMapa.camara.x = (window.innerWidth / 2) - (centerX * estadoMapa.camara.zoom);
+    estadoMapa.camara.y = (window.innerHeight / 2) - (centerY * estadoMapa.camara.zoom);
 }
 
 function iniciarEventosInput() {
@@ -91,19 +101,16 @@ function iniciarEventosInput() {
         const dy = e.clientY - estadoMapa.interaccion.lastMouseY;
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
 
-        // Mover cámara
         if (estadoMapa.interaccion.isDraggingBg) {
             estadoMapa.camara.x += dx;
             estadoMapa.camara.y += dy;
         } 
-        // Mover nodo (solo MÁSTER)
         else if (estadoMapa.interaccion.draggedNode) {
             estadoMapa.interaccion.draggedNode.x += dx / estadoMapa.camara.zoom;
             estadoMapa.interaccion.draggedNode.y += dy / estadoMapa.camara.zoom;
             estadoMapa.cambiosPendientes = true;
             document.getElementById('btn-save-positions').classList.remove('oculto');
         } 
-        // Hover
         else {
             const nodoBajoCursor = obtenerNodoEnCursor(worldPos.x, worldPos.y);
             if (estadoMapa.interaccion.hoveredNode !== nodoBajoCursor) {
@@ -127,7 +134,7 @@ function iniciarEventosInput() {
         e.preventDefault();
         const camara = estadoMapa.camara;
         const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
-        const nuevoZoom = Math.max(0.05, Math.min(camara.zoom * zoomDelta, 4)); 
+        const nuevoZoom = Math.max(0.02, Math.min(camara.zoom * zoomDelta, 4)); 
         
         const mouseX = e.clientX;
         const mouseY = e.clientY;
