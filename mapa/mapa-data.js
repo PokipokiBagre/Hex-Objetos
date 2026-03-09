@@ -35,7 +35,6 @@ function procesarNodos(json) {
     const nodosProcesados = new Set();
     
     let hexNodeRaw = null;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -59,17 +58,20 @@ function procesarNodos(json) {
     let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
     let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
 
-    let maxDist = 1;
+    // Cálculo independiente para X e Y (Elimina el estiramiento de elipse)
+    let maxXDist = 1;
+    let maxYDist = 1;
     todos.forEach(n => {
         let dx = Math.abs(n._rawX - originX);
         let dy = Math.abs(n._rawY - originY);
-        if (dx > maxDist) maxDist = dx;
-        if (dy > maxDist) maxDist = dy;
+        if (dx > maxXDist) maxXDist = dx;
+        if (dy > maxYDist) maxYDist = dy;
     });
 
     estadoMapa.math.originX = originX;
     estadoMapa.math.originY = originY;
-    estadoMapa.math.maxDist = maxDist;
+    estadoMapa.math.maxXDist = maxXDist;
+    estadoMapa.math.maxYDist = maxYDist;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -95,8 +97,14 @@ function procesarNodos(json) {
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        const x = ((n._rawX - originX) / maxDist) * 2000;
-        const y = -((n._rawY - originY) / maxDist) * 2000; 
+        // Forzamos un CÍRCULO PERFECTO escalando ambos ejes al mismo radio (2500)
+        const radioExpansion = 2500;
+        const x = ((n._rawX - originX) / maxXDist) * radioExpansion;
+        const y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
+
+        // TAMAÑOS DE NODOS AUMENTADOS
+        let radio = esConocido ? 35 : 20; // Antes: 20 y 12
+        if (isHexNode) radio = 65;        // Antes: 45
 
         estadoMapa.nodos.push({
             id: idReal,
@@ -113,7 +121,7 @@ function procesarNodos(json) {
             y: y,
             _rawX: n._rawX, 
             _rawY: n._rawY,
-            radio: isHexNode ? 40 : (esConocido ? 20 : 12),
+            radio: radio,
             incomingSources: [],
             modificado: false
         });
@@ -123,7 +131,6 @@ function procesarNodos(json) {
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
     
-    // Buscador Infalible que ignora mayúsculas, minúsculas y la palabra "Hechizo"
     const findNode = (val) => {
         if (!val) return null;
         const str = String(val).trim().toLowerCase();
@@ -142,7 +149,6 @@ function procesarEnlaces(arrayStrings) {
     arrayStrings.forEach(rel => {
         if (!rel) return;
         
-        // Magia: Ignoramos los encabezados de Excel. Tomamos Columna A y Columna B directamente.
         const vals = Object.values(rel).map(v => String(v).trim());
         if (vals.length < 2) return;
 
@@ -169,11 +175,11 @@ export function actualizarColoresFlechas() {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = 'rgba(255, 255, 255, 0.95)'; // BLANCAS
+            nodo.arrowColor = 'rgba(255, 255, 255, 0.95)'; 
         } else if (conocidos > 0) {
-            nodo.arrowColor = 'rgba(255, 200, 0, 0.9)'; // MOSTAZA
+            nodo.arrowColor = 'rgba(255, 200, 0, 0.9)'; 
         } else {
-            nodo.arrowColor = 'rgba(255, 100, 150, 0.7)'; // ROSA
+            nodo.arrowColor = 'rgba(255, 100, 150, 0.7)'; 
         }
     });
 }
