@@ -39,6 +39,7 @@ window.abrirMenuOP = () => {
 function centrarCamara() {
     if (estadoMapa.nodos.length === 0) return;
     
+    // Como normalizamos las coordenadas en un cuadrado de ~4000x4000
     const mapWidth = 4500;
     const mapHeight = 4500;
 
@@ -46,6 +47,7 @@ function centrarCamara() {
     const zoomY = window.innerHeight / mapHeight;
     
     estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.2);
+    // Centramos la cámara en el origen (0,0) del canvas (el centro del círculo de Gephi)
     estadoMapa.camara.x = window.innerWidth / 2;
     estadoMapa.camara.y = window.innerHeight / 2;
 }
@@ -89,16 +91,19 @@ function iniciarEventosInput() {
         const dy = e.clientY - estadoMapa.interaccion.lastMouseY;
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
 
+        // Mover cámara
         if (estadoMapa.interaccion.isDraggingBg) {
             estadoMapa.camara.x += dx;
             estadoMapa.camara.y += dy;
         } 
+        // Mover nodo (solo MÁSTER)
         else if (estadoMapa.interaccion.draggedNode) {
             estadoMapa.interaccion.draggedNode.x += dx / estadoMapa.camara.zoom;
             estadoMapa.interaccion.draggedNode.y += dy / estadoMapa.camara.zoom;
             estadoMapa.cambiosPendientes = true;
             document.getElementById('btn-save-positions').classList.remove('oculto');
         } 
+        // Hover
         else {
             const nodoBajoCursor = obtenerNodoEnCursor(worldPos.x, worldPos.y);
             if (estadoMapa.interaccion.hoveredNode !== nodoBajoCursor) {
