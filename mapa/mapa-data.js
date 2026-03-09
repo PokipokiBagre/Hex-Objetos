@@ -12,7 +12,7 @@ export async function cargarDatos(barra) {
         const json = JSON.parse(decodeURIComponent(escape(window.atob(jsonText))));
         
         procesarNodos(json);
-        procesarEnlaces(json.String || []);
+        procesarEnlaces(json.String || json.string || json.Strings || []);
         
         if(barra) barra.style.width = '100%';
         return true;
@@ -67,7 +67,6 @@ function procesarNodos(json) {
         if (dy > maxDist) maxDist = dy;
     });
 
-    // Guardamos la matemática para poder hacer el cálculo inverso al arrastrar
     estadoMapa.math.originX = originX;
     estadoMapa.math.originY = originY;
     estadoMapa.math.maxDist = maxDist;
@@ -96,14 +95,14 @@ function procesarNodos(json) {
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        const x = ((n._rawX - originX) / maxDist) * 5000;
-        const y = -((n._rawY - originY) / maxDist) * 5000; 
+        const x = ((n._rawX - originX) / maxDist) * 2000;
+        const y = -((n._rawY - originY) / maxDist) * 2000; 
 
         estadoMapa.nodos.push({
             id: idReal,
             nombreOriginal: nombreReal,
             nombre: nombreMostrar,
-            afinidad: n.Afinidad || 'Desconocida', // Guardamos la real para pintar
+            afinidad: n.Afinidad || 'Desconocida', 
             clase: n.Clase || '-',
             hex: hexCost,
             resumen: n.Resumen || 'Sin descripción',
@@ -112,11 +111,11 @@ function procesarNodos(json) {
             isHexNode: isHexNode,
             x: x,
             y: y,
-            _rawX: n._rawX, // Coord original de Excel
+            _rawX: n._rawX, 
             _rawY: n._rawY,
             radio: isHexNode ? 40 : (esConocido ? 20 : 12),
             incomingSources: [],
-            modificado: false // Bandera para API
+            modificado: false
         });
     });
 }
@@ -124,38 +123,31 @@ function procesarNodos(json) {
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
     
+    // Buscador Infalible que ignora mayúsculas, minúsculas y la palabra "Hechizo"
     const findNode = (val) => {
         if (!val) return null;
-        const original = String(val).trim().toLowerCase();
-        const coreVal = original.replace(/hechizo/g, '').replace(/_/g, ' ').trim();
+        const str = String(val).trim().toLowerCase();
+        const strNum = str.replace(/^hechizo\s+/i, '').trim();
 
         return estadoMapa.nodos.find(n => {
             const nid = String(n.id).trim().toLowerCase();
-            const nnom = String(n.nombreOriginal).trim().toLowerCase().replace(/_/g, ' ');
-            const coreId = nid.replace(/hechizo/g, '').trim();
-            const coreNom = nnom.replace(/hechizo/g, '').trim();
+            const nnom = String(n.nombreOriginal).trim().toLowerCase();
+            const nidNum = nid.replace(/^hechizo\s+/i, '').trim();
+            const nnomNum = nnom.replace(/^hechizo\s+/i, '').trim();
 
-            return nid === original || nnom === original || coreId === coreVal || coreNom === coreVal;
+            return nid === str || nnom === str || nidNum === strNum || nnomNum === strNum;
         });
     };
 
     arrayStrings.forEach(rel => {
         if (!rel) return;
-        let srcVal, tgtVal;
+        
+        // Magia: Ignoramos los encabezados de Excel. Tomamos Columna A y Columna B directamente.
+        const vals = Object.values(rel).map(v => String(v).trim());
+        if (vals.length < 2) return;
 
-        if (Array.isArray(rel)) {
-            srcVal = rel[0]; tgtVal = rel[1];
-        } else {
-            const srcKey = Object.keys(rel).find(k => k.trim().toLowerCase() === 'source');
-            const tgtKey = Object.keys(rel).find(k => k.trim().toLowerCase() === 'target');
-            srcVal = srcKey ? rel[srcKey] : Object.values(rel)[0];
-            tgtVal = tgtKey ? rel[tgtKey] : Object.values(rel)[1];
-        }
-
-        if (!srcVal || !tgtVal) return;
-
-        const sourceNode = findNode(srcVal);
-        const targetNode = findNode(tgtVal);
+        const sourceNode = findNode(vals[0]);
+        const targetNode = findNode(vals[1]);
 
         if (sourceNode && targetNode && sourceNode !== targetNode) {
             estadoMapa.enlaces.push({ source: sourceNode, target: targetNode });
