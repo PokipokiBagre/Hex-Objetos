@@ -2,7 +2,7 @@ export const estadoMapa = {
     esAdmin: false,
     nodos: [],
     enlaces: [],
-    math: { originX: 0, originY: 0, maxXDist: 1, maxYDist: 1 }, // Ejes independientes
+    math: { originX: 0, originY: 0, maxDist: 1 }, // Solo usamos una distancia máxima para forzar el cuadrado perfecto
     camara: { x: window.innerWidth/2, y: window.innerHeight/2, zoom: 0.8 },
     interaccion: {
         isDraggingBg: false,
