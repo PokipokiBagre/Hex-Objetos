@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Hechizos | HEX</title>
+    <link rel="icon" type="image/png" href="../img/icon.png">
+    <link rel="stylesheet" href="stylemapa.css">
+</head>
+<body>
+    <div id="ui-overlay">
+        <div class="nav-bar">
+            <button onclick="window.location.href='../index.html'" class="btn-basic">⬅ Volver</button>
+            <h2 style="margin:0; color:var(--gold); text-shadow:0 0 10px rgba(212,175,55,0.5);">MAPA DE CONOCIMIENTO</h2>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-save-positions" class="btn-action oculto">💾 Guardar Posiciones</button>
+                <span class="badge-conectado">🟢 CONECTADO</span>
+            </div>
+        </div>
+
+        <div id="panel-info" class="panel-info oculto">
+            <h3 id="info-titulo">Nombre Hechizo</h3>
+            <div id="info-tags" class="tags-container"></div>
+            <p id="info-desc" class="desc-text"></p>
+            <p id="info-efecto" class="efecto-text"></p>
+        </div>
+    </div>
+
+    <canvas id="mapa-canvas"></canvas>
+
+    <div id="loader" class="loading">
+        <div style="margin-bottom: 10px; color:var(--gold); font-weight:bold;">Trazando Mapa de Hechizos...</div>
+        <div style="width: 300px; height: 8px; background: #111; border: 1px solid var(--gold); border-radius: 4px;">
+            <div id="carga-progreso" style="width: 0%; height: 100%; background: var(--cyan-magic); transition: width 0.3s;"></div>
+        </div>
+    </div>
+
+    <script type="module" src="mapa-main.js"></script>
+</body>
+</html>
