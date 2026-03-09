@@ -58,20 +58,18 @@ function procesarNodos(json) {
     let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
     let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
 
-    // Cálculo independiente para X e Y (Elimina el estiramiento de elipse)
-    let maxXDist = 1;
-    let maxYDist = 1;
+    // Buscamos la distancia más larga en CUALQUIER dirección para crear un radio uniforme
+    let maxDist = 1;
     todos.forEach(n => {
         let dx = Math.abs(n._rawX - originX);
         let dy = Math.abs(n._rawY - originY);
-        if (dx > maxXDist) maxXDist = dx;
-        if (dy > maxYDist) maxYDist = dy;
+        if (dx > maxDist) maxDist = dx;
+        if (dy > maxDist) maxDist = dy;
     });
 
     estadoMapa.math.originX = originX;
     estadoMapa.math.originY = originY;
-    estadoMapa.math.maxXDist = maxXDist;
-    estadoMapa.math.maxYDist = maxYDist;
+    estadoMapa.math.maxDist = maxDist;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -97,14 +95,10 @@ function procesarNodos(json) {
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        // Forzamos un CÍRCULO PERFECTO escalando ambos ejes al mismo radio (2500)
         const radioExpansion = 2500;
-        const x = ((n._rawX - originX) / maxXDist) * radioExpansion;
-        const y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
-
-        // TAMAÑOS DE NODOS AUMENTADOS
-        let radio = esConocido ? 35 : 20; // Antes: 20 y 12
-        if (isHexNode) radio = 65;        // Antes: 45
+        // Al dividir ambos ejes por el MISMO maxDist, garantizamos que no se deforme a un óvalo
+        const x = ((n._rawX - originX) / maxDist) * radioExpansion;
+        const y = -((n._rawY - originY) / maxDist) * radioExpansion; 
 
         estadoMapa.nodos.push({
             id: idReal,
@@ -121,7 +115,7 @@ function procesarNodos(json) {
             y: y,
             _rawX: n._rawX, 
             _rawY: n._rawY,
-            radio: radio,
+            radio: isHexNode ? 65 : (esConocido ? 35 : 20),
             incomingSources: [],
             modificado: false
         });
