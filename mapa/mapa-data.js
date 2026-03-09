@@ -7,8 +7,10 @@ export async function cargarDatos(barra) {
         if(barra) barra.style.width = '30%';
         const res = await fetch(API_HECHIZOS);
         if(barra) barra.style.width = '70%';
+
+        const jsonText = await res.text();
+        const json = JSON.parse(decodeURIComponent(escape(window.atob(jsonText))));
         
-        const json = JSON.parse(decodeURIComponent(escape(window.atob(await res.text()))));
         procesarNodos(json);
         procesarEnlaces(json.String || []);
         
@@ -20,29 +22,45 @@ export async function cargarDatos(barra) {
     }
 }
 
+function cleanCoord(val) {
+    if (val === undefined || val === null || val === '') return null;
+    let str = String(val).replace(/[^0-9\-]/g, '');
+    let parsed = parseFloat(str);
+    return isNaN(parsed) ? null : parsed;
+}
+
 function procesarNodos(json) {
-    const todos = [...(json.nodos || []), ...(json.nodosOcultos || [])];
+    const todos = [].concat(json.nodos || []).concat(json.nodosOcultos || []);
     estadoMapa.nodos = [];
     
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
-    // 1. Extraer números crudos (ignorando puntos y comas raras del Excel)
+    // Primer paso: Recopilar coordenadas crudas y hallar límites
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
         
-        let rawX = parseFloat(n.X?.toString().replace(/[^0-9\-]/g, '')) || (Math.random() * 1000);
-        let rawY = parseFloat(n.Y?.toString().replace(/[^0-9\-]/g, '')) || (Math.random() * 1000);
-        
-        if (rawX < minX) minX = rawX; if (rawX > maxX) maxX = rawX;
-        if (rawY < minY) minY = rawY; if (rawY > maxY) maxY = rawY;
+        let rawX = cleanCoord(n.X) || cleanCoord(n.x);
+        let rawY = cleanCoord(n.Y) || cleanCoord(n.y);
 
-        n._rawX = rawX; n._rawY = rawY;
+        if (rawX === null) rawX = Math.random() * 1000;
+        if (rawY === null) rawY = Math.random() * 1000;
+        
+        if (rawX < minX) minX = rawX; 
+        if (rawX > maxX) maxX = rawX;
+        if (rawY < minY) minY = rawY; 
+        if (rawY > maxY) maxY = rawY;
+
+        n._rawX = rawX; 
+        n._rawY = rawY;
     });
 
-    let rangeX = (maxX - minX) || 1;
-    let rangeY = (maxY - minY) || 1;
+    let rangeX = maxX - minX;
+    let rangeY = maxY - minY;
+    
+    if (rangeX === 0 || isNaN(rangeX)) rangeX = 1;
+    if (rangeY === 0 || isNaN(rangeY)) rangeY = 1;
 
-    // 2. Normalizar a una cuadrícula perfecta de 4000x4000 para que se vean bien
+    // Segundo paso: Normalizar a un mapa perfecto de 4000x4000
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
         const nombreReal = n.Nombre && n.Nombre.trim() !== "" ? n.Nombre : n.ID;
@@ -62,7 +80,7 @@ function procesarNodos(json) {
             esConocido: esConocido,
             x: x,
             y: y,
-            radio: esConocido ? 30 : 12 // Tamaños distinguibles
+            radio: esConocido ? 30 : 12
         });
     });
 }
@@ -72,7 +90,7 @@ function procesarEnlaces(arrayStrings) {
     arrayStrings.forEach(rel => {
         if(!rel.Source || !rel.Target) return;
         
-        const norm = (s) => s.toString().trim().toLowerCase();
+        const norm = (s) => String(s).trim().toLowerCase();
         const srcVal = norm(rel.Source);
         const tgtVal = norm(rel.Target);
 
