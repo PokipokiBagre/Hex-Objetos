@@ -35,7 +35,7 @@ window.abrirMenuOP = () => {
         if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) { 
             estadoMapa.esAdmin = true; 
             document.getElementById('btn-ordenar').classList.remove('oculto');
-            alert("Modo OP Activado.\n- Haz CLIC en un nodo para fijar su menú.\n- Usa el botón 'Auto-Ordenar' para que la IA desenrede el mapa.");
+            alert("Modo OP Activado.\n- Haz CLIC en un nodo para fijar su menú.\n- Usa el botón 'Auto-Ordenar' para que la IA desenrede el mapa en un círculo.");
             actualizarPanelInfo(); 
         } 
     } 
@@ -46,23 +46,23 @@ window.ordenarMapaYifanHu = () => {
     const enlaces = estadoMapa.enlaces;
     const math = estadoMapa.math;
     
-    const K = 350; // Constante aumentada por el nuevo tamaño de nodos
-    let iteraciones = 150; 
-    let temp = 250; 
+    const K = 450; // Constante incrementada para separar más los nodos
+    let iteraciones = 200; 
+    let temp = 300; 
 
     nodos.forEach(n => n.modificado = true);
     document.getElementById('btn-save-map').classList.remove('oculto');
 
     function iterarFisica() {
         if(iteraciones <= 0) {
-            alert("¡Mapa ordenado! Si te gusta, pulsa Guardar Cambios.");
+            alert("¡Mapa circular ordenado! Si te gusta, pulsa Guardar Cambios.");
             return;
         }
 
         const disp = new Map();
         nodos.forEach(n => disp.set(n.id, {x:0, y:0}));
 
-        // 1. REPULSIÓN (Se empujan más a lo ancho para no pisar textos)
+        // 1. REPULSIÓN (Fuerza simétrica = círculo perfecto)
         for(let i=0; i<nodos.length; i++) {
             for(let j=i+1; j<nodos.length; j++) {
                 const u = nodos[i]; const v = nodos[j];
@@ -71,7 +71,7 @@ window.ordenarMapaYifanHu = () => {
                 let dist = Math.sqrt(dx*dx + dy*dy) || 1;
                 
                 const f = (K * K) / dist;
-                const fx = (dx / dist) * f * 2.5; 
+                const fx = (dx / dist) * f; // <-- Eliminado el multiplicador que creaba el óvalo
                 const fy = (dy / dist) * f;
 
                 disp.get(u.id).x += fx; disp.get(u.id).y += fy;
@@ -98,7 +98,7 @@ window.ordenarMapaYifanHu = () => {
         nodos.forEach(u => {
             if(!u.isHexNode) {
                 let distCentro = Math.sqrt(u.x*u.x + u.y*u.y) || 1;
-                const fG = (distCentro * distCentro) / (K * 4); 
+                const fG = (distCentro * distCentro) / (K * 3); 
                 disp.get(u.id).x -= (u.x / distCentro) * fG;
                 disp.get(u.id).y -= (u.y / distCentro) * fG;
             }
@@ -119,9 +119,9 @@ window.ordenarMapaYifanHu = () => {
                 u.x += (d.x / dLen) * limit;
                 u.y += (d.y / dLen) * limit;
                 
-                // ACTUALIZACIÓN MATEMÁTICA AL RADIO 2500
-                u._rawX = (u.x / 2500) * math.maxXDist + math.originX;
-                u._rawY = -(u.y / 2500) * math.maxYDist + math.originY;
+                // ACTUALIZACIÓN MATEMÁTICA SIMÉTRICA
+                u._rawX = (u.x / 2500) * math.maxDist + math.originX;
+                u._rawY = -(u.y / 2500) * math.maxDist + math.originY;
             }
         });
 
@@ -260,9 +260,9 @@ function iniciarEventosInput() {
             n.y += dy / estadoMapa.camara.zoom;
             
             const math = estadoMapa.math;
-            // ACTUALIZACIÓN MATEMÁTICA AL RADIO 2500
-            n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
-            n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
+            // ACTUALIZACIÓN MATEMÁTICA SIMÉTRICA
+            n._rawX = (n.x / 2500) * math.maxDist + math.originX;
+            n._rawY = -(n.y / 2500) * math.maxDist + math.originY;
 
             n.modificado = true;
             document.getElementById('btn-save-map').classList.remove('oculto');
