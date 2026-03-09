@@ -2,13 +2,13 @@ export const estadoMapa = {
     esAdmin: false,
     nodos: [],
     enlaces: [],
-    math: { originX: 0, originY: 0, maxDist: 1 },
+    math: { originX: 0, originY: 0, maxXDist: 1, maxYDist: 1 }, // Ejes independientes
     camara: { x: window.innerWidth/2, y: window.innerHeight/2, zoom: 0.8 },
     interaccion: {
         isDraggingBg: false,
         draggedNode: null,
         hoveredNode: null,
-        selectedNode: null, // NUEVO: Bloquea el panel al hacer clic
+        selectedNode: null, 
         lastMouseX: 0,
         lastMouseY: 0
     }
