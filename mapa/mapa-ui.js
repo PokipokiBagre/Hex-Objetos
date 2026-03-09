@@ -34,7 +34,6 @@ export function dibujarFrame() {
     ctx.translate(camara.x, camara.y);
     ctx.scale(camara.zoom, camara.zoom);
 
-    // FIX ESCALA: Limita el engrosamiento cuando te alejas demasiado
     const scaleFactor = Math.max(camara.zoom, 0.4);
 
     // 1. DIBUJAR ENLACES CON FLECHAS
@@ -54,12 +53,11 @@ export function dibujarFrame() {
             ctx.strokeStyle = 'rgba(0, 255, 255, 1)';
             ctx.lineWidth = 6 / scaleFactor;
         } else {
-            ctx.strokeStyle = link.target.arrowColor; 
+            ctx.strokeStyle = link.target.arrowColor || 'rgba(255, 255, 255, 0.5)'; 
             ctx.lineWidth = 2 / scaleFactor; 
         }
         ctx.stroke();
 
-        // Punta de la flecha dinámica
         const headlen = 14 / scaleFactor;
         ctx.beginPath();
         ctx.moveTo(targetX, targetY);
@@ -162,13 +160,14 @@ export function actualizarPanelInfo() {
         efectoEl.style.display = 'none'; 
     }
 
-    // CONTROLES MÁSTER (Dropdown)
+    // EL MENÚ DESPLEGABLE OP (Cambiado a un botón limpio para asegurar compatibilidad HTML)
     const opDiv = document.getElementById('info-op');
     if (estadoMapa.esAdmin && !nodo.isHexNode) {
+        const safeId = nodo.id.replace(/'/g, "\\'");
         opDiv.innerHTML = `
             <hr style="border-color: #444; margin: 15px 0 10px 0;">
             <label style="color:var(--gold); font-size:0.85em; font-weight:bold; font-family:'Cinzel';">🛠️ ESTADO (MÁSTER):</label>
-            <select onchange="window.cambiarEstadoNodo('${nodo.id}', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid var(--gold); padding:8px; margin-top:5px; cursor:pointer;">
+            <select onchange="window.cambiarEstadoNodo('${safeId}', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid var(--gold); padding:8px; margin-top:5px; cursor:pointer;">
                 <option value="si" ${nodo.esConocido ? 'selected' : ''}>👁️ SÍ (Descubierto)</option>
                 <option value="no" ${!nodo.esConocido ? 'selected' : ''}>🔒 NO (Sellado)</option>
             </select>
