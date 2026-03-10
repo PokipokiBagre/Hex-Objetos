@@ -130,12 +130,13 @@ export function dibujarFrame() {
                     let posReq = target.incomingSources.filter(n => posesiones.has(n)).length;
                     let ratio = posReq / totalReq;
 
-                    // Paleta de dorados/amarillos elegantes (sin verde)
-                    if (ratio >= 0.75) ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)'; // Gold puro (amarillo brillante elegante)
-                    else if (ratio >= 0.4) ctx.strokeStyle = 'rgba(218, 165, 32, 0.7)'; // GoldenRod (dorado medio tostado elegante)
-                    else ctx.strokeStyle = 'rgba(238, 232, 170, 0.7)'; // PaleGoldenRod (dorado pálido muy sutil elegante)
+                    // Paleta de dorados/amarillos elegantes (sin verde) - BAJADA OPACIDAD A 0.5
+                    if (ratio >= 0.75) ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)'; // Gold puro (amarillo brillante elegante)
+                    else if (ratio >= 0.4) ctx.strokeStyle = 'rgba(218, 165, 32, 0.5)'; // GoldenRod (dorado medio tostado elegante)
+                    else ctx.strokeStyle = 'rgba(238, 232, 170, 0.5)'; // PaleGoldenRod (dorado pálido muy sutil elegante)
                     
-                    ctx.lineWidth = 4 / scaleFactor;
+                    // DISMINUIDA ANCHURA DE 4 A 1.8 (Elegancia fina)
+                    ctx.lineWidth = 1.8 / scaleFactor; 
                     ctx.setLineDash([]);
                 } else if (sT && tT) {
                     // Es parte del árbol genealógico pero no lo tienes
