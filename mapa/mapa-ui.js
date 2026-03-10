@@ -35,10 +35,9 @@ export function dibujarFrame() {
     ctx.scale(camara.zoom, camara.zoom);
 
     const scaleFactor = Math.max(camara.zoom, 0.4);
-    
     const nodoActivo = interaccion.selectedNode || interaccion.hoveredNode;
 
-    // 1. DIBUJAR ENLACES (Lógica de Colores Direccionales)
+    // 1. DIBUJAR ENLACES
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -51,41 +50,43 @@ export function dibujarFrame() {
         ctx.moveTo(link.source.x, link.source.y);
         ctx.lineTo(targetX, targetY);
         
-        // Asignación de Estética de Rol
         if (nodoActivo) {
             if (link.source === nodoActivo) {
-                // SALIENTE: Amarillo Dorado
+                // SALIENTE: Amarillo Dorado Brillante
                 ctx.strokeStyle = ESTETICA.lineaSaliente;
                 ctx.lineWidth = 6 / scaleFactor;
                 ctx.setLineDash([]);
             } else if (link.target === nodoActivo) {
-                // PRECEDENTE: Morado Violeta
+                // PRECEDENTE: Morado Violeta Brillante
                 ctx.strokeStyle = ESTETICA.lineaPrecedente;
                 ctx.lineWidth = 6 / scaleFactor;
                 ctx.setLineDash([]);
             } else {
-                // Otras líneas se oscurecen
-                ctx.strokeStyle = ESTETICA.lineaBase;
-                ctx.lineWidth = 1.5 / scaleFactor; 
+                // Opacar el resto
+                ctx.strokeStyle = 'rgba(49, 13, 49, 0.2)';
+                ctx.lineWidth = 1 / scaleFactor; 
                 ctx.setLineDash([]);
             }
         } else {
-            // Estado Normal sin interacción
-            ctx.strokeStyle = link.target.arrowColor || ESTETICA.lineaBase; 
-            ctx.lineWidth = 2.5 / scaleFactor; 
+            ctx.strokeStyle = link.target.arrowColor; 
             
-            // Segmentación para nodos no descubiertos
-            if (ctx.strokeStyle !== ESTETICA.lineaBase && ctx.strokeStyle !== ESTETICA.lineaNoDescubierto) {
-                ctx.setLineDash([12 / scaleFactor, 8 / scaleFactor]);
-            } else {
+            // DIFERENCIACIÓN DE GROSOR Y TIPO DE LÍNEA
+            if (ctx.strokeStyle === ESTETICA.lineaDescubierta) {
+                // Líneas descubiertas: Delgadas, tenues, continuas
+                ctx.lineWidth = 1.0 / scaleFactor; 
                 ctx.setLineDash([]);
+            } else {
+                // Líneas incompletas (Mostaza/Rosa): Más gruesas y punteadas
+                ctx.lineWidth = 2.5 / scaleFactor; 
+                ctx.setLineDash([12 / scaleFactor, 8 / scaleFactor]);
             }
         }
 
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        const headlen = 16 / scaleFactor;
+        // Punta de Flecha
+        const headlen = (ctx.lineWidth * 4) + (8 / scaleFactor); // Escala la flecha según el grosor
         ctx.beginPath();
         ctx.moveTo(targetX, targetY);
         ctx.lineTo(targetX - headlen * Math.cos(angle - Math.PI / 7), targetY - headlen * Math.sin(angle - Math.PI / 7));
@@ -107,7 +108,7 @@ export function dibujarFrame() {
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(nodo.x, nodo.y, nodo.radio + (8/scaleFactor), 0, Math.PI * 2);
-            ctx.strokeStyle = ESTETICA.lineaSaliente; // Aura dorada al seleccionar
+            ctx.strokeStyle = ESTETICA.lineaSaliente; 
             ctx.lineWidth = 3 / scaleFactor;
             ctx.setLineDash([8/scaleFactor, 8/scaleFactor]);
             ctx.stroke();
@@ -140,9 +141,8 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. TEXTOS (Aumentado y mejorado)
+        // 3. TEXTOS
         if (camara.zoom > 0.15 || isHovered || isSelected || nodo.isHexNode) {
-            // ETIQUETAS MÁS GRANDES: Base 20px (antes 13), Destacado 24px
             let fontSize = nodo.isHexNode ? 34 : (nodo.esConocido ? 20 : 16);
             if (isHovered || isSelected) fontSize += 6;
 
@@ -152,7 +152,6 @@ export function dibujarFrame() {
             
             const textY = nodo.y + nodo.radio + (10 / scaleFactor);
 
-            // Sombra/Borde negro más grueso para máxima legibilidad
             ctx.lineWidth = 5 / scaleFactor;
             ctx.strokeStyle = 'rgba(0,0,0,0.95)';
             ctx.strokeText(nodo.nombre, nodo.x, textY);
