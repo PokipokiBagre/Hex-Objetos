@@ -268,19 +268,22 @@ export function actualizarPanelInfo() {
     panel.classList.remove('oculto');
 }
 
-// NUEVO: Resetea la posición FORZANDO los valores originales del CSS
+// RESETEO ABSOLUTO: Borra top/left/right y obliga a anclarse abajo
 export function resetearPosicionPanel() {
     const panel = document.getElementById('panel-info');
     if (panel) {
-        panel.style.top = 'auto'; // Libera la fijación de arriba
-        panel.style.bottom = '25px'; // Vuelve abajo
-        panel.style.left = '50%'; // Vuelve al centro
-        panel.style.right = 'auto'; 
-        panel.style.transform = 'translateX(-50%)'; // Centrado perfecto
+        panel.style.removeProperty('top');
+        panel.style.removeProperty('left');
+        panel.style.removeProperty('right');
+        
+        // Forzamos las posiciones iniciales originales del CSS
+        panel.style.bottom = '25px'; 
+        panel.style.left = '50%'; 
+        panel.style.transform = 'translateX(-50%)'; 
     }
 }
 
-// NUEVO MOTOR DE ARRASTRE (A prueba de caídas infinitas)
+// MOTOR DE ARRASTRE SÓLIDO (Evita saltos calculando coordenadas visuales reales)
 function hacerPanelArrastrable() {
     const el = document.getElementById('panel-info');
     const header = document.getElementById('info-titulo');
@@ -299,17 +302,22 @@ function hacerPanelArrastrable() {
         let clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         let clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         
-        const rect = el.getBoundingClientRect();
-        
-        // Fijar posición absoluta cruda la primera vez que se toca
-        el.style.left = rect.left + "px";
-        el.style.top = rect.top + "px";
-        el.style.bottom = "auto";
-        el.style.transform = "none";
+        // Si el panel aún tiene el 'transform: translateX', leemos su posición exacta en pantalla
+        if (el.style.transform !== "none") {
+            const rect = el.getBoundingClientRect();
+            
+            // Borramos el transform y lo fijamos visualmente exactamente donde estaba
+            el.style.transform = "none";
+            el.style.bottom = "auto";
+            el.style.right = "auto";
+            el.style.left = rect.left + "px";
+            el.style.top = rect.top + "px";
+        }
 
-        // Guardar el desplazamiento del ratón respecto a la esquina del panel
-        offsetX = clientX - rect.left;
-        offsetY = clientY - rect.top;
+        // Calculamos la diferencia entre el click del ratón y la esquina real del panel
+        const currentRect = el.getBoundingClientRect();
+        offsetX = clientX - currentRect.left;
+        offsetY = clientY - currentRect.top;
 
         document.onmouseup = detenerArrastre;
         document.onmousemove = arrastrar;
@@ -324,7 +332,7 @@ function hacerPanelArrastrable() {
         
         if (e.type !== 'touchmove') e.preventDefault();
         
-        // El movimiento es relativo a la pantalla menos el offset inicial
+        // Movemos el panel basándonos puramente en la posición del ratón menos el offset original
         el.style.left = (clientX - offsetX) + "px";
         el.style.top = (clientY - offsetY) + "px";
     }
