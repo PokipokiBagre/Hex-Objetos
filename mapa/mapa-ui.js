@@ -1,4 +1,4 @@
-import { estadoMapa, COLOR_AFINIDAD, ESTETICA } from './mapa-state.js';
+import { estadoMapa, COLOR_AFINIDAD, ESTETICA, COLORES_JUGADOR } from './mapa-state.js';
 
 let canvas, ctx;
 
@@ -92,19 +92,17 @@ export function dibujarFrame() {
         if (nodoActivo) {
             if (outgoingEdges.has(link)) {
                 ctx.strokeStyle = ESTETICA.lineaSaliente;
-                ctx.lineWidth = 4 / scaleFactor; // Un poco más fino que antes para no saturar
+                ctx.lineWidth = 4 / scaleFactor;
                 ctx.setLineDash([]);
                 drawNormal = false;
             } else if (ancestorEdges.has(link)) {
-                // AQUÍ ESTABA EL CAOS VISUAL AL HACER CLIC: 
-                // Reducido a línea fina y sutil en lugar de gruesa
                 ctx.strokeStyle = 'rgba(138, 43, 226, 0.45)'; 
                 ctx.lineWidth = 1.5 / scaleFactor; 
                 ctx.setLineDash([]);
                 drawNormal = false;
             } else {
-                ctx.strokeStyle = 'rgba(100, 100, 100, 0.2)'; 
-                ctx.lineWidth = 1 / scaleFactor; 
+                ctx.strokeStyle = 'rgba(80, 80, 80, 0.15)'; 
+                ctx.lineWidth = 0.8 / scaleFactor; 
                 ctx.setLineDash([]);
                 ctx.globalAlpha = 0.2; 
                 arrowMult = 1.5; baseHeadLen = 5;
@@ -121,32 +119,29 @@ export function dibujarFrame() {
                 let tT = rastreo.has(link.target) || tP || tA;
 
                 if (sP && tP) {
-                    ctx.strokeStyle = 'rgba(138, 43, 226, 0.65)'; 
+                    ctx.strokeStyle = COLORES_JUGADOR.posesionMorada; 
                     ctx.lineWidth = 1.5 / scaleFactor;
                     ctx.setLineDash([]);
                 } else if (sP && tA) {
-                    // AMARILLO SÓLIDO (INMEDIATO)
                     let target = link.target;
                     let totalReq = target.incomingSources.length;
                     let posReq = target.incomingSources.filter(n => posesiones.has(n)).length;
                     let ratio = posReq / totalReq;
 
-                    if (ratio >= 0.75) ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)'; 
-                    else if (ratio >= 0.4) ctx.strokeStyle = 'rgba(218, 165, 32, 0.5)'; 
-                    else ctx.strokeStyle = 'rgba(238, 232, 170, 0.5)'; 
+                    if (ratio >= 0.75) ctx.strokeStyle = COLORES_JUGADOR.doradoInmediato; 
+                    else if (ratio >= 0.4) ctx.strokeStyle = COLORES_JUGADOR.doradoMedio; 
+                    else ctx.strokeStyle = COLORES_JUGADOR.doradoTenue; 
                     
-                    ctx.lineWidth = 1.8 / scaleFactor;
+                    ctx.lineWidth = 1.5 / scaleFactor;
                     ctx.setLineDash([]);
                 } else if (sT && tT) {
-                    // AMARILLO TRASLÚCIDO (PRECEDENTES) - Sólido pero tenue
-                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.20)'; 
+                    ctx.strokeStyle = COLORES_JUGADOR.doradoRastreo; 
                     ctx.lineWidth = 1 / scaleFactor; 
                     ctx.setLineDash([]); 
                 } else {
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; 
-                    ctx.lineWidth = 1.2 / scaleFactor;
-                    ctx.setLineDash([4 / scaleFactor, 6 / scaleFactor]);
-                    ctx.globalAlpha = 0.15; 
+                    ctx.strokeStyle = COLORES_JUGADOR.fondoNeutro; 
+                    ctx.lineWidth = 0.8 / scaleFactor;
+                    ctx.setLineDash([]);
                     arrowMult = 1.5; baseHeadLen = 5;
                 }
             } else {
@@ -179,25 +174,29 @@ export function dibujarFrame() {
         let colorAfinidadReal = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         if (nodo.isHexNode) colorAfinidadReal = '#ff4444'; 
 
-        let borderColor = colorAfinidadReal;
-        
         const isHovered = interaccion.hoveredNode === nodo;
         const isSelected = interaccion.selectedNode === nodo;
         
-        // Separación Lógica de "Los Dos Amarillos"
-        const esPlenamenteDescubierto = (isPlayerView && posesiones.has(nodo)) || (!isPlayerView && nodo.esConocido);
-        const esAprendibleInmediato = isPlayerView && aprendibles.has(nodo) && !posesiones.has(nodo);
-        const esPrecedente = isPlayerView && rastreo.has(nodo) && !aprendibles.has(nodo) && !posesiones.has(nodo);
-        const esIrrelevantePlayer = isPlayerView && !posesiones.has(nodo) && !aprendibles.has(nodo) && !rastreo.has(nodo);
+        const tieneElHechizo = posesiones.has(nodo);
+        const esPlenamenteDescubierto = (isPlayerView && tieneElHechizo) || (!isPlayerView && nodo.esConocido);
+        const esAprendibleInmediato = isPlayerView && aprendibles.has(nodo) && !tieneElHechizo;
+        const esPrecedente = isPlayerView && rastreo.has(nodo) && !aprendibles.has(nodo) && !tieneElHechizo;
+        const esIrrelevantePlayer = isPlayerView && !tieneElHechizo && !aprendibles.has(nodo) && !rastreo.has(nodo);
+
+        // Color de borde y sombra dinámico para vista jugador (IGNORA AFINIDAD SI LO TIENE)
+        let colorNodoFinal = colorAfinidadReal;
+        if (isPlayerView && tieneElHechizo && !nodo.isHexNode) {
+            colorNodoFinal = 'rgba(138, 43, 226, 1)'; // VIOLETA ABSOLUTO
+        } else if (isPlayerView && (esAprendibleInmediato || esPrecedente)) {
+            colorNodoFinal = esAprendibleInmediato ? 'rgba(255, 215, 0, 0.8)' : 'rgba(212, 175, 55, 0.4)';
+        }
 
         if (nodoActivo) {
             if (nodo !== nodoActivo && !ancestorNodes.has(nodo) && !outgoingNodes.has(nodo) && !nodo.isHexNode) {
                 ctx.globalAlpha = 0.2;
             }
-        } else if (isPlayerView) {
-            if (esIrrelevantePlayer) {
-                ctx.globalAlpha = 0.56; 
-            }
+        } else if (isPlayerView && esIrrelevantePlayer) {
+            ctx.globalAlpha = 0.56; 
         }
 
         if (isSelected) {
@@ -215,7 +214,7 @@ export function dibujarFrame() {
         const rCore = Math.max(1, nodo.radio - 7); 
 
         ctx.shadowBlur = (isHovered || isSelected) ? 35 : (nodo.isHexNode ? 30 : (nodo.esConocido ? 5 : 0));
-        ctx.shadowColor = esIrrelevantePlayer ? 'transparent' : colorAfinidadReal;
+        ctx.shadowColor = esIrrelevantePlayer ? 'transparent' : colorNodoFinal;
 
         if (nodo.isHexNode) {
             ctx.beginPath(); ctx.arc(nodo.x, nodo.y, rOuter, 0, Math.PI * 2);
@@ -229,47 +228,35 @@ export function dibujarFrame() {
 
             ctx.beginPath(); ctx.arc(nodo.x, nodo.y, rCore, 0, Math.PI * 2);
             if (esPlenamenteDescubierto) {
-                ctx.fillStyle = colorAfinidadReal;
+                ctx.fillStyle = colorNodoFinal;
                 ctx.globalAlpha = 0.9;
                 ctx.fill();
                 ctx.globalAlpha = 1.0;
             } else if (esAprendibleInmediato) {
-                // AMARILLO SÓLIDO INMEDIATO (Centro un poco más visible)
                 ctx.fillStyle = '#222'; ctx.fill();
                 ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'; ctx.fill();
-                borderColor = 'rgba(255, 215, 0, 0.8)';
             } else if (esPrecedente) {
-                // AMARILLO TRASLÚCIDO (Precedentes)
                 ctx.fillStyle = '#222'; ctx.fill();
-                ctx.fillStyle = 'rgba(212, 175, 55, 0.08)'; ctx.fill(); // Apenas visible
-                borderColor = 'rgba(212, 175, 55, 0.3)'; // Borde tenue
-            } else if (esIrrelevantePlayer) {
-                ctx.fillStyle = '#111'; ctx.fill(); 
+                ctx.fillStyle = 'rgba(212, 175, 55, 0.08)'; ctx.fill();
             } else {
-                ctx.fillStyle = '#222'; ctx.fill();
-                ctx.fillStyle = colorAfinidadReal;
-                ctx.globalAlpha = 0.15;
-                ctx.fill();
-                ctx.globalAlpha = 1.0;
+                ctx.fillStyle = '#111'; ctx.fill();
+                if (!isPlayerView) {
+                    ctx.fillStyle = colorAfinidadReal;
+                    ctx.globalAlpha = 0.15; ctx.fill(); ctx.globalAlpha = 1.0;
+                }
             }
         }
         
         ctx.shadowBlur = 0;
-        
         ctx.lineWidth = ((isHovered || isSelected) ? 4 : 2) / scaleFactor;
-        ctx.beginPath();
-        ctx.arc(nodo.x, nodo.y, rOuter, 0, Math.PI * 2);
+        ctx.beginPath(); ctx.arc(nodo.x, nodo.y, rOuter, 0, Math.PI * 2);
         
         if (esPlenamenteDescubierto) {
-            ctx.strokeStyle = colorAfinidadReal;
+            ctx.strokeStyle = colorNodoFinal;
             ctx.setLineDash([]);
             ctx.stroke();
-        } else if (esAprendibleInmediato || esPrecedente) {
-            ctx.strokeStyle = borderColor; 
-            ctx.setLineDash([]); // Todo amarillo es sólido ahora
-            ctx.stroke();
-        } else if (esIrrelevantePlayer) {
-            ctx.strokeStyle = 'rgba(80, 80, 80, 0.3)'; 
+        } else if (isPlayerView) {
+            ctx.strokeStyle = esIrrelevantePlayer ? 'rgba(80, 80, 80, 0.3)' : colorNodoFinal;
             ctx.setLineDash([]);
             ctx.stroke();
         } else {
@@ -289,11 +276,9 @@ export function dibujarFrame() {
             if (isHovered || isSelected) fontSize += 8;
 
             ctx.font = "bold " + fontSize + "px sans-serif";
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'top';
             
             const textY = nodo.y + nodo.radio + (15 / scaleFactor);
-
             ctx.lineWidth = 6 / scaleFactor;
             
             if (isPlayerView && esIrrelevantePlayer && !nodo.isHexNode) {
@@ -306,15 +291,10 @@ export function dibujarFrame() {
             if (nodo.isHexNode) {
                 ctx.fillStyle = '#ffaaaa';
             } else if (isPlayerView) {
-                if (posesiones.has(nodo)) {
-                    ctx.fillStyle = colorAfinidadReal; 
-                } else if (esAprendibleInmediato) {
-                    ctx.fillStyle = 'rgba(255, 215, 0, 0.9)'; // Amarillo vibrante
-                } else if (esPrecedente) {
-                    ctx.fillStyle = 'rgba(212, 175, 55, 0.4)'; // Dorado suave traslúcido
-                } else {
-                    ctx.fillStyle = 'rgba(100, 100, 100, 0.2)'; 
-                }
+                if (tieneElHechizo) ctx.fillStyle = 'rgba(180, 100, 255, 1)'; // Violeta claro para texto
+                else if (esAprendibleInmediato) ctx.fillStyle = 'rgba(255, 215, 0, 0.9)'; 
+                else if (esPrecedente) ctx.fillStyle = 'rgba(212, 175, 55, 0.4)'; 
+                else ctx.fillStyle = 'rgba(100, 100, 100, 0.2)'; 
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? ESTETICA.lineaSaliente : '#fff';
             } else {
