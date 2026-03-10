@@ -268,7 +268,7 @@ export function actualizarPanelInfo() {
     panel.classList.remove('oculto');
 }
 
-// RESETEO: Borra los estilos fijos para que el CSS original (bottom: 25px) tome el control total
+// RESETEO: Borra todas las restricciones inline para que el CSS vuelva a tomar el control
 export function resetearPosicionPanel() {
     const panel = document.getElementById('panel-info');
     if (panel) {
@@ -280,14 +280,14 @@ export function resetearPosicionPanel() {
     }
 }
 
-// ARRASTRE CORRECTO POR DELTAS (Evita caídas y saltos del ratón)
+// MOTOR DE ARRASTRE INFALIBLE
 function hacerPanelArrastrable() {
     const el = document.getElementById('panel-info');
     const header = document.getElementById('info-titulo');
     header.style.cursor = 'move';
     header.title = "Arrastra para mover la ventana";
 
-    let startX = 0, startY = 0;
+    let offsetX = 0, offsetY = 0;
 
     header.onmousedown = iniciarArrastre;
     header.ontouchstart = iniciarArrastre;
@@ -296,18 +296,25 @@ function hacerPanelArrastrable() {
         e = e || window.event;
         if (e.type !== 'touchstart') e.preventDefault();
         
-        startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+        let clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         
-        // Bloquear posición si es el primer arrastre (convierte bottom/transform a top/left)
-        if (el.style.bottom !== "auto" && el.style.bottom !== "") {
-            const rect = el.getBoundingClientRect();
-            el.style.transform = "none";
-            el.style.bottom = "auto";
-            el.style.right = "auto";
-            el.style.left = rect.left + "px";
-            el.style.top = rect.top + "px";
-        }
+        // Lee la caja en la pantalla antes de hacerle nada
+        const rect = el.getBoundingClientRect();
+        
+        // ¡LA SOLUCIÓN! Matamos las anclas de CSS (bottom y transform)
+        // Así deja de luchar por irse hacia abajo
+        el.style.bottom = "auto";
+        el.style.right = "auto";
+        el.style.transform = "none";
+        
+        // Lo re-ubicamos exactamente donde estaba visualmente usando TOP absoluto
+        el.style.left = rect.left + "px";
+        el.style.top = rect.top + "px";
+
+        // Distancia entre donde hiciste clic y la esquina de la tarjeta
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
 
         document.onmouseup = detenerArrastre;
         document.onmousemove = arrastrar;
@@ -322,17 +329,9 @@ function hacerPanelArrastrable() {
         
         if (e.type !== 'touchmove') e.preventDefault();
         
-        // Calculamos la diferencia exacta que se movió el ratón
-        let dx = clientX - startX;
-        let dy = clientY - startY;
-        
-        // Actualizamos las coordenadas iniciales para el siguiente fotograma
-        startX = clientX;
-        startY = clientY;
-
-        // Movemos el panel exactamente esa diferencia
-        el.style.left = (el.offsetLeft + dx) + "px";
-        el.style.top = (el.offsetTop + dy) + "px";
+        // Movemos libremente sin que el `bottom` nos cause estiramientos infinitos
+        el.style.left = (clientX - offsetX) + "px";
+        el.style.top = (clientY - offsetY) + "px";
     }
 
     function detenerArrastre() {
