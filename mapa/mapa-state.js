@@ -1,5 +1,13 @@
 export const estadoMapa = {
     esAdmin: false,
+    jugadorActivo: 'Todos', // Estado inicial
+    jugadores: [],          // Lista de jugadores activos
+    inventario: {},         // Diccionario de hechizos por jugador
+    vistaJugador: {         // Sets calculados en tiempo real
+        posesiones: new Set(),
+        aprendibles: new Set(),
+        rastreo: new Set()
+    },
     nodos: [],
     enlaces: [],
     math: { originX: 0, originY: 0, maxXDist: 1, maxYDist: 1 }, 
@@ -23,11 +31,10 @@ export const COLOR_AFINIDAD = {
     'Oscura': '#c285ff'
 };
 
-// ESTÉTICA DE ROL DEFINITIVA (OPACIDADES REDUCIDAS)
 export const ESTETICA = {
-    lineaDescubierta: 'rgba(210, 190, 230, 0.3)', // Muy translúcida
-    lineaMostaza: 'rgba(212, 175, 55, 0.4)',       // Reducida de 0.8 a 0.4
-    lineaRosa: 'rgba(200, 60, 100, 0.35)',         // Reducida de 0.6 a 0.35
-    lineaPrecedente: 'rgba(138, 43, 226, 0.45)',   // Morado activo
-    lineaSaliente: 'rgba(255, 236, 139, 0.45)'     // Dorado activo
+    lineaDescubierta: 'rgba(210, 190, 230, 0.3)', 
+    lineaMostaza: 'rgba(212, 175, 55, 0.4)',       
+    lineaRosa: 'rgba(200, 60, 100, 0.35)',         
+    lineaPrecedente: 'rgba(138, 43, 226, 0.45)',   
+    lineaSaliente: 'rgba(255, 236, 139, 0.45)'     
 };
