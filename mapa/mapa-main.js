@@ -48,6 +48,7 @@ window.abrirMenuOP = () => {
 window.ordenarMapaYifanHu = () => {
     const nodos = estadoMapa.nodos;
     const enlaces = estadoMapa.enlaces;
+    const math = estadoMapa.math;
     
     const K = 550; 
     let iteraciones = 150; 
@@ -107,7 +108,7 @@ window.ordenarMapaYifanHu = () => {
         nodos.forEach(u => {
             if(u.isHexNode) { 
                 u.x = 0; u.y = 0; 
-                u._rawX = 0; u._rawY = 0; 
+                u._rawX = math.originX; u._rawY = math.originY; 
                 return; 
             }
 
@@ -118,9 +119,8 @@ window.ordenarMapaYifanHu = () => {
                 u.x += (d.x / dLen) * limit;
                 u.y += (d.y / dLen) * limit;
                 
-                // GUARDADO ABSOLUTO (Sin matemáticas compresivas)
-                u._rawX = u.x;
-                u._rawY = u.y;
+                u._rawX = (u.x / math.maxXDist) + math.originX;
+                u._rawY = -(u.y / math.maxYDist) + math.originY;
             }
         });
 
@@ -160,7 +160,6 @@ window.guardarCambiosMapa = async () => {
     const btn = document.getElementById('btn-save-map');
     btn.innerText = "Guardando..."; btn.disabled = true;
 
-    // Se envían los valores ABSOLUTOS de pantalla al Excel
     const cambios = estadoMapa.nodos.filter(n => n.modificado).map(n => ({
         id: n.id || n.nombreOriginal, 
         x: n._rawX,
@@ -184,7 +183,7 @@ window.guardarCambiosMapa = async () => {
         const data = await res.json();
         
         if (data.status === 'success') {
-            alert("¡Éxito! Posiciones absolutas guardadas en tu Base de Datos.");
+            alert("¡Éxito! Posiciones guardadas en tu Base de Datos.");
             estadoMapa.nodos.forEach(n => n.modificado = false);
             btn.classList.add('oculto');
         } else {
@@ -248,15 +247,28 @@ function iniciarEventosInput() {
     // ===================================
     // RATÓN (PC)
     // ===================================
+    
+    // DOBLE CLIC PARA LIMPIAR SELECCIÓN GLOBALMENTE
+    canvas.addEventListener('dblclick', (e) => {
+        estadoMapa.interaccion.selectedNode = null;
+        actualizarPanelInfo();
+    });
+
     canvas.addEventListener('mousedown', (e) => {
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
 
         if (nodo) {
-            estadoMapa.interaccion.selectedNode = nodo;
+            // SI SE HACE CLIC EN EL MISMO NODO, SE DESELECCIONA
+            if (estadoMapa.interaccion.selectedNode === nodo) {
+                estadoMapa.interaccion.selectedNode = null;
+            } else {
+                estadoMapa.interaccion.selectedNode = nodo;
+            }
+            
             if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
         } else {
-            estadoMapa.interaccion.selectedNode = null; 
+            // AL TOCAR EL FONDO, SE MUEVE LA CÁMARA (NO DESELECCIONA EL NODO ACTIVO)
             estadoMapa.interaccion.isDraggingBg = true;
         }
         
@@ -279,9 +291,9 @@ function iniciarEventosInput() {
             n.x += dx / estadoMapa.camara.zoom;
             n.y += dy / estadoMapa.camara.zoom;
             
-            // GUARDADO ABSOLUTO (Sin dividir, respetando su lugar real)
-            n._rawX = n.x;
-            n._rawY = n.y;
+            const math = estadoMapa.math;
+            n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
+            n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
 
             n.modificado = true;
             document.getElementById('btn-save-map').classList.remove('oculto');
@@ -330,10 +342,14 @@ function iniciarEventosInput() {
             const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
 
             if (nodo) {
-                estadoMapa.interaccion.selectedNode = nodo;
+                if (estadoMapa.interaccion.selectedNode === nodo) {
+                    estadoMapa.interaccion.selectedNode = null;
+                } else {
+                    estadoMapa.interaccion.selectedNode = nodo;
+                }
+                
                 if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
             } else {
-                estadoMapa.interaccion.selectedNode = null; 
                 estadoMapa.interaccion.isDraggingBg = true;
             }
             
@@ -367,8 +383,9 @@ function iniciarEventosInput() {
                 n.x += dx / estadoMapa.camara.zoom;
                 n.y += dy / estadoMapa.camara.zoom;
                 
-                n._rawX = n.x;
-                n._rawY = n.y;
+                const math = estadoMapa.math;
+                n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
+                n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
 
                 n.modificado = true;
                 document.getElementById('btn-save-map').classList.remove('oculto');
