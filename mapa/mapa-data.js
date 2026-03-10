@@ -33,8 +33,8 @@ function procesarNodos(json) {
     const todos = [].concat(json.nodos || []).concat(json.nodosOcultos || []);
     estadoMapa.nodos = [];
     const nodosProcesados = new Set();
-    
-    let hexNodeRaw = null;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -47,19 +47,17 @@ function procesarNodos(json) {
         if (n._rawX === null) n._rawX = Math.random() * 500;
         if (n._rawY === null) n._rawY = Math.random() * 500;
 
-        const idStr = String(n.ID || '').trim().toLowerCase();
-        const nomStr = String(n.Nombre || '').trim().toLowerCase();
-        if (idStr === 'hex' || nomStr === 'hex' || idStr === 'hechizo hex') {
-            hexNodeRaw = n; 
-        }
+        if(n._rawX < minX) minX = n._rawX; if(n._rawX > maxX) maxX = n._rawX;
+        if(n._rawY < minY) minY = n._rawY; if(n._rawY > maxY) maxY = n._rawY;
     });
 
-    let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
-    let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
+    const range = Math.max(maxX - minX, maxY - minY) || 1;
+    const cx = (maxX + minX) / 2;
+    const cy = (maxY + minY) / 2;
 
-    estadoMapa.math.originX = originX;
-    estadoMapa.math.originY = originY;
-    const scale = estadoMapa.math.scale;
+    // LA MAGIA ANTI-RESORTE: Si los números son gigantes (> 50,000), es Gephi puro y debe encogerse.
+    // Si son menores, significa que ya los guardaste en tu Excel y se deben respetar tal cual están.
+    const isGephiRaw = range > 50000;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -85,9 +83,16 @@ function procesarNodos(json) {
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        // LÓGICA ABSOLUTA: Ya no se encoge, respeta su distancia original multiplicada por la escala.
-        const x = (n._rawX - originX) * scale;
-        const y = -(n._rawY - originY) * scale; 
+        let x, y;
+        if (isGephiRaw) {
+            // Expansión inicial
+            x = ((n._rawX - cx) / range) * 8000;
+            y = ((n._rawY - cy) / range) * 8000;
+        } else {
+            // Posición guardada absoluta
+            x = n._rawX;
+            y = n._rawY;
+        }
 
         let radio = esConocido ? 35 : 28;
         if (isHexNode) radio = 65;
@@ -113,11 +118,11 @@ function procesarNodos(json) {
             isHexNode: isHexNode,
             x: x,
             y: y,
-            _rawX: n._rawX, 
-            _rawY: n._rawY,
+            _rawX: x, // Guarda el valor procesado para que Excel se actualice con píxeles reales
+            _rawY: y,
             radio: radio,
             incomingSources: [],
-            modificado: false
+            modificado: isGephiRaw // Si era Gephi raw, forzamos un guardado la próxima vez
         });
     });
 }
@@ -166,11 +171,11 @@ export function actualizarColoresFlechas() {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = ESTETICA.lineaDescubierta; // La nueva "blanca" (morado tenue)
+            nodo.arrowColor = ESTETICA.lineaDescubierta; 
         } else if (conocidos > 0) {
-            nodo.arrowColor = ESTETICA.lineaMostaza; // Mostaza
+            nodo.arrowColor = ESTETICA.lineaMostaza; 
         } else {
-            nodo.arrowColor = ESTETICA.lineaRosa; // Rosa
+            nodo.arrowColor = ESTETICA.lineaRosa; 
         }
     });
 }
