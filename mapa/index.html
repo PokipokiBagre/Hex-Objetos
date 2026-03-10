@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mapa de Hechizos | HEX</title>
     <link rel="icon" type="image/png" href="../img/icon.png">
-    <link rel="stylesheet" href="../stylemapa.css?v=3.0">
+    <link rel="stylesheet" href="../stylemapa.css?v=4.0">
 </head>
 <body>
     <div id="ui-overlay" style="pointer-events: none;">
@@ -21,6 +21,9 @@
         </div>
 
         <div id="panel-info" class="panel-info oculto" style="pointer-events: auto; max-height: 80vh; overflow-y: auto;">
+            
+            <button id="btn-cerrar-panel" onclick="window.cerrarPanelInfo()" title="Deseleccionar nodo">✕</button>
+
             <h3 id="info-titulo">Nombre Hechizo</h3>
             <div id="info-tags" class="tags-container"></div>
             
