@@ -121,7 +121,7 @@ export function dibujarFrame() {
                 let tT = rastreo.has(link.target) || tP || tA;
 
                 if (sP && tP) {
-                    ctx.strokeStyle = 'rgba(138, 43, 226, 0.45)'; 
+                    ctx.strokeStyle = 'rgba(138, 43, 226, 0.65)'; 
                     ctx.lineWidth = 1.5 / scaleFactor;
                     ctx.setLineDash([]);
                 } else if (sP && tA) {
@@ -131,19 +131,19 @@ export function dibujarFrame() {
                     let posReq = target.incomingSources.filter(n => posesiones.has(n)).length;
                     let ratio = posReq / totalReq;
 
-                    if (ratio >= 0.75) ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)'; 
-                    else if (ratio >= 0.4) ctx.strokeStyle = 'rgba(218, 165, 32, 0.8)'; 
-                    else ctx.strokeStyle = 'rgba(238, 232, 170, 0.8)'; 
+                    if (ratio >= 0.75) ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)'; 
+                    else if (ratio >= 0.4) ctx.strokeStyle = 'rgba(218, 165, 32, 0.5)'; 
+                    else ctx.strokeStyle = 'rgba(238, 232, 170, 0.5)'; 
                     
                     ctx.lineWidth = 1.8 / scaleFactor;
                     ctx.setLineDash([]);
                 } else if (sT && tT) {
                     // AMARILLO TRASLÚCIDO (PRECEDENTES) - Sólido pero tenue
-                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.15)'; 
+                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.20)'; 
                     ctx.lineWidth = 1 / scaleFactor; 
                     ctx.setLineDash([]); 
                 } else {
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)'; 
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'; 
                     ctx.lineWidth = 1.2 / scaleFactor;
                     ctx.setLineDash([4 / scaleFactor, 6 / scaleFactor]);
                     ctx.globalAlpha = 0.15; 
