@@ -36,7 +36,7 @@ export function dibujarFrame() {
 
     const scaleFactor = Math.max(camara.zoom, 0.4);
 
-    // 1. DIBUJAR ENLACES
+    // 1. DIBUJAR ENLACES CON SEGMENTACIÓN
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -53,11 +53,20 @@ export function dibujarFrame() {
             interaccion.selectedNode === link.source || interaccion.selectedNode === link.target) {
             ctx.strokeStyle = 'rgba(0, 255, 255, 1)';
             ctx.lineWidth = 6 / scaleFactor;
+            ctx.setLineDash([]);
         } else {
             ctx.strokeStyle = link.target.arrowColor || 'rgba(255, 255, 255, 0.5)'; 
             ctx.lineWidth = 2.5 / scaleFactor; 
+            
+            // SEGMENTACIÓN: Si es Mostaza o Rosa, la línea es punteada
+            if (ctx.strokeStyle === 'rgba(255, 200, 0, 0.9)' || ctx.strokeStyle === 'rgba(255, 100, 150, 0.7)') {
+                ctx.setLineDash([12 / scaleFactor, 8 / scaleFactor]);
+            } else {
+                ctx.setLineDash([]);
+            }
         }
         ctx.stroke();
+        ctx.setLineDash([]); // Resetear para que la punta de la flecha no sea punteada
 
         const headlen = 16 / scaleFactor;
         ctx.beginPath();
@@ -72,7 +81,7 @@ export function dibujarFrame() {
     // 2. DIBUJAR NODOS
     nodos.forEach(nodo => {
         let colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
-        if (!nodo.esConocido) colorAf = '#555';
+        if (!nodo.esConocido) colorAf = '#666'; // Borde un poco más brillante
         if (nodo.isHexNode) colorAf = '#ff4444'; 
         
         const isHovered = interaccion.hoveredNode === nodo;
@@ -91,15 +100,17 @@ export function dibujarFrame() {
         ctx.beginPath();
         ctx.arc(nodo.x, nodo.y, nodo.radio, 0, Math.PI * 2);
         
-        ctx.shadowBlur = (isHovered || isSelected) ? 25 : (nodo.isHexNode ? 30 : 5);
+        ctx.shadowBlur = (isHovered || isSelected) ? 25 : (nodo.isHexNode ? 30 : (nodo.esConocido ? 5 : 2));
         ctx.shadowColor = colorAf;
 
+        // FONDOS DE NODOS
         if (nodo.isHexNode) {
             ctx.fillStyle = '#4a0000';
         } else if (nodo.esConocido) {
             ctx.fillStyle = (isHovered || isSelected) ? '#333' : '#111';
         } else {
-            ctx.fillStyle = (isHovered || isSelected) ? '#222' : '#000'; 
+            // Nodos Sellados: Gris más claro para que sean muy visibles
+            ctx.fillStyle = (isHovered || isSelected) ? '#3a3a3a' : '#1c1c1c'; 
         }
         
         ctx.fill();
@@ -109,7 +120,7 @@ export function dibujarFrame() {
         ctx.strokeStyle = colorAf;
         
         if (!nodo.esConocido && !nodo.isHexNode) {
-            ctx.setLineDash([5 / scaleFactor, 5 / scaleFactor]);
+            ctx.setLineDash([6 / scaleFactor, 4 / scaleFactor]); // Borde punteado
         }
         ctx.stroke();
         ctx.setLineDash([]); 
@@ -123,7 +134,6 @@ export function dibujarFrame() {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             
-            // Texto se posiciona respetando el nuevo radio gigante
             const textY = nodo.y + nodo.radio + (8 / scaleFactor);
 
             ctx.lineWidth = 3 / scaleFactor;
@@ -135,7 +145,7 @@ export function dibujarFrame() {
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? '#00ffff' : '#fff';
             } else {
-                ctx.fillStyle = (isHovered || isSelected) ? '#aaa' : '#888'; 
+                ctx.fillStyle = (isHovered || isSelected) ? '#bbb' : '#888'; 
             }
             ctx.fillText(nodo.nombre, nodo.x, textY);
         }
@@ -167,11 +177,34 @@ export function actualizarPanelInfo() {
     }
         
     const efectoEl = document.getElementById('info-efecto');
-    if (nodo.efecto && nodo.esConocido) {
-        efectoEl.innerText = "Efecto: " + nodo.efecto; 
-        efectoEl.style.display = 'block';
+    const detallesEl = document.getElementById('info-detalles');
+    
+    if (nodo.esConocido) {
+        // EFECTO PRINCIPAL
+        if (nodo.efecto) {
+            efectoEl.innerText = "Efecto: " + nodo.efecto; 
+            efectoEl.style.display = 'block';
+        } else {
+            efectoEl.style.display = 'none';
+        }
+
+        // SECCIÓN MODIFICADORES
+        if (nodo.overcast || nodo.undercast || nodo.especial) {
+            detallesEl.style.display = 'block';
+            
+            const bOver = document.getElementById('box-overcast');
+            const bUnder = document.getElementById('box-undercast');
+            const bEsp = document.getElementById('box-especial');
+
+            if(nodo.overcast) { bOver.style.display = 'block'; document.getElementById('info-overcast').innerText = nodo.overcast; } else { bOver.style.display = 'none'; }
+            if(nodo.undercast) { bUnder.style.display = 'block'; document.getElementById('info-undercast').innerText = nodo.undercast; } else { bUnder.style.display = 'none'; }
+            if(nodo.especial) { bEsp.style.display = 'block'; document.getElementById('info-especial').innerText = nodo.especial; } else { bEsp.style.display = 'none'; }
+        } else {
+            detallesEl.style.display = 'none';
+        }
     } else { 
         efectoEl.style.display = 'none'; 
+        detallesEl.style.display = 'none';
     }
 
     const opDiv = document.getElementById('info-op');
@@ -191,4 +224,5 @@ export function actualizarPanelInfo() {
     }
 
     panel.classList.remove('oculto');
-}
+                    }
+            
