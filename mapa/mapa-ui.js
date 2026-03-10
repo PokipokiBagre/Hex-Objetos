@@ -52,25 +52,32 @@ export function dibujarFrame() {
         
         if (nodoActivo) {
             if (link.source === nodoActivo) {
-                // SALIENTE
                 ctx.strokeStyle = ESTETICA.lineaSaliente;
                 ctx.lineWidth = 6 / scaleFactor;
+                ctx.setLineDash([]);
             } else if (link.target === nodoActivo) {
-                // PRECEDENTE
                 ctx.strokeStyle = ESTETICA.lineaPrecedente;
                 ctx.lineWidth = 6 / scaleFactor;
+                ctx.setLineDash([]);
             } else {
-                ctx.strokeStyle = 'rgba(49, 13, 49, 0.15)'; 
+                ctx.strokeStyle = 'rgba(49, 13, 49, 0.1)'; // Super difuminado si no está seleccionado
                 ctx.lineWidth = 1 / scaleFactor; 
+                ctx.setLineDash([]);
             }
         } else {
-            // ESTADO NORMAL: Mismo grosor para todas (Descubiertas, Mostazas y Rosas) y continuas
             ctx.strokeStyle = link.target.arrowColor; 
             ctx.lineWidth = 1.5 / scaleFactor; 
+            
+            // SOLO LAS LÍNEAS ROJAS (ROSAS) SON PUNTEADAS
+            if (ctx.strokeStyle === ESTETICA.lineaRosa) {
+                ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
+            } else {
+                ctx.setLineDash([]); // Mostaza y Descubierta son sólidas
+            }
         }
 
-        ctx.setLineDash([]); // TODAS las líneas son normales/continuas
         ctx.stroke();
+        ctx.setLineDash([]); 
 
         const headlen = (ctx.lineWidth * 3) + (10 / scaleFactor); 
         ctx.beginPath();
@@ -94,7 +101,7 @@ export function dibujarFrame() {
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(nodo.x, nodo.y, nodo.radio + (10/scaleFactor), 0, Math.PI * 2);
-            ctx.strokeStyle = ESTETICA.lineaSaliente; // Aura Dorada
+            ctx.strokeStyle = ESTETICA.lineaSaliente; 
             ctx.lineWidth = 3 / scaleFactor;
             ctx.setLineDash([8/scaleFactor, 8/scaleFactor]);
             ctx.stroke();
@@ -127,16 +134,17 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. TEXTOS 
-        if (camara.zoom > 0.10 || isHovered || isSelected || nodo.isHexNode) {
-            let fontSize = nodo.isHexNode ? 42 : (nodo.esConocido ? 24 : 20);
+        // 3. TEXTOS (AUMENTADOS)
+        if (camara.zoom > 0.08 || isHovered || isSelected || nodo.isHexNode) {
+            // TAMAÑOS NUEVOS: 52 para HEX, 32 para Conocidos, 26 para Ocultos
+            let fontSize = nodo.isHexNode ? 52 : (nodo.esConocido ? 32 : 26);
             if (isHovered || isSelected) fontSize += 8;
 
             ctx.font = "bold " + fontSize + "px sans-serif";
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             
-            const textY = nodo.y + nodo.radio + (12 / scaleFactor);
+            const textY = nodo.y + nodo.radio + (15 / scaleFactor);
 
             ctx.lineWidth = 6 / scaleFactor;
             ctx.strokeStyle = 'rgba(0,0,0,0.95)'; 
