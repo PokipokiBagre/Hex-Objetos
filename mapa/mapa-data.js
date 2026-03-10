@@ -58,18 +58,20 @@ function procesarNodos(json) {
     let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
     let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
 
-    // Buscamos la distancia más larga en CUALQUIER dirección para crear un radio uniforme
-    let maxDist = 1;
+    // RESTAURADO: Cálculo independiente para X e Y para forzar el círculo
+    let maxXDist = 1;
+    let maxYDist = 1;
     todos.forEach(n => {
         let dx = Math.abs(n._rawX - originX);
         let dy = Math.abs(n._rawY - originY);
-        if (dx > maxDist) maxDist = dx;
-        if (dy > maxDist) maxDist = dy;
+        if (dx > maxXDist) maxXDist = dx;
+        if (dy > maxYDist) maxYDist = dy;
     });
 
     estadoMapa.math.originX = originX;
     estadoMapa.math.originY = originY;
-    estadoMapa.math.maxDist = maxDist;
+    estadoMapa.math.maxXDist = maxXDist;
+    estadoMapa.math.maxYDist = maxYDist;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -96,9 +98,9 @@ function procesarNodos(json) {
         }
 
         const radioExpansion = 2500;
-        // Al dividir ambos ejes por el MISMO maxDist, garantizamos que no se deforme a un óvalo
-        const x = ((n._rawX - originX) / maxDist) * radioExpansion;
-        const y = -((n._rawY - originY) / maxDist) * radioExpansion; 
+        // Al usar maxXDist y maxYDist, la estructura de Excel encaja en una caja perfecta de 1:1
+        const x = ((n._rawX - originX) / maxXDist) * radioExpansion;
+        const y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
 
         estadoMapa.nodos.push({
             id: idReal,
