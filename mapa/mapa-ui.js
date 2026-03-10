@@ -86,6 +86,8 @@ export function dibujarFrame() {
         
         ctx.globalAlpha = 1.0; 
         let drawNormal = true;
+        let arrowMult = 3;
+        let baseHeadLen = 10;
 
         if (nodoActivo) {
             if (outgoingEdges.has(link)) {
@@ -99,10 +101,10 @@ export function dibujarFrame() {
                 ctx.setLineDash([]);
                 drawNormal = false;
             } else {
-                ctx.strokeStyle = 'rgba(100, 100, 100, 0.2)'; 
-                ctx.lineWidth = 1 / scaleFactor; 
+                ctx.strokeStyle = 'rgba(80, 80, 80, 0.15)'; 
+                ctx.lineWidth = 0.8 / scaleFactor; 
                 ctx.setLineDash([]);
-                ctx.globalAlpha = 0.2; 
+                arrowMult = 1.5; baseHeadLen = 5;
                 drawNormal = false;
             }
         } 
@@ -116,7 +118,7 @@ export function dibujarFrame() {
                 let tT = rastreo.has(link.target) || tP || tA;
 
                 if (sP && tP) {
-                    ctx.strokeStyle = 'rgba(138, 43, 226, 0.45)'; // Grosor y opacidad de vista normal
+                    ctx.strokeStyle = 'rgba(138, 43, 226, 0.45)'; 
                     ctx.lineWidth = 1.5 / scaleFactor;
                     ctx.setLineDash([]);
                 } else if (sP && tA) {
@@ -125,24 +127,26 @@ export function dibujarFrame() {
                     let posReq = target.incomingSources.filter(n => posesiones.has(n)).length;
                     let ratio = posReq / totalReq;
 
-                    if (ratio >= 0.75) ctx.strokeStyle = 'rgba(50, 205, 50, 0.45)'; // Verde
-                    else if (ratio >= 0.4) ctx.strokeStyle = 'rgba(173, 255, 47, 0.45)'; // Verde-Amarillo
-                    else ctx.strokeStyle = 'rgba(255, 215, 0, 0.45)'; // Amarillo
+                    // Mismo grosor, LÍNEAS SÓLIDAS, opacidad media (0.5)
+                    if (ratio >= 0.75) ctx.strokeStyle = 'rgba(50, 205, 50, 0.5)'; 
+                    else if (ratio >= 0.4) ctx.strokeStyle = 'rgba(173, 255, 47, 0.5)'; 
+                    else ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)'; 
                     
-                    ctx.lineWidth = 1.5 / scaleFactor; // Mismo grosor sutil
+                    ctx.lineWidth = 1.5 / scaleFactor;
                     ctx.setLineDash([]);
                 } else if (sT && tT) {
-                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)'; 
-                    ctx.lineWidth = 1.5 / scaleFactor;
-                    ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
-                } else {
-                    // BLANCO AL 65% para lo que no interactúa con el jugador
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)'; 
+                    // LÍNEA SÓLIDA MUY TENUE
+                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.2)'; 
                     ctx.lineWidth = 1.2 / scaleFactor;
-                    ctx.setLineDash([4 / scaleFactor, 6 / scaleFactor]);
+                    ctx.setLineDash([]); 
+                } else {
+                    // GRIS HUMO, DELGADO, FLECHA CHICA
+                    ctx.strokeStyle = 'rgba(80, 80, 80, 0.15)'; 
+                    ctx.lineWidth = 0.8 / scaleFactor;
+                    ctx.setLineDash([]);
+                    arrowMult = 1.5; baseHeadLen = 5;
                 }
             } else {
-                // MODO TODOS
                 ctx.strokeStyle = link.target.arrowColor; 
                 ctx.lineWidth = 1.5 / scaleFactor; 
                 if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
@@ -153,7 +157,8 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        const headlen = (ctx.lineWidth * 3) + (10 / scaleFactor); 
+        // Flecha dinámica, más chica si es irrelevante
+        const headlen = (ctx.lineWidth * arrowMult) + (baseHeadLen / scaleFactor); 
         ctx.beginPath();
         ctx.moveTo(targetX, targetY);
         ctx.lineTo(targetX - headlen * Math.cos(angle - Math.PI / 7), targetY - headlen * Math.sin(angle - Math.PI / 7));
@@ -172,6 +177,8 @@ export function dibujarFrame() {
         let colorAfinidadReal = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         if (nodo.isHexNode) colorAfinidadReal = '#ff4444'; 
 
+        let borderColor = colorAfinidadReal;
+        
         const isHovered = interaccion.hoveredNode === nodo;
         const isSelected = interaccion.selectedNode === nodo;
         
@@ -183,7 +190,7 @@ export function dibujarFrame() {
             if (nodo !== nodoActivo && !ancestorNodes.has(nodo) && !outgoingNodes.has(nodo) && !nodo.isHexNode) {
                 ctx.globalAlpha = 0.2;
             }
-        }
+        } 
 
         if (isSelected) {
             ctx.beginPath();
@@ -195,13 +202,9 @@ export function dibujarFrame() {
             ctx.setLineDash([]);
         }
 
-        // ==========================================
-        // SISTEMA DE RELLENO "GEMA" CON RADIOS ABSOLUTOS
-        // (Esto arregla el bug de que se encogían al alejar la cámara)
-        // ==========================================
         const rOuter = nodo.radio;
-        const rGap = Math.max(1, nodo.radio - 3); // Anillo negro interno (3px absolutos)
-        const rCore = Math.max(1, nodo.radio - 7); // Núcleo central (7px absolutos)
+        const rGap = Math.max(1, nodo.radio - 3); 
+        const rCore = Math.max(1, nodo.radio - 7); 
 
         ctx.shadowBlur = (isHovered || isSelected) ? 35 : (nodo.isHexNode ? 30 : (nodo.esConocido ? 5 : 0));
         ctx.shadowColor = esIrrelevantePlayer ? 'transparent' : colorAfinidadReal;
@@ -210,31 +213,24 @@ export function dibujarFrame() {
             ctx.beginPath(); ctx.arc(nodo.x, nodo.y, rOuter, 0, Math.PI * 2);
             ctx.fillStyle = '#4a0000'; ctx.fill();
         } else {
-            // 1. Capa Base (Para evitar fondos transparentes extraños)
             ctx.beginPath(); ctx.arc(nodo.x, nodo.y, rOuter, 0, Math.PI * 2);
             ctx.fillStyle = '#111'; ctx.fill();
 
-            // 2. Capa "Hueco" oscuro para el borde interno
             ctx.beginPath(); ctx.arc(nodo.x, nodo.y, rGap, 0, Math.PI * 2);
             ctx.fillStyle = '#111'; ctx.fill();
 
-            // 3. Capa "Núcleo" Central
             ctx.beginPath(); ctx.arc(nodo.x, nodo.y, rCore, 0, Math.PI * 2);
             if (esPlenamenteDescubierto) {
-                // Descubiertos: Centro relleno de su color
                 ctx.fillStyle = colorAfinidadReal;
                 ctx.globalAlpha = 0.9;
                 ctx.fill();
                 ctx.globalAlpha = 1.0;
             } else if (esAprendibleORastreo) {
-                // Aprendibles: Centro grisáceo con leve tinte amarillo
                 ctx.fillStyle = '#222'; ctx.fill();
-                ctx.fillStyle = 'rgba(212, 175, 55, 0.2)'; ctx.fill();
+                ctx.fillStyle = 'rgba(212, 175, 55, 0.15)'; ctx.fill();
             } else if (esIrrelevantePlayer) {
-                // Irrelevantes: Centro gris simple
-                ctx.fillStyle = '#222'; ctx.fill();
+                ctx.fillStyle = '#111'; ctx.fill(); // Más oscuro
             } else {
-                // No descubiertos (Modo Todos): Centro gris con tinte de afinidad
                 ctx.fillStyle = '#222'; ctx.fill();
                 ctx.fillStyle = colorAfinidadReal;
                 ctx.globalAlpha = 0.15;
@@ -245,7 +241,6 @@ export function dibujarFrame() {
         
         ctx.shadowBlur = 0;
         
-        // 4. Borde Exterior Estilizado
         ctx.lineWidth = ((isHovered || isSelected) ? 4 : 2) / scaleFactor;
         ctx.beginPath();
         ctx.arc(nodo.x, nodo.y, rOuter, 0, Math.PI * 2);
@@ -255,12 +250,12 @@ export function dibujarFrame() {
             ctx.setLineDash([]);
             ctx.stroke();
         } else if (esAprendibleORastreo) {
-            ctx.strokeStyle = 'rgba(212, 175, 55, 0.8)';
-            ctx.setLineDash([8 / scaleFactor, 6 / scaleFactor]);
+            ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)'; // Más suave, sin punteado
+            ctx.setLineDash([]);
             ctx.stroke();
         } else if (esIrrelevantePlayer) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)'; // Blanco al 65%
-            ctx.setLineDash([4 / scaleFactor, 6 / scaleFactor]);
+            ctx.strokeStyle = 'rgba(80, 80, 80, 0.3)'; // Borde gris suave
+            ctx.setLineDash([]);
             ctx.stroke();
         } else {
             ctx.strokeStyle = colorAfinidadReal;
@@ -285,15 +280,21 @@ export function dibujarFrame() {
             const textY = nodo.y + nodo.radio + (15 / scaleFactor);
 
             ctx.lineWidth = 6 / scaleFactor;
-            ctx.strokeStyle = 'rgba(0,0,0,0.95)'; 
+            
+            // Si es irrelevante, quitamos el borde negro grueso para que no llame la atención
+            if (isPlayerView && esIrrelevantePlayer && !nodo.isHexNode) {
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)'; 
+            } else {
+                ctx.strokeStyle = 'rgba(0,0,0,0.95)'; 
+            }
             ctx.strokeText(nodo.nombre, nodo.x, textY);
             
             if (nodo.isHexNode) {
                 ctx.fillStyle = '#ffaaaa';
             } else if (isPlayerView) {
                 if (posesiones.has(nodo)) ctx.fillStyle = colorAfinidadReal; 
-                else if (aprendibles.has(nodo) || rastreo.has(nodo)) ctx.fillStyle = 'rgba(212, 175, 55, 1)'; 
-                else ctx.fillStyle = 'rgba(255, 255, 255, 0.65)'; // Blanco al 65% para irrelevantes
+                else if (aprendibles.has(nodo) || rastreo.has(nodo)) ctx.fillStyle = 'rgba(212, 175, 55, 0.8)'; 
+                else ctx.fillStyle = 'rgba(100, 100, 100, 0.2)'; // Texto gris muy suave
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? ESTETICA.lineaSaliente : '#fff';
             } else {
