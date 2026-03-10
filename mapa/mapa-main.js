@@ -45,6 +45,12 @@ window.abrirMenuOP = () => {
     } 
 };
 
+// NUEVA FUNCIÓN PARA EL BOTÓN 'X' ROJO
+window.cerrarPanelInfo = () => {
+    estadoMapa.interaccion.selectedNode = null;
+    actualizarPanelInfo();
+};
+
 window.ordenarMapaYifanHu = () => {
     const nodos = estadoMapa.nodos;
     const enlaces = estadoMapa.enlaces;
@@ -248,7 +254,6 @@ function iniciarEventosInput() {
     // RATÓN (PC)
     // ===================================
     
-    // DOBLE CLIC PARA LIMPIAR SELECCIÓN GLOBALMENTE
     canvas.addEventListener('dblclick', (e) => {
         estadoMapa.interaccion.selectedNode = null;
         actualizarPanelInfo();
@@ -259,7 +264,6 @@ function iniciarEventosInput() {
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
 
         if (nodo) {
-            // SI SE HACE CLIC EN EL MISMO NODO, SE DESELECCIONA
             if (estadoMapa.interaccion.selectedNode === nodo) {
                 estadoMapa.interaccion.selectedNode = null;
             } else {
@@ -268,7 +272,6 @@ function iniciarEventosInput() {
             
             if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
         } else {
-            // AL TOCAR EL FONDO, SE MUEVE LA CÁMARA (NO DESELECCIONA EL NODO ACTIVO)
             estadoMapa.interaccion.isDraggingBg = true;
         }
         
