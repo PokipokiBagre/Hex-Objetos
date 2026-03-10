@@ -20,14 +20,26 @@
             </div>
         </div>
 
-        <div id="panel-info" class="panel-info oculto" style="pointer-events: auto;">
+               <div id="panel-info" class="panel-info oculto" style="pointer-events: auto; max-height: 85vh; overflow-y: auto;">
             <h3 id="info-titulo">Nombre Hechizo</h3>
             <div id="info-tags" class="tags-container"></div>
-            <p id="info-desc" class="desc-text"></p>
-            <p id="info-efecto" class="efecto-text"></p>
+            
+            <p id="info-desc" style="color: #999; font-size: 0.85em; line-height: 1.4; margin-bottom: 10px; font-style: italic;"></p>
+            
+            <p id="info-efecto" style="color: #fff; font-size: 0.9em; font-weight: bold; margin-bottom: 10px; border-top: 1px dashed #444; padding-top: 10px;"></p>
+            
+            <details id="info-detalles" style="background: rgba(0,0,0,0.6); padding: 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #333;">
+                <summary style="color: var(--gold); cursor: pointer; font-weight: bold; font-family: 'Cinzel'; font-size: 0.85em;">🔍 Ver Modificadores</summary>
+                <div style="margin-top: 10px; font-size: 0.8em; color: #ddd; line-height: 1.5;">
+                    <div id="box-overcast"><b style="color:#ff7777">Overcast (100%):</b> <span id="info-overcast"></span></div>
+                    <div id="box-undercast" style="margin-top:6px;"><b style="color:#77aaff">Undercast (50%):</b> <span id="info-undercast"></span></div>
+                    <div id="box-especial" style="margin-top:6px;"><b style="color:#d4af37">Especial:</b> <span id="info-especial"></span></div>
+                </div>
+            </details>
+
             <div id="info-op"></div>
         </div>
-    </div>
+
 
     <canvas id="mapa-canvas"></canvas>
 
