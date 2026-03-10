@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mapa de Hechizos | HEX</title>
     <link rel="icon" type="image/png" href="../img/icon.png">
-    <link rel="stylesheet" href="../stylemapa.css?v=4.0">
+    <link rel="stylesheet" href="../stylemapa.css?v=5.0">
 </head>
 <body>
     <div id="ui-overlay" style="pointer-events: none;">
@@ -19,6 +19,8 @@
                 <span class="badge-conectado">🟢 CONECTADO</span>
             </div>
         </div>
+
+        <button id="btn-toggle-sidebar" onclick="document.getElementById('sidebar-jugadores').classList.toggle('open')" style="pointer-events: auto;">👥 Jugadores</button>
 
         <div id="sidebar-jugadores" class="sidebar" style="pointer-events: auto;">
             <h3 style="color:var(--gold); text-align:center; font-family:'Cinzel'; margin: 0 0 15px 0; border-bottom: 1px solid var(--gold); padding-bottom: 10px;">JUGADORES</h3>
