@@ -57,18 +57,9 @@ function procesarNodos(json) {
     let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
     let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
 
-    let maxXDist = 1; let maxYDist = 1;
-    todos.forEach(n => {
-        let dx = Math.abs(n._rawX - originX);
-        let dy = Math.abs(n._rawY - originY);
-        if (dx > maxXDist) maxXDist = dx;
-        if (dy > maxYDist) maxYDist = dy;
-    });
-
     estadoMapa.math.originX = originX;
     estadoMapa.math.originY = originY;
-    estadoMapa.math.maxXDist = maxXDist;
-    estadoMapa.math.maxYDist = maxYDist;
+    const scale = estadoMapa.math.scale;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -94,9 +85,9 @@ function procesarNodos(json) {
             nombreMostrar = `${maskName} (${hexCost})`;
         }
 
-        const radioExpansion = 2500;
-        const x = ((n._rawX - originX) / maxXDist) * radioExpansion;
-        const y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
+        // LÓGICA ABSOLUTA: Ya no se encoge, respeta su distancia original multiplicada por la escala.
+        const x = (n._rawX - originX) * scale;
+        const y = -(n._rawY - originY) * scale; 
 
         let radio = esConocido ? 35 : 28;
         if (isHexNode) radio = 65;
@@ -167,7 +158,7 @@ function procesarEnlaces(arrayStrings) {
 export function actualizarColoresFlechas() {
     estadoMapa.nodos.forEach(nodo => {
         if (nodo.incomingSources.length === 0) {
-            nodo.arrowColor = ESTETICA.lineaBase; 
+            nodo.arrowColor = ESTETICA.lineaDescubierta; 
             return;
         }
         
@@ -175,11 +166,11 @@ export function actualizarColoresFlechas() {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = ESTETICA.lineaBase; // Por defecto oscuro
+            nodo.arrowColor = ESTETICA.lineaDescubierta; // La nueva "blanca" (morado tenue)
         } else if (conocidos > 0) {
-            nodo.arrowColor = 'rgba(200, 150, 50, 0.6)'; // Mostaza oscuro
+            nodo.arrowColor = ESTETICA.lineaMostaza; // Mostaza
         } else {
-            nodo.arrowColor = ESTETICA.lineaNoDescubierto; // Rosa tenue
+            nodo.arrowColor = ESTETICA.lineaRosa; // Rosa
         }
     });
 }
