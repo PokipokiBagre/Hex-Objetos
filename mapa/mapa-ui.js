@@ -268,25 +268,26 @@ export function actualizarPanelInfo() {
     panel.classList.remove('oculto');
 }
 
-// NUEVO: Función para limpiar los estilos de arrastre y devolverlo a la base
+// NUEVO: Resetea la posición FORZANDO los valores originales del CSS
 export function resetearPosicionPanel() {
     const panel = document.getElementById('panel-info');
     if (panel) {
-        panel.style.top = '';
-        panel.style.left = '';
-        panel.style.bottom = '';
-        panel.style.right = '';
-        panel.style.transform = '';
+        panel.style.top = 'auto'; // Libera la fijación de arriba
+        panel.style.bottom = '25px'; // Vuelve abajo
+        panel.style.left = '50%'; // Vuelve al centro
+        panel.style.right = 'auto'; 
+        panel.style.transform = 'translateX(-50%)'; // Centrado perfecto
     }
 }
 
+// NUEVO MOTOR DE ARRASTRE (A prueba de caídas infinitas)
 function hacerPanelArrastrable() {
     const el = document.getElementById('panel-info');
     const header = document.getElementById('info-titulo');
     header.style.cursor = 'move';
     header.title = "Arrastra para mover la ventana";
 
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let offsetX = 0, offsetY = 0;
 
     header.onmousedown = iniciarArrastre;
     header.ontouchstart = iniciarArrastre;
@@ -295,22 +296,20 @@ function hacerPanelArrastrable() {
         e = e || window.event;
         if (e.type !== 'touchstart') e.preventDefault();
         
-        if (e.type === 'touchstart') {
-            pos3 = e.touches[0].clientX;
-            pos4 = e.touches[0].clientY;
-        } else {
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-        }
+        let clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         
-        if (el.style.transform !== "none") {
-            const rect = el.getBoundingClientRect();
-            el.style.transform = "none";
-            el.style.left = rect.left + "px";
-            el.style.top = rect.top + "px";
-            el.style.bottom = "auto";
-            el.style.right = "auto";
-        }
+        const rect = el.getBoundingClientRect();
+        
+        // Fijar posición absoluta cruda la primera vez que se toca
+        el.style.left = rect.left + "px";
+        el.style.top = rect.top + "px";
+        el.style.bottom = "auto";
+        el.style.transform = "none";
+
+        // Guardar el desplazamiento del ratón respecto a la esquina del panel
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
 
         document.onmouseup = detenerArrastre;
         document.onmousemove = arrastrar;
@@ -320,21 +319,14 @@ function hacerPanelArrastrable() {
 
     function arrastrar(e) {
         e = e || window.event;
-        let clientX, clientY;
-        if (e.type === 'touchmove') {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            e.preventDefault();
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-        pos1 = pos3 - clientX;
-        pos2 = pos4 - clientY;
-        pos3 = clientX;
-        pos4 = clientY;
-        el.style.top = (el.offsetTop - pos2) + "px";
-        el.style.left = (el.offsetLeft - pos1) + "px";
+        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        
+        if (e.type !== 'touchmove') e.preventDefault();
+        
+        // El movimiento es relativo a la pantalla menos el offset inicial
+        el.style.left = (clientX - offsetX) + "px";
+        el.style.top = (clientY - offsetY) + "px";
     }
 
     function detenerArrastre() {
