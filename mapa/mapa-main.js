@@ -136,7 +136,7 @@ window.cambiarEstadoNodo = (id, valor) => {
             nodo.esConocido = nuevoEstado;
             nodo.modificado = true;
             
-            nodo.radio = nodo.esConocido ? 35 : 20;
+            nodo.radio = nodo.esConocido ? 35 : 28;
             let baseName = nodo.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim();
             if (nodo.esConocido) {
                 nodo.nombre = `${baseName} (${nodo.hex})`;
@@ -179,7 +179,7 @@ window.guardarCambiosMapa = async () => {
         const data = await res.json();
         
         if (data.status === 'success') {
-            alert("¡Cambios guardados! Tu constelación está a salvo.");
+            alert("¡Éxito! Base de datos actualizada velozmente.");
             estadoMapa.nodos.forEach(n => n.modificado = false);
             btn.classList.add('oculto');
         } else {
@@ -189,7 +189,7 @@ window.guardarCambiosMapa = async () => {
         alert("Fallo de red al intentar guardar en el servidor.");
     }
 
-    btn.innerText = "💾 GUARDAR CAMBIOS";
+    btn.innerText = "💾 Guardar Cambios";
     btn.disabled = false;
 };
 
@@ -204,7 +204,7 @@ function iniciarEventosInput() {
     const canvas = document.getElementById('mapa-canvas');
     if(!canvas) return;
 
-    let pinchStartDistance = 0; // TÁCTIL: Guarda la distancia de los dos dedos
+    let pinchStartDistance = 0;
 
     const getPosicionMundo = (clientX, clientY) => {
         const camara = estadoMapa.camara;
@@ -223,9 +223,9 @@ function iniciarEventosInput() {
         return null;
     };
 
-    // ==========================================
-    // EVENTOS DE RATÓN (PC)
-    // ==========================================
+    // ===================================
+    // RATÓN (PC)
+    // ===================================
     canvas.addEventListener('mousedown', (e) => {
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
@@ -287,7 +287,7 @@ function iniciarEventosInput() {
         e.preventDefault();
         const camara = estadoMapa.camara;
         const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
-        const nuevoZoom = Math.max(0.05, Math.min(camara.zoom * zoomDelta, 4)); 
+        const nuevoZoom = Math.max(0.02, Math.min(camara.zoom * zoomDelta, 4)); // PERMITE ALEJARSE MÁS
         
         const mouseX = e.clientX;
         const mouseY = e.clientY;
@@ -297,11 +297,12 @@ function iniciarEventosInput() {
         camara.zoom = nuevoZoom;
     }, { passive: false });
 
-    // ==========================================
-    // EVENTOS TÁCTILES (MÓVIL)
-    // ==========================================
+    // ===================================
+    // TÁCTIL (MÓVIL PROTEGIDO)
+    // ===================================
     canvas.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) { // Un dedo = Clic o Arrastre
+        e.preventDefault(); // BLOQUEA ZOOM NATIVO O REFRESH
+        if (e.touches.length === 1) { 
             const touch = e.touches[0];
             const worldPos = getPosicionMundo(touch.clientX, touch.clientY);
             const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
@@ -318,7 +319,7 @@ function iniciarEventosInput() {
             estadoMapa.interaccion.lastMouseX = touch.clientX;
             estadoMapa.interaccion.lastMouseY = touch.clientY;
         } 
-        else if (e.touches.length === 2) { // Dos dedos = Pinch Zoom
+        else if (e.touches.length === 2) { 
             estadoMapa.interaccion.isDraggingBg = false;
             estadoMapa.interaccion.draggedNode = null;
             const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -328,9 +329,9 @@ function iniciarEventosInput() {
     }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // FUNDAMENTAL: Evita que la pantalla haga "Pull-to-refresh"
+        e.preventDefault(); // BLOQUEA EL SCROLL DEL NAVEGADOR
         
-        if (e.touches.length === 1) { // Arrastre
+        if (e.touches.length === 1) { 
             const touch = e.touches[0];
             const dx = touch.clientX - estadoMapa.interaccion.lastMouseX;
             const dy = touch.clientY - estadoMapa.interaccion.lastMouseY;
@@ -355,7 +356,7 @@ function iniciarEventosInput() {
             estadoMapa.interaccion.lastMouseX = touch.clientX;
             estadoMapa.interaccion.lastMouseY = touch.clientY;
             
-        } else if (e.touches.length === 2) { // Zooming
+        } else if (e.touches.length === 2) { 
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
             const distance = Math.hypot(dx, dy);
@@ -363,7 +364,7 @@ function iniciarEventosInput() {
             if (pinchStartDistance > 0) {
                 const zoomFactor = distance / pinchStartDistance;
                 const camara = estadoMapa.camara;
-                const nuevoZoom = Math.max(0.05, Math.min(camara.zoom * zoomFactor, 4));
+                const nuevoZoom = Math.max(0.02, Math.min(camara.zoom * zoomFactor, 4));
                 
                 const mouseX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const mouseY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -388,5 +389,4 @@ function iniciarEventosInput() {
 function bucleRender() {
     dibujarFrame();
     requestAnimationFrame(bucleRender);
-        }
-                
+}
