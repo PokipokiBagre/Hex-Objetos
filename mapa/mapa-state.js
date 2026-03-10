@@ -32,19 +32,22 @@ export const COLOR_AFINIDAD = {
 };
 
 export const ESTETICA = {
-    lineaDescubierta: 'rgba(210, 190, 230, 0.3)', 
-    lineaMostaza: 'rgba(212, 175, 55, 0.4)',       
-    lineaRosa: 'rgba(200, 60, 100, 0.35)',         
-    lineaPrecedente: 'rgba(138, 43, 226, 0.45)',   // Violeta Selección
-    lineaSaliente: 'rgba(255, 236, 139, 0.45)'     // Dorado Selección
+    lineaDescubierta: 'rgba(210, 190, 230, 0.2)', 
+    lineaMostaza: 'rgba(212, 175, 55, 0.3)',       
+    lineaRosa: 'rgba(200, 60, 100, 0.25)',         
+    
+    lineaPrecedente: 'rgba(177, 156, 217, 0.5)',   
+    lineaSaliente: 'rgba(236, 213, 154, 0.5)'     
 };
 
-// --- NUEVA SECCIÓN PARA VISTA PERSONAJE ---
+// --- NUEVA SECCIÓN PARA VISTA PERSONAJE (COLORES SUAVIZADOS) ---
 export const COLORES_JUGADOR = {
-    posesionMorada: 'rgba(138, 43, 226, 0.45)', // El Morado de lo que ya tienes
-    doradoInmediato: 'rgba(255, 215, 0, 0.5)',   // Amarillo Sólido (Aprendible ya)
-    doradoMedio: 'rgba(218, 165, 32, 0.5)',      // Dorado Medio (Progreso 40-75%)
-    doradoTenue: 'rgba(238, 232, 170, 0.5)',     // Dorado Pálido (Progreso < 40%)
-    doradoRastreo: 'rgba(212, 175, 55, 0.15)',   // Amarillo Traslúcido (Precedentes)
-    fondoNeutro: 'rgba(80, 80, 80, 0.15)'        // Gris de los nodos irrelevantes
+    posesionMorada: 'rgba(150, 131, 200, 0.6)', 
+
+    doradoInmediato: 'rgba(236, 213, 154, 0.7)', 
+    doradoMedio: 'rgba(212, 196, 146, 0.5)',     
+    doradoTenue: 'rgba(188, 180, 156, 0.4)',     
+    
+    doradoRastreo: 'rgba(160, 150, 130, 0.3)',   
+    fondoNeutro: 'rgba(60, 60, 65, 0.25)'       
 };
