@@ -10,7 +10,7 @@ window.onload = async () => {
 
         await cargarDatos(barra);
         centrarCamaraAuto(); 
-        inicializarSidebar(); // <-- Genera los botones de los jugadores
+        inicializarSidebar(); 
         
         if (loadScreen) {
             loadScreen.style.opacity = '0';
@@ -40,7 +40,6 @@ function inicializarSidebar() {
         btn.className = 'btn-jugador';
         btn.id = 'btn-jug-' + jug.replace(/\s+/g, '-');
         
-        // Uso de imagen de personaje con ruta relativa al servidor
         btn.innerHTML = `
             <img src="../img/imgpersonajes/${normalizarNombre(jug)}icon.png" 
                  onerror="this.src='../img/imgobjetos/no_encontrado.png'" 
@@ -55,20 +54,20 @@ function inicializarSidebar() {
 window.seleccionarJugador = (nombre) => {
     estadoMapa.jugadorActivo = nombre;
     
-    // UI Botones
     document.querySelectorAll('.btn-jugador').forEach(b => b.classList.remove('activo'));
     let btnId = nombre === 'Todos' ? 'btn-jug-Todos' : 'btn-jug-' + nombre.replace(/\s+/g, '-');
     let activeBtn = document.getElementById(btnId);
     if(activeBtn) activeBtn.classList.add('activo');
     
-    // Vaciar cálculos anteriores
+    // Ocultar menú en celular tras seleccionar
+    const sidebar = document.getElementById('sidebar-jugadores');
+    if (sidebar) sidebar.classList.remove('open');
+
     estadoMapa.vistaJugador = { posesiones: new Set(), aprendibles: new Set(), rastreo: new Set() };
     
-    // MATEMÁTICA DE APRENDIZAJE SI NO ES "TODOS"
     if (nombre !== 'Todos') {
         const inv = estadoMapa.inventario[nombre] || new Set();
         
-        // 1. Posesiones (Hechizos que ya tiene)
         estadoMapa.nodos.forEach(n => {
             let baseName = n.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim().toLowerCase();
             let idName = n.id.replace(/\s*\(\d+\)$/, '').trim().toLowerCase();
@@ -80,14 +79,12 @@ window.seleccionarJugador = (nombre) => {
             }
         });
 
-        // 2. Aprendibles (Los que salen directamente de lo que ya tiene)
         estadoMapa.enlaces.forEach(e => {
             if (estadoMapa.vistaJugador.posesiones.has(e.source) && !estadoMapa.vistaJugador.posesiones.has(e.target)) {
                 estadoMapa.vistaJugador.aprendibles.add(e.target);
             }
         });
 
-        // 3. Rastreo (El árbol genealógico hacia atrás para darle contexto)
         const rastrear = (n) => {
             estadoMapa.enlaces.forEach(e => {
                 if (e.target === n && !estadoMapa.vistaJugador.rastreo.has(e.source)) {
@@ -96,17 +93,13 @@ window.seleccionarJugador = (nombre) => {
                 }
             });
         };
-        // Rastrear desde los aprendibles hacia el centro
         estadoMapa.vistaJugador.aprendibles.forEach(n => rastrear(n));
         estadoMapa.vistaJugador.posesiones.forEach(n => rastrear(n));
     }
     
-    // Limpiar selección actual para evitar confusiones visuales
     estadoMapa.interaccion.selectedNode = null;
     window.cerrarPanelInfo(); 
 };
-
-// ===================================
 
 window.abrirMenuOP = () => { 
     if (estadoMapa.esAdmin) { 
