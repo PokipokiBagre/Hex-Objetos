@@ -23,12 +23,11 @@ export const COLOR_AFINIDAD = {
     'Oscura': '#c285ff'
 };
 
-// ESTÉTICA DE ROL DEFINITIVA
+// ESTÉTICA DE ROL DEFINITIVA (OPACIDADES REDUCIDAS)
 export const ESTETICA = {
-    // Violeta mucho más claro y blanquecino para que resalte en el fondo oscuro
-    lineaDescubierta: 'rgba(210, 190, 230, 0.55)', 
-    lineaMostaza: 'rgba(212, 175, 55, 0.8)',       
-    lineaRosa: 'rgba(200, 60, 100, 0.6)',          
-    lineaPrecedente: 'rgba(138, 43, 226, 1)',      
-    lineaSaliente: 'rgba(255, 236, 139, 1)'        
+    lineaDescubierta: 'rgba(210, 190, 230, 0.25)', // Muy translúcida
+    lineaMostaza: 'rgba(212, 175, 55, 0.4)',       // Reducida de 0.8 a 0.4
+    lineaRosa: 'rgba(200, 60, 100, 0.35)',         // Reducida de 0.6 a 0.35
+    lineaPrecedente: 'rgba(138, 43, 226, 0.85)',   // Morado activo
+    lineaSaliente: 'rgba(255, 236, 139, 0.85)'     // Dorado activo
 };
