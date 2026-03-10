@@ -33,8 +33,8 @@ function procesarNodos(json) {
     const todos = [].concat(json.nodos || []).concat(json.nodosOcultos || []);
     estadoMapa.nodos = [];
     const nodosProcesados = new Set();
-
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    let hexNodeRaw = null;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -47,17 +47,33 @@ function procesarNodos(json) {
         if (n._rawX === null) n._rawX = Math.random() * 500;
         if (n._rawY === null) n._rawY = Math.random() * 500;
 
-        if(n._rawX < minX) minX = n._rawX; if(n._rawX > maxX) maxX = n._rawX;
-        if(n._rawY < minY) minY = n._rawY; if(n._rawY > maxY) maxY = n._rawY;
+        const idStr = String(n.ID || '').trim().toLowerCase();
+        const nomStr = String(n.Nombre || '').trim().toLowerCase();
+        if (idStr === 'hex' || nomStr === 'hex' || idStr === 'hechizo hex') {
+            hexNodeRaw = n; 
+        }
     });
 
-    const range = Math.max(maxX - minX, maxY - minY) || 1;
-    const cx = (maxX + minX) / 2;
-    const cy = (maxY + minY) / 2;
+    let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
+    let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
 
-    // LA MAGIA ANTI-RESORTE: Si los números son gigantes (> 50,000), es Gephi puro y debe encogerse.
-    // Si son menores, significa que ya los guardaste en tu Excel y se deben respetar tal cual están.
-    const isGephiRaw = range > 50000;
+    let maxXDist = 1; let maxYDist = 1;
+    todos.forEach(n => {
+        let dx = Math.abs(n._rawX - originX);
+        let dy = Math.abs(n._rawY - originY);
+        if (dx > maxXDist) maxXDist = dx;
+        if (dy > maxYDist) maxYDist = dy;
+    });
+
+    estadoMapa.math.originX = originX;
+    estadoMapa.math.originY = originY;
+    estadoMapa.math.maxXDist = maxXDist;
+    estadoMapa.math.maxYDist = maxYDist;
+
+    // DETECCIÓN INTELIGENTE: Si la distancia es gigante, son datos de Gephi crudos.
+    // Si la distancia es normal (ej. 5000), significa que ya guardaste en pantalla y no debemos comprimirlo más.
+    const isGephiRaw = maxXDist > 15000 || maxYDist > 15000;
+    const radioExpansion = 3500; 
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
@@ -85,11 +101,11 @@ function procesarNodos(json) {
 
         let x, y;
         if (isGephiRaw) {
-            // Expansión inicial
-            x = ((n._rawX - cx) / range) * 8000;
-            y = ((n._rawY - cy) / range) * 8000;
+            // Fuerza la Elipse de Gephi a volverse un Círculo Perfecto
+            x = ((n._rawX - originX) / maxXDist) * radioExpansion;
+            y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
         } else {
-            // Posición guardada absoluta
+            // Carga posiciones absolutas ya guardadas, manteniendo tu orden
             x = n._rawX;
             y = n._rawY;
         }
@@ -118,18 +134,17 @@ function procesarNodos(json) {
             isHexNode: isHexNode,
             x: x,
             y: y,
-            _rawX: x, // Guarda el valor procesado para que Excel se actualice con píxeles reales
+            _rawX: x, // REESCRITURA ABSOLUTA: Convierte Gephi en Píxeles de Pantalla
             _rawY: y,
             radio: radio,
             incomingSources: [],
-            modificado: isGephiRaw // Si era Gephi raw, forzamos un guardado la próxima vez
+            modificado: isGephiRaw // Si detectó Gephi, te pedirá guardar para asentar las posiciones
         });
     });
 }
 
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
-    
     const findNode = (val) => {
         if (!val) return null;
         const str = String(val).trim().toLowerCase();
@@ -171,11 +186,11 @@ export function actualizarColoresFlechas() {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = ESTETICA.lineaDescubierta; 
+            nodo.arrowColor = ESTETICA.lineaDescubierta; // Violeta sutil (ex-blanca)
         } else if (conocidos > 0) {
-            nodo.arrowColor = ESTETICA.lineaMostaza; 
+            nodo.arrowColor = ESTETICA.lineaMostaza; // Mostaza
         } else {
-            nodo.arrowColor = ESTETICA.lineaRosa; 
+            nodo.arrowColor = ESTETICA.lineaRosa; // Rosa
         }
     });
 }
