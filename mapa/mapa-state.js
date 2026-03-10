@@ -25,9 +25,9 @@ export const COLOR_AFINIDAD = {
 
 // ESTÉTICA DE ROL DEFINITIVA (OPACIDADES REDUCIDAS)
 export const ESTETICA = {
-    lineaDescubierta: 'rgba(210, 190, 230, 0.25)', // Muy translúcida
+    lineaDescubierta: 'rgba(210, 190, 230, 0.3)', // Muy translúcida
     lineaMostaza: 'rgba(212, 175, 55, 0.4)',       // Reducida de 0.8 a 0.4
     lineaRosa: 'rgba(200, 60, 100, 0.35)',         // Reducida de 0.6 a 0.35
-    lineaPrecedente: 'rgba(138, 43, 226, 0.85)',   // Morado activo
-    lineaSaliente: 'rgba(255, 236, 139, 0.85)'     // Dorado activo
+    lineaPrecedente: 'rgba(138, 43, 226, 0.45)',   // Morado activo
+    lineaSaliente: 'rgba(255, 236, 139, 0.45)'     // Dorado activo
 };
