@@ -34,10 +34,10 @@ export function dibujarFrame() {
     ctx.translate(camara.x, camara.y);
     ctx.scale(camara.zoom, camara.zoom);
 
-    const scaleFactor = Math.max(camara.zoom, 0.2); // Permite escalar elementos incluso al alejar
+    const scaleFactor = Math.max(camara.zoom, 0.2); 
     const nodoActivo = interaccion.selectedNode || interaccion.hoveredNode;
 
-    // 1. DIBUJAR ENLACES
+    // 1. DIBUJAR ENLACES (LÓGICA DE ROL)
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -62,7 +62,7 @@ export function dibujarFrame() {
                 ctx.lineWidth = 6 / scaleFactor;
                 ctx.setLineDash([]);
             } else {
-                ctx.strokeStyle = 'rgba(49, 13, 49, 0.15)';
+                ctx.strokeStyle = 'rgba(49, 13, 49, 0.15)'; // Apaga lo demás
                 ctx.lineWidth = 1 / scaleFactor; 
                 ctx.setLineDash([]);
             }
@@ -70,12 +70,12 @@ export function dibujarFrame() {
             ctx.strokeStyle = link.target.arrowColor; 
             
             if (ctx.strokeStyle === ESTETICA.lineaDescubierta) {
-                // Líneas descubiertas: Delgadas, tenues, y sutiles
-                ctx.lineWidth = 1.0 / scaleFactor; 
+                // Líneas descubiertas: Sutiles, delgadas, no molestan
+                ctx.lineWidth = 1.2 / scaleFactor; 
                 ctx.setLineDash([]);
             } else {
-                // Líneas Incompletas/Selladas (Mostaza, Rosa)
-                ctx.lineWidth = 3 / scaleFactor; 
+                // Líneas de incompletos (Mostaza/Rosa): Gruesas y punteadas
+                ctx.lineWidth = 2.8 / scaleFactor; 
                 ctx.setLineDash([12 / scaleFactor, 8 / scaleFactor]);
             }
         }
@@ -105,7 +105,7 @@ export function dibujarFrame() {
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(nodo.x, nodo.y, nodo.radio + (10/scaleFactor), 0, Math.PI * 2);
-            ctx.strokeStyle = ESTETICA.lineaSaliente; 
+            ctx.strokeStyle = ESTETICA.lineaSaliente; // Aura Dorada
             ctx.lineWidth = 3 / scaleFactor;
             ctx.setLineDash([8/scaleFactor, 8/scaleFactor]);
             ctx.stroke();
@@ -138,9 +138,8 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. TEXTOS MUCHÍSIMO MÁS GRANDES
+        // 3. TEXTOS GIGANTES Y LEGIBLES
         if (camara.zoom > 0.10 || isHovered || isSelected || nodo.isHexNode) {
-            // TEXTOS BASE AMPLIADOS (Base: 24, Hex: 42)
             let fontSize = nodo.isHexNode ? 42 : (nodo.esConocido ? 24 : 20);
             if (isHovered || isSelected) fontSize += 8;
 
@@ -150,9 +149,9 @@ export function dibujarFrame() {
             
             const textY = nodo.y + nodo.radio + (12 / scaleFactor);
 
-            // Borde oscuro para garantizar que se lea
+            // Borde oscuro para contraste total
             ctx.lineWidth = 6 / scaleFactor;
-            ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+            ctx.strokeStyle = 'rgba(0,0,0,0.95)'; 
             ctx.strokeText(nodo.nombre, nodo.x, textY);
             
             if (nodo.isHexNode) {
