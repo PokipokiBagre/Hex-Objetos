@@ -2,7 +2,7 @@ export const estadoMapa = {
     esAdmin: false,
     nodos: [],
     enlaces: [],
-    math: { originX: 0, originY: 0, maxXDist: 2, maxYDist: 2 }, 
+    math: { originX: 0, originY: 0, maxXDist: 1, maxYDist: 1 }, 
     camara: { x: window.innerWidth/2, y: window.innerHeight/2, zoom: 0.8 },
     interaccion: {
         isDraggingBg: false,
@@ -25,9 +25,10 @@ export const COLOR_AFINIDAD = {
 
 // ESTÉTICA DE ROL DEFINITIVA
 export const ESTETICA = {
-    lineaDescubierta: 'rgba(140, 100, 160, 0.35)', // Violeta tenue/sutil (Reemplaza a la blanca)
-    lineaMostaza: 'rgba(212, 175, 55, 0.8)',       // Mostaza para incompletos
-    lineaRosa: 'rgba(200, 60, 100, 0.6)',          // Rosa para sellados
-    lineaPrecedente: 'rgba(138, 43, 226, 1)',      // Morado Violeta (Llega al nodo)
-    lineaSaliente: 'rgba(255, 236, 139, 1)'        // Amarillo Dorado (Sale del nodo)
+    // Violeta mucho más claro y blanquecino para que resalte en el fondo oscuro
+    lineaDescubierta: 'rgba(210, 190, 230, 0.55)', 
+    lineaMostaza: 'rgba(212, 175, 55, 0.8)',       
+    lineaRosa: 'rgba(200, 60, 100, 0.6)',          
+    lineaPrecedente: 'rgba(138, 43, 226, 1)',      
+    lineaSaliente: 'rgba(255, 236, 139, 1)'        
 };
