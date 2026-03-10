@@ -35,7 +35,7 @@ window.abrirMenuOP = () => {
         if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) { 
             estadoMapa.esAdmin = true; 
             document.getElementById('btn-ordenar').classList.remove('oculto');
-            alert("Modo OP Activado.\n- Haz CLIC en un nodo para fijar su menú.\n- Usa el botón 'Auto-Ordenar' para que la IA desenrede el mapa.");
+            alert("Modo OP Activado.\n- TOCA un nodo para fijar su menú.\n- Usa 'Auto-Ordenar' para organizar el mapa.");
             actualizarPanelInfo(); 
         } 
     } 
@@ -62,7 +62,6 @@ window.ordenarMapaYifanHu = () => {
         const disp = new Map();
         nodos.forEach(n => disp.set(n.id, {x:0, y:0}));
 
-        // 1. REPULSIÓN (Fuerzas X e Y iguales = círculo)
         for(let i=0; i<nodos.length; i++) {
             for(let j=i+1; j<nodos.length; j++) {
                 const u = nodos[i]; const v = nodos[j];
@@ -71,7 +70,7 @@ window.ordenarMapaYifanHu = () => {
                 let dist = Math.sqrt(dx*dx + dy*dy) || 1;
                 
                 const f = (K * K) / dist;
-                const fx = (dx / dist) * f; // SIN MULTIPLICADOR 2.5
+                const fx = (dx / dist) * f; 
                 const fy = (dy / dist) * f;
 
                 disp.get(u.id).x += fx; disp.get(u.id).y += fy;
@@ -79,7 +78,6 @@ window.ordenarMapaYifanHu = () => {
             }
         }
 
-        // 2. ATRACCIÓN
         enlaces.forEach(link => {
             const u = link.source; const v = link.target;
             let dx = u.x - v.x;
@@ -94,7 +92,6 @@ window.ordenarMapaYifanHu = () => {
             disp.get(v.id).x += fx; disp.get(v.id).y += fy;
         });
 
-        // 3. GRAVEDAD HACIA EL HEX
         nodos.forEach(u => {
             if(!u.isHexNode) {
                 let distCentro = Math.sqrt(u.x*u.x + u.y*u.y) || 1;
@@ -104,7 +101,6 @@ window.ordenarMapaYifanHu = () => {
             }
         });
 
-        // 4. APLICAR
         nodos.forEach(u => {
             if(u.isHexNode) { 
                 u.x = 0; u.y = 0; 
@@ -119,7 +115,6 @@ window.ordenarMapaYifanHu = () => {
                 u.x += (d.x / dLen) * limit;
                 u.y += (d.y / dLen) * limit;
                 
-                // ACTUALIZACIÓN MATEMÁTICA CON X e Y INDEPENDIENTES
                 u._rawX = (u.x / 2500) * math.maxXDist + math.originX;
                 u._rawY = -(u.y / 2500) * math.maxYDist + math.originY;
             }
@@ -209,6 +204,8 @@ function iniciarEventosInput() {
     const canvas = document.getElementById('mapa-canvas');
     if(!canvas) return;
 
+    let pinchStartDistance = 0; // TÁCTIL: Guarda la distancia de los dos dedos
+
     const getPosicionMundo = (clientX, clientY) => {
         const camara = estadoMapa.camara;
         return {
@@ -226,15 +223,16 @@ function iniciarEventosInput() {
         return null;
     };
 
+    // ==========================================
+    // EVENTOS DE RATÓN (PC)
+    // ==========================================
     canvas.addEventListener('mousedown', (e) => {
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
 
         if (nodo) {
             estadoMapa.interaccion.selectedNode = nodo;
-            if (estadoMapa.esAdmin) {
-                estadoMapa.interaccion.draggedNode = nodo;
-            }
+            if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
         } else {
             estadoMapa.interaccion.selectedNode = null; 
             estadoMapa.interaccion.isDraggingBg = true;
@@ -260,7 +258,6 @@ function iniciarEventosInput() {
             n.y += dy / estadoMapa.camara.zoom;
             
             const math = estadoMapa.math;
-            // ACTUALIZACIÓN MATEMÁTICA CON X e Y INDEPENDIENTES
             n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
             n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
 
@@ -271,10 +268,7 @@ function iniciarEventosInput() {
             const nodoBajoCursor = obtenerNodoEnCursor(worldPos.x, worldPos.y);
             if (estadoMapa.interaccion.hoveredNode !== nodoBajoCursor) {
                 estadoMapa.interaccion.hoveredNode = nodoBajoCursor;
-                
-                if (!estadoMapa.interaccion.selectedNode) {
-                    actualizarPanelInfo();
-                }
+                if (!estadoMapa.interaccion.selectedNode) actualizarPanelInfo();
                 canvas.style.cursor = nodoBajoCursor ? 'pointer' : 'grab';
             }
         }
@@ -302,9 +296,97 @@ function iniciarEventosInput() {
         camara.y = mouseY - (mouseY - camara.y) * (nuevoZoom / camara.zoom);
         camara.zoom = nuevoZoom;
     }, { passive: false });
+
+    // ==========================================
+    // EVENTOS TÁCTILES (MÓVIL)
+    // ==========================================
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) { // Un dedo = Clic o Arrastre
+            const touch = e.touches[0];
+            const worldPos = getPosicionMundo(touch.clientX, touch.clientY);
+            const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
+
+            if (nodo) {
+                estadoMapa.interaccion.selectedNode = nodo;
+                if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
+            } else {
+                estadoMapa.interaccion.selectedNode = null; 
+                estadoMapa.interaccion.isDraggingBg = true;
+            }
+            
+            actualizarPanelInfo(); 
+            estadoMapa.interaccion.lastMouseX = touch.clientX;
+            estadoMapa.interaccion.lastMouseY = touch.clientY;
+        } 
+        else if (e.touches.length === 2) { // Dos dedos = Pinch Zoom
+            estadoMapa.interaccion.isDraggingBg = false;
+            estadoMapa.interaccion.draggedNode = null;
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            pinchStartDistance = Math.hypot(dx, dy);
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault(); // FUNDAMENTAL: Evita que la pantalla haga "Pull-to-refresh"
+        
+        if (e.touches.length === 1) { // Arrastre
+            const touch = e.touches[0];
+            const dx = touch.clientX - estadoMapa.interaccion.lastMouseX;
+            const dy = touch.clientY - estadoMapa.interaccion.lastMouseY;
+
+            if (estadoMapa.interaccion.isDraggingBg) {
+                estadoMapa.camara.x += dx;
+                estadoMapa.camara.y += dy;
+            } 
+            else if (estadoMapa.interaccion.draggedNode) {
+                const n = estadoMapa.interaccion.draggedNode;
+                n.x += dx / estadoMapa.camara.zoom;
+                n.y += dy / estadoMapa.camara.zoom;
+                
+                const math = estadoMapa.math;
+                n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
+                n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
+
+                n.modificado = true;
+                document.getElementById('btn-save-map').classList.remove('oculto');
+            }
+
+            estadoMapa.interaccion.lastMouseX = touch.clientX;
+            estadoMapa.interaccion.lastMouseY = touch.clientY;
+            
+        } else if (e.touches.length === 2) { // Zooming
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const distance = Math.hypot(dx, dy);
+            
+            if (pinchStartDistance > 0) {
+                const zoomFactor = distance / pinchStartDistance;
+                const camara = estadoMapa.camara;
+                const nuevoZoom = Math.max(0.05, Math.min(camara.zoom * zoomFactor, 4));
+                
+                const mouseX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const mouseY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                
+                camara.x = mouseX - (mouseX - camara.x) * (nuevoZoom / camara.zoom);
+                camara.y = mouseY - (mouseY - camara.y) * (nuevoZoom / camara.zoom);
+                camara.zoom = nuevoZoom;
+            }
+            pinchStartDistance = distance;
+        }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        estadoMapa.interaccion.isDraggingBg = false;
+        estadoMapa.interaccion.draggedNode = null;
+        if (e.touches.length < 2) {
+            pinchStartDistance = 0;
+        }
+    });
 }
 
 function bucleRender() {
     dibujarFrame();
     requestAnimationFrame(bucleRender);
-}
+        }
+                
