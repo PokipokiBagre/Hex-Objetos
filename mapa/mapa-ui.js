@@ -268,7 +268,6 @@ export function actualizarPanelInfo() {
     panel.classList.remove('oculto');
 }
 
-// RESETEO: Borra todas las restricciones inline para que el CSS vuelva a tomar el control
 export function resetearPosicionPanel() {
     const panel = document.getElementById('panel-info');
     if (panel) {
@@ -280,39 +279,49 @@ export function resetearPosicionPanel() {
     }
 }
 
-// MOTOR DE ARRASTRE INFALIBLE
+// MOTOR DE ARRASTRE DEL PANEL COMPLETO
 function hacerPanelArrastrable() {
     const el = document.getElementById('panel-info');
+    // Le ponemos el cursor de "agarre" a todo el fondo
+    el.style.cursor = 'grab';
+    el.title = "Arrastra para mover la ventana";
+
+    // Si había un cursor en el título, lo quitamos para que el panel completo asuma el control
     const header = document.getElementById('info-titulo');
-    header.style.cursor = 'move';
-    header.title = "Arrastra para mover la ventana";
+    if (header) {
+        header.style.cursor = 'default';
+        header.title = '';
+    }
 
     let offsetX = 0, offsetY = 0;
 
-    header.onmousedown = iniciarArrastre;
-    header.ontouchstart = iniciarArrastre;
+    // Ahora el evento se adjunta a todo el elemento (el) en lugar de solo al header
+    el.onmousedown = iniciarArrastre;
+    el.ontouchstart = iniciarArrastre;
 
     function iniciarArrastre(e) {
+        // EXCEPCIONES: Si hicimos clic en un botón (X), en un desplegable (select) o en "Ver Detalles" (summary), NO arrastramos.
+        if (e.target.closest('button') || e.target.closest('select') || e.target.closest('summary')) {
+            return; // Permite el funcionamiento normal de los botones
+        }
+
         e = e || window.event;
-        if (e.type !== 'touchstart') e.preventDefault();
+        if (e.type !== 'touchstart') e.preventDefault(); // Solo previene en mouse para evitar seleccionar el texto accidentalmente al arrastrar
+        
+        el.style.cursor = 'grabbing'; // Cambia la manito a "agarrando"
         
         let clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         let clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         
-        // Lee la caja en la pantalla antes de hacerle nada
         const rect = el.getBoundingClientRect();
         
-        // ¡LA SOLUCIÓN! Matamos las anclas de CSS (bottom y transform)
-        // Así deja de luchar por irse hacia abajo
         el.style.bottom = "auto";
         el.style.right = "auto";
         el.style.transform = "none";
         
-        // Lo re-ubicamos exactamente donde estaba visualmente usando TOP absoluto
         el.style.left = rect.left + "px";
         el.style.top = rect.top + "px";
 
-        // Distancia entre donde hiciste clic y la esquina de la tarjeta
         offsetX = clientX - rect.left;
         offsetY = clientY - rect.top;
 
@@ -329,12 +338,12 @@ function hacerPanelArrastrable() {
         
         if (e.type !== 'touchmove') e.preventDefault();
         
-        // Movemos libremente sin que el `bottom` nos cause estiramientos infinitos
         el.style.left = (clientX - offsetX) + "px";
         el.style.top = (clientY - offsetY) + "px";
     }
 
     function detenerArrastre() {
+        el.style.cursor = 'grab'; // Vuelve a "manito suelta"
         document.onmouseup = null;
         document.onmousemove = null;
         document.ontouchend = null;
