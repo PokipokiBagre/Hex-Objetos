@@ -10,6 +10,7 @@ window.onload = async () => {
 
         await cargarDatos(barra);
         centrarCamaraAuto(); 
+        inicializarSidebar(); // <-- Genera los botones de los jugadores
         
         if (loadScreen) {
             loadScreen.style.opacity = '0';
@@ -26,6 +27,81 @@ window.onload = async () => {
         console.error("Error fatal iniciando el mapa:", error);
     }
 };
+
+// ===================================
+// MOTOR DE FILTRO DE JUGADORES
+// ===================================
+function inicializarSidebar() {
+    const container = document.getElementById('lista-jugadores');
+    if(!container) return;
+    container.innerHTML = '';
+    
+    estadoMapa.jugadores.forEach(jug => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-jugador';
+        btn.id = 'btn-jug-' + jug.replace(/\s+/g, '-');
+        let inicial = jug.charAt(0).toUpperCase();
+        btn.innerHTML = `<div style="width:24px;height:24px;border-radius:50%;background:rgba(212, 175, 55, 0.8);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;">${inicial}</div> <span>${jug}</span>`;
+        btn.onclick = () => window.seleccionarJugador(jug);
+        container.appendChild(btn);
+    });
+}
+
+window.seleccionarJugador = (nombre) => {
+    estadoMapa.jugadorActivo = nombre;
+    
+    // UI Botones
+    document.querySelectorAll('.btn-jugador').forEach(b => b.classList.remove('activo'));
+    let btnId = nombre === 'Todos' ? 'btn-jug-Todos' : 'btn-jug-' + nombre.replace(/\s+/g, '-');
+    let activeBtn = document.getElementById(btnId);
+    if(activeBtn) activeBtn.classList.add('activo');
+    
+    // Vaciar cálculos anteriores
+    estadoMapa.vistaJugador = { posesiones: new Set(), aprendibles: new Set(), rastreo: new Set() };
+    
+    // MATEMÁTICA DE APRENDIZAJE SI NO ES "TODOS"
+    if (nombre !== 'Todos') {
+        const inv = estadoMapa.inventario[nombre] || new Set();
+        
+        // 1. Posesiones (Hechizos que ya tiene)
+        estadoMapa.nodos.forEach(n => {
+            let baseName = n.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim().toLowerCase();
+            let idName = n.id.replace(/\s*\(\d+\)$/, '').trim().toLowerCase();
+            let justId = n.id.toLowerCase();
+            let idWithHechizo = `hechizo ${justId}`;
+            
+            if (inv.has(baseName) || inv.has(idName) || inv.has(justId) || inv.has(idWithHechizo)) {
+                estadoMapa.vistaJugador.posesiones.add(n);
+            }
+        });
+
+        // 2. Aprendibles (Los que salen directamente de lo que ya tiene)
+        estadoMapa.enlaces.forEach(e => {
+            if (estadoMapa.vistaJugador.posesiones.has(e.source) && !estadoMapa.vistaJugador.posesiones.has(e.target)) {
+                estadoMapa.vistaJugador.aprendibles.add(e.target);
+            }
+        });
+
+        // 3. Rastreo (El árbol genealógico hacia atrás para darle contexto)
+        const rastrear = (n) => {
+            estadoMapa.enlaces.forEach(e => {
+                if (e.target === n && !estadoMapa.vistaJugador.rastreo.has(e.source)) {
+                    estadoMapa.vistaJugador.rastreo.add(e.source);
+                    rastrear(e.source);
+                }
+            });
+        };
+        // Rastrear desde los aprendibles hacia el centro
+        estadoMapa.vistaJugador.aprendibles.forEach(n => rastrear(n));
+        estadoMapa.vistaJugador.posesiones.forEach(n => rastrear(n));
+    }
+    
+    // Limpiar selección actual para evitar confusiones visuales
+    estadoMapa.interaccion.selectedNode = null;
+    window.cerrarPanelInfo(); 
+};
+
+// ===================================
 
 window.abrirMenuOP = () => { 
     if (estadoMapa.esAdmin) { 
@@ -45,13 +121,12 @@ window.abrirMenuOP = () => {
     } 
 };
 
-// BOTÓN CERRAR 'X': Limpia TODO y resetea posición
 window.cerrarPanelInfo = () => {
     estadoMapa.interaccion.selectedNode = null;
-    estadoMapa.interaccion.hoveredNode = null; // Evita que se reabra al instante
+    estadoMapa.interaccion.hoveredNode = null; 
     resetearPosicionPanel();
     actualizarPanelInfo();
-    dibujarFrame(); // Actualiza el lienzo al instante
+    dibujarFrame(); 
 };
 
 window.ordenarMapaYifanHu = () => {
@@ -253,10 +328,6 @@ function iniciarEventosInput() {
         return null;
     };
 
-    // ===================================
-    // RATÓN (PC)
-    // ===================================
-    
     canvas.addEventListener('dblclick', (e) => {
         estadoMapa.interaccion.selectedNode = null;
         resetearPosicionPanel();
@@ -273,9 +344,8 @@ function iniciarEventosInput() {
                 resetearPosicionPanel();
             } else {
                 estadoMapa.interaccion.selectedNode = nodo;
-                resetearPosicionPanel(); // Resetea si abres uno nuevo
+                resetearPosicionPanel(); 
             }
-            
             if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
         } else {
             estadoMapa.interaccion.isDraggingBg = true;
@@ -340,11 +410,10 @@ function iniciarEventosInput() {
         camara.zoom = nuevoZoom;
     }, { passive: false });
 
-    // ===================================
-    // TÁCTIL (MÓVIL PROTEGIDO)
-    // ===================================
     canvas.addEventListener('touchstart', (e) => {
+        if (e.target.closest('button') || e.target.closest('.sidebar')) return; 
         e.preventDefault(); 
+        
         if (e.touches.length === 1) { 
             const touch = e.touches[0];
             const worldPos = getPosicionMundo(touch.clientX, touch.clientY);
@@ -356,9 +425,8 @@ function iniciarEventosInput() {
                     resetearPosicionPanel();
                 } else {
                     estadoMapa.interaccion.selectedNode = nodo;
-                    resetearPosicionPanel(); // Resetea si abres uno nuevo
+                    resetearPosicionPanel(); 
                 }
-                
                 if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
             } else {
                 estadoMapa.interaccion.isDraggingBg = true;
@@ -378,6 +446,7 @@ function iniciarEventosInput() {
     }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
+        if (e.target.closest('button') || e.target.closest('.sidebar')) return; 
         e.preventDefault(); 
         
         if (e.touches.length === 1) { 
