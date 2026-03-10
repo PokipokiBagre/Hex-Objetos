@@ -64,6 +64,9 @@ export function dibujarFrame() {
         });
     }
 
+    // ==========================================
+    // 1. DIBUJAR ENLACES
+    // ==========================================
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -118,21 +121,27 @@ export function dibujarFrame() {
         ctx.fill();
     });
 
+    // ==========================================
+    // 2. DIBUJAR NODOS
+    // ==========================================
     nodos.forEach(nodo => {
         ctx.globalAlpha = 1.0; 
+        
+        // Extraemos el color puro de su Afinidad
         let colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
-        if (!nodo.esConocido) colorAf = '#777'; 
         if (nodo.isHexNode) colorAf = '#ff4444'; 
         
         const isHovered = interaccion.hoveredNode === nodo;
         const isSelected = interaccion.selectedNode === nodo;
         
+        // Efecto de opacidad para el árbol genealógico
         if (nodoActivo) {
             if (nodo !== nodoActivo && !ancestorNodes.has(nodo) && !outgoingNodes.has(nodo) && !nodo.isHexNode) {
                 ctx.globalAlpha = 0.2;
             }
         }
 
+        // Anillo de Selección Dorada
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(nodo.x, nodo.y, nodo.radio + (10/scaleFactor), 0, Math.PI * 2);
@@ -143,6 +152,7 @@ export function dibujarFrame() {
             ctx.setLineDash([]);
         }
 
+        // --- RELLENO DEL NODO ---
         ctx.beginPath();
         ctx.arc(nodo.x, nodo.y, nodo.radio, 0, Math.PI * 2);
         
@@ -151,24 +161,46 @@ export function dibujarFrame() {
 
         if (nodo.isHexNode) {
             ctx.fillStyle = '#4a0000';
+            ctx.fill();
         } else if (nodo.esConocido) {
             ctx.fillStyle = (isHovered || isSelected) ? '#333' : '#111';
+            ctx.fill();
         } else {
+            // Nodos Sellados: Relleno Gris + Tinte sutil de la Afinidad (15%)
             ctx.fillStyle = (isHovered || isSelected) ? '#444' : '#222'; 
+            ctx.fill();
+            
+            const currentAlpha = ctx.globalAlpha;
+            ctx.globalAlpha = currentAlpha * 0.15; // 15% de intensidad
+            ctx.fillStyle = colorAf; // Aplicamos el color de la afinidad por encima
+            ctx.fill();
+            ctx.globalAlpha = currentAlpha; // Restaurar
         }
         
-        ctx.fill();
         ctx.shadowBlur = 0;
         
+        // --- BORDE DEL NODO ---
         ctx.lineWidth = ((isHovered || isSelected) ? 4 : 2) / scaleFactor;
-        ctx.strokeStyle = colorAf;
         
         if (!nodo.esConocido && !nodo.isHexNode) {
+            // Nodos Sellados: Borde punteado con el color de Afinidad (reducido a 50% de opacidad)
+            const currentAlpha = ctx.globalAlpha;
+            ctx.globalAlpha = currentAlpha * 0.5;
+            ctx.strokeStyle = colorAf;
             ctx.setLineDash([6 / scaleFactor, 4 / scaleFactor]);
+            ctx.stroke();
+            ctx.globalAlpha = currentAlpha; // Restaurar
+        } else {
+            // Nodos Descubiertos: Borde sólido y brillante
+            ctx.strokeStyle = colorAf;
+            ctx.setLineDash([]);
+            ctx.stroke();
         }
-        ctx.stroke();
         ctx.setLineDash([]); 
 
+        // ==========================================
+        // 3. TEXTOS
+        // ==========================================
         if (camara.zoom > 0.08 || isHovered || isSelected || nodo.isHexNode) {
             let fontSize = nodo.isHexNode ? 52 : (nodo.esConocido ? 32 : 26);
             if (isHovered || isSelected) fontSize += 8;
@@ -197,6 +229,9 @@ export function dibujarFrame() {
     ctx.globalAlpha = 1.0; 
 }
 
+// ==========================================
+// 4. ACTUALIZACIÓN DE TARJETA
+// ==========================================
 export function actualizarPanelInfo() {
     const panel = document.getElementById('panel-info');
     if(!panel) return;
@@ -206,18 +241,23 @@ export function actualizarPanelInfo() {
     if (!nodo) { panel.classList.add('oculto'); return; }
 
     document.getElementById('info-titulo').innerText = nodo.nombre;
+    const colorAfinidad = COLOR_AFINIDAD[nodo.afinidad] || '#888';
     
     if (nodo.esConocido || nodo.isHexNode) {
-        document.getElementById('info-titulo').style.color = COLOR_AFINIDAD[nodo.afinidad] || '#fff';
+        document.getElementById('info-titulo').style.color = colorAfinidad;
         document.getElementById('info-tags').innerHTML = 
-            '<span class="tag" style="border-color:' + (COLOR_AFINIDAD[nodo.afinidad] || '#888') + '; color:' + (COLOR_AFINIDAD[nodo.afinidad] || '#888') + '">' + nodo.afinidad + '</span>' +
+            '<span class="tag" style="border-color:' + colorAfinidad + '; color:' + colorAfinidad + '">' + nodo.afinidad + '</span>' +
             '<span class="tag">HEX: ' + nodo.hex + '</span>' +
             '<span class="tag">C-' + nodo.clase + '</span>';
         
         document.getElementById('info-desc').innerText = nodo.resumen;
     } else {
-        document.getElementById('info-titulo').style.color = '#888';
-        document.getElementById('info-tags').innerHTML = '<span class="tag" style="border-color:#555; color:#888;">Requisitos Insuficientes</span>';
+        // Título pintado con el color de Afinidad, y etiqueta de Afinidad visible
+        document.getElementById('info-titulo').style.color = colorAfinidad;
+        document.getElementById('info-tags').innerHTML = 
+            '<span class="tag" style="border-color:' + colorAfinidad + '; color:' + colorAfinidad + '">' + nodo.afinidad + '</span>' +
+            '<span class="tag" style="border-color:#555; color:#888;">Requisitos Insuficientes</span>';
+        
         document.getElementById('info-desc').innerText = 'El conocimiento de este nodo permanece sellado.';
     }
         
@@ -279,14 +319,12 @@ export function resetearPosicionPanel() {
     }
 }
 
-// MOTOR DE ARRASTRE DEL PANEL COMPLETO
+// MOTOR DE ARRASTRE
 function hacerPanelArrastrable() {
     const el = document.getElementById('panel-info');
-    // Le ponemos el cursor de "agarre" a todo el fondo
     el.style.cursor = 'grab';
     el.title = "Arrastra para mover la ventana";
 
-    // Si había un cursor en el título, lo quitamos para que el panel completo asuma el control
     const header = document.getElementById('info-titulo');
     if (header) {
         header.style.cursor = 'default';
@@ -295,20 +333,18 @@ function hacerPanelArrastrable() {
 
     let offsetX = 0, offsetY = 0;
 
-    // Ahora el evento se adjunta a todo el elemento (el) en lugar de solo al header
     el.onmousedown = iniciarArrastre;
     el.ontouchstart = iniciarArrastre;
 
     function iniciarArrastre(e) {
-        // EXCEPCIONES: Si hicimos clic en un botón (X), en un desplegable (select) o en "Ver Detalles" (summary), NO arrastramos.
         if (e.target.closest('button') || e.target.closest('select') || e.target.closest('summary')) {
-            return; // Permite el funcionamiento normal de los botones
+            return; 
         }
 
         e = e || window.event;
-        if (e.type !== 'touchstart') e.preventDefault(); // Solo previene en mouse para evitar seleccionar el texto accidentalmente al arrastrar
+        if (e.type !== 'touchstart') e.preventDefault(); 
         
-        el.style.cursor = 'grabbing'; // Cambia la manito a "agarrando"
+        el.style.cursor = 'grabbing'; 
         
         let clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         let clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
@@ -343,7 +379,7 @@ function hacerPanelArrastrable() {
     }
 
     function detenerArrastre() {
-        el.style.cursor = 'grab'; // Vuelve a "manito suelta"
+        el.style.cursor = 'grab'; 
         document.onmouseup = null;
         document.onmousemove = null;
         document.ontouchend = null;
