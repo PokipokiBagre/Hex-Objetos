@@ -24,7 +24,7 @@ function redimensionar() {
 
 export function dibujarFrame() {
     if(!ctx) return;
-    const { nodos, enlaces, camara, interaccion } = estadoMapa;
+    const { nodos, enlaces, camara, interaccion, jugadorActivo, vistaJugador } = estadoMapa;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0); 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -38,7 +38,14 @@ export function dibujarFrame() {
 
     const scaleFactor = Math.max(camara.zoom, 0.2); 
     const nodoActivo = interaccion.selectedNode || interaccion.hoveredNode;
+    const isPlayerView = jugadorActivo !== 'Todos';
 
+    // Desempaquetado de memoria del jugador
+    const posesiones = vistaJugador.posesiones || new Set();
+    const aprendibles = vistaJugador.aprendibles || new Set();
+    const rastreo = vistaJugador.rastreo || new Set();
+
+    // Lógica para el Click Manual
     const ancestorEdges = new Set();
     const ancestorNodes = new Set();
     const outgoingEdges = new Set();
@@ -80,31 +87,74 @@ export function dibujarFrame() {
         ctx.lineTo(targetX, targetY);
         
         ctx.globalAlpha = 1.0; 
+        let drawNormal = true;
 
         if (nodoActivo) {
             if (outgoingEdges.has(link)) {
                 ctx.strokeStyle = ESTETICA.lineaSaliente;
                 ctx.lineWidth = 6 / scaleFactor;
                 ctx.setLineDash([]);
+                drawNormal = false;
             } else if (ancestorEdges.has(link)) {
                 ctx.strokeStyle = ESTETICA.lineaPrecedente;
                 ctx.lineWidth = 6 / scaleFactor;
                 ctx.setLineDash([]);
+                drawNormal = false;
             } else {
+                // Al pasar el mouse, apagamos el resto (sin importar el modo jugador)
+                ctx.strokeStyle = 'rgba(100, 100, 100, 0.2)'; 
+                ctx.lineWidth = 1 / scaleFactor; 
+                ctx.setLineDash([]);
+                ctx.globalAlpha = 0.2; 
+                drawNormal = false;
+            }
+        } 
+        
+        if (drawNormal) {
+            if (isPlayerView) {
+                let sP = posesiones.has(link.source);
+                let tP = posesiones.has(link.target);
+                let tA = aprendibles.has(link.target);
+                let sT = rastreo.has(link.source) || sP;
+                let tT = rastreo.has(link.target) || tP || tA;
+
+                if (sP && tP) {
+                    // Tienes ambos: Morado Activo
+                    ctx.strokeStyle = 'rgba(138, 43, 226, 0.7)'; 
+                    ctx.lineWidth = 3 / scaleFactor;
+                    ctx.setLineDash([]);
+                } else if (sP && tA) {
+                    // Tienes el origen, el objetivo es aprendible: Lógica de Progreso
+                    let target = link.target;
+                    let totalReq = target.incomingSources.length;
+                    let posReq = target.incomingSources.filter(n => posesiones.has(n)).length;
+                    let ratio = posReq / totalReq;
+
+                    // Verde -> VerdeAmarillo -> Amarillo
+                    if (ratio >= 0.75) ctx.strokeStyle = 'rgba(50, 205, 50, 0.7)'; 
+                    else if (ratio >= 0.4) ctx.strokeStyle = 'rgba(173, 255, 47, 0.7)'; 
+                    else ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)'; 
+                    
+                    ctx.lineWidth = 4 / scaleFactor;
+                    ctx.setLineDash([]);
+                } else if (sT && tT) {
+                    // Es parte del árbol genealógico pero no lo tienes
+                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.25)'; 
+                    ctx.lineWidth = 1.5 / scaleFactor;
+                    ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
+                } else {
+                    // No te interesa: Súper apagado
+                    ctx.strokeStyle = 'rgba(100, 100, 100, 0.1)';
+                    ctx.lineWidth = 1 / scaleFactor;
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 0.05;
+                }
+            } else {
+                // MODO TODOS
                 ctx.strokeStyle = link.target.arrowColor; 
                 ctx.lineWidth = 1.5 / scaleFactor; 
-                if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8/scaleFactor, 8/scaleFactor]);
-                else ctx.setLineDash([]);
-                
-                ctx.globalAlpha = 0.2; 
-            }
-        } else {
-            ctx.strokeStyle = link.target.arrowColor; 
-            ctx.lineWidth = 1.5 / scaleFactor; 
-            if (ctx.strokeStyle === ESTETICA.lineaRosa) {
-                ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
-            } else {
-                ctx.setLineDash([]); 
+                if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
+                else ctx.setLineDash([]); 
             }
         }
 
@@ -127,21 +177,30 @@ export function dibujarFrame() {
     nodos.forEach(nodo => {
         ctx.globalAlpha = 1.0; 
         
-        // Extraemos el color puro de su Afinidad
         let colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         if (nodo.isHexNode) colorAf = '#ff4444'; 
+
+        // Si estamos en MODO JUGADOR, el color del borde y el resplandor cambia a Morado/Amarillo
+        if (isPlayerView && !nodo.isHexNode) {
+            if (posesiones.has(nodo)) colorAf = 'rgba(138, 43, 226, 1)'; 
+            else if (aprendibles.has(nodo) || rastreo.has(nodo)) colorAf = 'rgba(212, 175, 55, 1)'; 
+            else colorAf = '#444'; 
+        }
         
         const isHovered = interaccion.hoveredNode === nodo;
         const isSelected = interaccion.selectedNode === nodo;
         
-        // Efecto de opacidad para el árbol genealógico
+        // Manejo estricto de opacidades
         if (nodoActivo) {
             if (nodo !== nodoActivo && !ancestorNodes.has(nodo) && !outgoingNodes.has(nodo) && !nodo.isHexNode) {
                 ctx.globalAlpha = 0.2;
             }
+        } else if (isPlayerView) {
+            if (!posesiones.has(nodo) && !aprendibles.has(nodo) && !rastreo.has(nodo) && !nodo.isHexNode) {
+                ctx.globalAlpha = 0.05; // Borrado casi total de lo inútil
+            }
         }
 
-        // Anillo de Selección Dorada
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(nodo.x, nodo.y, nodo.radio + (10/scaleFactor), 0, Math.PI * 2);
@@ -152,46 +211,54 @@ export function dibujarFrame() {
             ctx.setLineDash([]);
         }
 
-        // --- RELLENO DEL NODO ---
         ctx.beginPath();
         ctx.arc(nodo.x, nodo.y, nodo.radio, 0, Math.PI * 2);
         
         ctx.shadowBlur = (isHovered || isSelected) ? 35 : (nodo.isHexNode ? 30 : (nodo.esConocido ? 5 : 0));
         ctx.shadowColor = colorAf;
 
-        if (nodo.isHexNode) {
-            ctx.fillStyle = '#4a0000';
-            ctx.fill();
-        } else if (nodo.esConocido) {
-            ctx.fillStyle = (isHovered || isSelected) ? '#333' : '#111';
-            ctx.fill();
+        if (isPlayerView) {
+            if (posesiones.has(nodo)) {
+                ctx.fillStyle = 'rgba(138, 43, 226, 0.9)'; // Morado relleno
+                ctx.fill();
+            } else if (aprendibles.has(nodo) || rastreo.has(nodo)) {
+                ctx.fillStyle = 'rgba(212, 175, 55, 0.8)'; // Amarillo relleno
+                ctx.fill();
+            } else {
+                ctx.fillStyle = '#222'; // Oculto relleno
+                ctx.fill();
+            }
         } else {
-            // Nodos Sellados: Relleno Gris + Tinte sutil de la Afinidad (15%)
-            ctx.fillStyle = (isHovered || isSelected) ? '#444' : '#222'; 
-            ctx.fill();
-            
-            const currentAlpha = ctx.globalAlpha;
-            ctx.globalAlpha = currentAlpha * 0.15; // 15% de intensidad
-            ctx.fillStyle = colorAf; // Aplicamos el color de la afinidad por encima
-            ctx.fill();
-            ctx.globalAlpha = currentAlpha; // Restaurar
+            // Lógica MODO TODOS
+            if (nodo.isHexNode) {
+                ctx.fillStyle = '#4a0000';
+                ctx.fill();
+            } else if (nodo.esConocido) {
+                ctx.fillStyle = (isHovered || isSelected) ? '#333' : '#111';
+                ctx.fill();
+            } else {
+                ctx.fillStyle = (isHovered || isSelected) ? '#444' : '#222'; 
+                ctx.fill();
+                
+                const currentAlpha = ctx.globalAlpha;
+                ctx.globalAlpha = currentAlpha * 0.15; 
+                ctx.fillStyle = colorAf; 
+                ctx.fill();
+                ctx.globalAlpha = currentAlpha; 
+            }
         }
         
         ctx.shadowBlur = 0;
-        
-        // --- BORDE DEL NODO ---
         ctx.lineWidth = ((isHovered || isSelected) ? 4 : 2) / scaleFactor;
         
-        if (!nodo.esConocido && !nodo.isHexNode) {
-            // Nodos Sellados: Borde punteado con el color de Afinidad (reducido a 50% de opacidad)
+        if (!isPlayerView && !nodo.esConocido && !nodo.isHexNode) {
             const currentAlpha = ctx.globalAlpha;
             ctx.globalAlpha = currentAlpha * 0.5;
             ctx.strokeStyle = colorAf;
             ctx.setLineDash([6 / scaleFactor, 4 / scaleFactor]);
             ctx.stroke();
-            ctx.globalAlpha = currentAlpha; // Restaurar
+            ctx.globalAlpha = currentAlpha; 
         } else {
-            // Nodos Descubiertos: Borde sólido y brillante
             ctx.strokeStyle = colorAf;
             ctx.setLineDash([]);
             ctx.stroke();
@@ -217,6 +284,8 @@ export function dibujarFrame() {
             
             if (nodo.isHexNode) {
                 ctx.fillStyle = '#ffaaaa';
+            } else if (isPlayerView && !posesiones.has(nodo) && !aprendibles.has(nodo) && !rastreo.has(nodo)) {
+                ctx.fillStyle = '#444'; // Texto muy apagado si no es parte del jugador
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? ESTETICA.lineaSaliente : '#fff';
             } else {
@@ -229,9 +298,6 @@ export function dibujarFrame() {
     ctx.globalAlpha = 1.0; 
 }
 
-// ==========================================
-// 4. ACTUALIZACIÓN DE TARJETA
-// ==========================================
 export function actualizarPanelInfo() {
     const panel = document.getElementById('panel-info');
     if(!panel) return;
@@ -252,7 +318,6 @@ export function actualizarPanelInfo() {
         
         document.getElementById('info-desc').innerText = nodo.resumen;
     } else {
-        // Título pintado con el color de Afinidad, y etiqueta de Afinidad visible
         document.getElementById('info-titulo').style.color = colorAfinidad;
         document.getElementById('info-tags').innerHTML = 
             '<span class="tag" style="border-color:' + colorAfinidad + '; color:' + colorAfinidad + '">' + nodo.afinidad + '</span>' +
@@ -319,7 +384,6 @@ export function resetearPosicionPanel() {
     }
 }
 
-// MOTOR DE ARRASTRE
 function hacerPanelArrastrable() {
     const el = document.getElementById('panel-info');
     el.style.cursor = 'grab';
