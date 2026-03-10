@@ -9,11 +9,16 @@ window.onload = async () => {
         const loadScreen = document.getElementById('loader');
 
         await cargarDatos(barra);
-        centrarCamara(); 
+        centrarCamaraAuto(); 
         
         if (loadScreen) {
             loadScreen.style.opacity = '0';
             setTimeout(() => loadScreen.remove(), 500);
+        }
+
+        // Si se detectó formato Gephi en la primera carga, mostramos el botón de Guardar
+        if(estadoMapa.nodos.some(n => n.modificado)) {
+            document.getElementById('btn-save-map').classList.remove('oculto');
         }
 
         iniciarEventosInput();
@@ -44,11 +49,10 @@ window.abrirMenuOP = () => {
 window.ordenarMapaYifanHu = () => {
     const nodos = estadoMapa.nodos;
     const enlaces = estadoMapa.enlaces;
-    const math = estadoMapa.math;
     
-    const K = 450; 
-    let iteraciones = 200; 
-    let temp = 300; 
+    const K = 550; // Constante aún más grande para separar los textos crecidos
+    let iteraciones = 150; 
+    let temp = 400; 
 
     nodos.forEach(n => n.modificado = true);
     document.getElementById('btn-save-map').classList.remove('oculto');
@@ -95,7 +99,7 @@ window.ordenarMapaYifanHu = () => {
         nodos.forEach(u => {
             if(!u.isHexNode) {
                 let distCentro = Math.sqrt(u.x*u.x + u.y*u.y) || 1;
-                const fG = (distCentro * distCentro) / (K * 3); 
+                const fG = (distCentro * distCentro) / (K * 2); 
                 disp.get(u.id).x -= (u.x / distCentro) * fG;
                 disp.get(u.id).y -= (u.y / distCentro) * fG;
             }
@@ -104,7 +108,7 @@ window.ordenarMapaYifanHu = () => {
         nodos.forEach(u => {
             if(u.isHexNode) { 
                 u.x = 0; u.y = 0; 
-                u._rawX = math.originX; u._rawY = math.originY; 
+                u._rawX = 0; u._rawY = 0; 
                 return; 
             }
 
@@ -115,9 +119,9 @@ window.ordenarMapaYifanHu = () => {
                 u.x += (d.x / dLen) * limit;
                 u.y += (d.y / dLen) * limit;
                 
-                // GUARDADO ABSOLUTO (Evita la compresión futura)
-                u._rawX = (u.x / math.scale) + math.originX;
-                u._rawY = -(u.y / math.scale) + math.originY;
+                // GUARDADO DIRECTO SIN MATEMÁTICAS COMPRESIVAS
+                u._rawX = u.x;
+                u._rawY = u.y;
             }
         });
 
@@ -137,7 +141,7 @@ window.cambiarEstadoNodo = (id, valor) => {
             nodo.esConocido = nuevoEstado;
             nodo.modificado = true;
             
-            nodo.radio = nodo.esConocido ? 35 : 28; 
+            nodo.radio = nodo.esConocido ? 35 : 28;
             let baseName = nodo.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim();
             if (nodo.esConocido) {
                 nodo.nombre = `${baseName} (${nodo.hex})`;
@@ -157,6 +161,7 @@ window.guardarCambiosMapa = async () => {
     const btn = document.getElementById('btn-save-map');
     btn.innerText = "Guardando..."; btn.disabled = true;
 
+    // Aquí enviamos los valores limpios directos de x e y para que tu excel se llene de coordenadas de píxeles
     const cambios = estadoMapa.nodos.filter(n => n.modificado).map(n => ({
         id: n.id || n.nombreOriginal, 
         x: n._rawX,
@@ -180,7 +185,7 @@ window.guardarCambiosMapa = async () => {
         const data = await res.json();
         
         if (data.status === 'success') {
-            alert("¡Éxito! Base de datos actualizada velozmente.");
+            alert("¡Éxito! Base de datos actualizada con coordenadas fijas.");
             estadoMapa.nodos.forEach(n => n.modificado = false);
             btn.classList.add('oculto');
         } else {
@@ -194,11 +199,29 @@ window.guardarCambiosMapa = async () => {
     btn.disabled = false;
 };
 
-function centrarCamara() {
+// AUTO CENTRADO INTELIGENTE (Busca a todos los nodos y encuadra la cámara perfectamente)
+function centrarCamaraAuto() {
     if (estadoMapa.nodos.length === 0) return;
-    estadoMapa.camara.zoom = window.innerWidth > 1000 ? 0.3 : 0.15; 
-    estadoMapa.camara.x = window.innerWidth / 2;
-    estadoMapa.camara.y = window.innerHeight / 2;
+    
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    estadoMapa.nodos.forEach(n => {
+        if (n.x < minX) minX = n.x;
+        if (n.x > maxX) maxX = n.x;
+        if (n.y < minY) minY = n.y;
+        if (n.y > maxY) maxY = n.y;
+    });
+
+    const w = (maxX - minX) || 1000;
+    const h = (maxY - minY) || 1000;
+    const cx = minX + w / 2;
+    const cy = minY + h / 2;
+
+    const zoomX = window.innerWidth / (w * 1.2);
+    const zoomY = window.innerHeight / (h * 1.2);
+    
+    estadoMapa.camara.zoom = Math.min(zoomX, zoomY, 1.5); 
+    estadoMapa.camara.x = (window.innerWidth / 2) - (cx * estadoMapa.camara.zoom);
+    estadoMapa.camara.y = (window.innerHeight / 2) - (cy * estadoMapa.camara.zoom);
 }
 
 function iniciarEventosInput() {
@@ -258,10 +281,9 @@ function iniciarEventosInput() {
             n.x += dx / estadoMapa.camara.zoom;
             n.y += dy / estadoMapa.camara.zoom;
             
-            const math = estadoMapa.math;
-            // GUARDADO ABSOLUTO EN ARRASTRE
-            n._rawX = (n.x / math.scale) + math.originX;
-            n._rawY = -(n.y / math.scale) + math.originY;
+            // EL GUARDADO ES ABSOLUTO (Sin dividir, respetando su lugar real en la pantalla)
+            n._rawX = n.x;
+            n._rawY = n.y;
 
             n.modificado = true;
             document.getElementById('btn-save-map').classList.remove('oculto');
@@ -289,7 +311,7 @@ function iniciarEventosInput() {
         e.preventDefault();
         const camara = estadoMapa.camara;
         const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
-        const nuevoZoom = Math.max(0.02, Math.min(camara.zoom * zoomDelta, 4)); 
+        const nuevoZoom = Math.max(0.01, Math.min(camara.zoom * zoomDelta, 4)); // PERMITE ALEJARSE MÁS
         
         const mouseX = e.clientX;
         const mouseY = e.clientY;
@@ -347,9 +369,8 @@ function iniciarEventosInput() {
                 n.x += dx / estadoMapa.camara.zoom;
                 n.y += dy / estadoMapa.camara.zoom;
                 
-                const math = estadoMapa.math;
-                n._rawX = (n.x / math.scale) + math.originX;
-                n._rawY = -(n.y / math.scale) + math.originY;
+                n._rawX = n.x;
+                n._rawY = n.y;
 
                 n.modificado = true;
                 document.getElementById('btn-save-map').classList.remove('oculto');
@@ -366,7 +387,7 @@ function iniciarEventosInput() {
             if (pinchStartDistance > 0) {
                 const zoomFactor = distance / pinchStartDistance;
                 const camara = estadoMapa.camara;
-                const nuevoZoom = Math.max(0.02, Math.min(camara.zoom * zoomFactor, 4));
+                const nuevoZoom = Math.max(0.01, Math.min(camara.zoom * zoomFactor, 4));
                 
                 const mouseX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const mouseY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
