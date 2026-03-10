@@ -93,14 +93,24 @@ function procesarNodos(json) {
         if (esConocido || isHexNode) {
             nombreMostrar = isHexNode ? "HEX" : `${baseName} (${hexCost})`;
         } else {
-            let maskName = idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`;
-            nombreMostrar = `${maskName} (${hexCost})`;
+        // ... (resto del código igual)
+        let maskName = idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`;
+        nombreMostrar = `${maskName} (${hexCost})`;
         }
 
         const radioExpansion = 2500;
-        // Al usar maxXDist y maxYDist, la estructura de Excel encaja en una caja perfecta de 1:1
         const x = ((n._rawX - originX) / maxXDist) * radioExpansion;
         const y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
+
+        // TAMAÑOS DE NODOS AUMENTADOS PARA NO DESCUBIERTOS
+        let radio = esConocido ? 35 : 28; // <--- Subimos el 20 a 28
+        if (isHexNode) radio = 65;
+
+        // Búsqueda flexible de columnas de efectos
+        const extData = (key) => {
+            const foundKey = Object.keys(n).find(k => k.trim().toLowerCase().includes(key));
+            return foundKey ? n[foundKey] : '';
+        };
 
         estadoMapa.nodos.push({
             id: idReal,
@@ -111,18 +121,23 @@ function procesarNodos(json) {
             hex: hexCost,
             resumen: n.Resumen || 'Sin descripción',
             efecto: n.Efecto || '',
+            overcast: extData('overcast'), // Extrae "Overcast 100%"
+            undercast: extData('undercast'), // Extrae "Undercast 50%"
+            especial: extData('especial'), // Extrae "Especial"
             esConocido: esConocido,
             isHexNode: isHexNode,
             x: x,
             y: y,
             _rawX: n._rawX, 
             _rawY: n._rawY,
-            radio: isHexNode ? 65 : (esConocido ? 35 : 20),
+            radio: radio,
             incomingSources: [],
             modificado: false
         });
     });
 }
+// ... (resto de mapa-data.js intacto)
+
 
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
