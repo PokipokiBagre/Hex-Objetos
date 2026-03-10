@@ -36,7 +36,7 @@ export function dibujarFrame() {
 
     const scaleFactor = Math.max(camara.zoom, 0.4);
 
-    // 1. DIBUJAR ENLACES CON SEGMENTACIÓN
+    // 1. DIBUJAR ENLACES
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -58,15 +58,15 @@ export function dibujarFrame() {
             ctx.strokeStyle = link.target.arrowColor || 'rgba(255, 255, 255, 0.5)'; 
             ctx.lineWidth = 2.5 / scaleFactor; 
             
-            // SEGMENTACIÓN: Si es Mostaza o Rosa, la línea es punteada
-            if (ctx.strokeStyle === 'rgba(255, 200, 0, 0.9)' || ctx.strokeStyle === 'rgba(255, 100, 150, 0.7)') {
+            // LÍNEAS SEGMENTADAS para Mostaza y Rosa
+            if (ctx.strokeStyle !== 'rgba(255, 255, 255, 0.95)' && ctx.strokeStyle !== 'rgba(255, 255, 255, 0.4)') {
                 ctx.setLineDash([12 / scaleFactor, 8 / scaleFactor]);
             } else {
                 ctx.setLineDash([]);
             }
         }
         ctx.stroke();
-        ctx.setLineDash([]); // Resetear para que la punta de la flecha no sea punteada
+        ctx.setLineDash([]); // Reset para punta de flecha
 
         const headlen = 16 / scaleFactor;
         ctx.beginPath();
@@ -81,7 +81,7 @@ export function dibujarFrame() {
     // 2. DIBUJAR NODOS
     nodos.forEach(nodo => {
         let colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
-        if (!nodo.esConocido) colorAf = '#666'; // Borde un poco más brillante
+        if (!nodo.esConocido) colorAf = '#777'; 
         if (nodo.isHexNode) colorAf = '#ff4444'; 
         
         const isHovered = interaccion.hoveredNode === nodo;
@@ -100,17 +100,16 @@ export function dibujarFrame() {
         ctx.beginPath();
         ctx.arc(nodo.x, nodo.y, nodo.radio, 0, Math.PI * 2);
         
-        ctx.shadowBlur = (isHovered || isSelected) ? 25 : (nodo.isHexNode ? 30 : (nodo.esConocido ? 5 : 2));
+        ctx.shadowBlur = (isHovered || isSelected) ? 25 : (nodo.isHexNode ? 30 : (nodo.esConocido ? 5 : 0));
         ctx.shadowColor = colorAf;
 
-        // FONDOS DE NODOS
         if (nodo.isHexNode) {
             ctx.fillStyle = '#4a0000';
         } else if (nodo.esConocido) {
             ctx.fillStyle = (isHovered || isSelected) ? '#333' : '#111';
         } else {
-            // Nodos Sellados: Gris más claro para que sean muy visibles
-            ctx.fillStyle = (isHovered || isSelected) ? '#3a3a3a' : '#1c1c1c'; 
+            // Fondo Gris Carbón para destacar los no descubiertos
+            ctx.fillStyle = (isHovered || isSelected) ? '#444' : '#222'; 
         }
         
         ctx.fill();
@@ -120,13 +119,13 @@ export function dibujarFrame() {
         ctx.strokeStyle = colorAf;
         
         if (!nodo.esConocido && !nodo.isHexNode) {
-            ctx.setLineDash([6 / scaleFactor, 4 / scaleFactor]); // Borde punteado
+            ctx.setLineDash([6 / scaleFactor, 4 / scaleFactor]);
         }
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. TEXTOS
-        if (camara.zoom > 0.25 || isHovered || isSelected || nodo.isHexNode) {
+        // 3. TEXTOS (Ajustado para que se vean un poco más lejos)
+        if (camara.zoom > 0.15 || isHovered || isSelected || nodo.isHexNode) {
             let fontSize = nodo.isHexNode ? 28 : (nodo.esConocido ? 16 : 13);
             if (isHovered || isSelected) fontSize += 4;
 
@@ -180,7 +179,6 @@ export function actualizarPanelInfo() {
     const detallesEl = document.getElementById('info-detalles');
     
     if (nodo.esConocido) {
-        // EFECTO PRINCIPAL
         if (nodo.efecto) {
             efectoEl.innerText = "Efecto: " + nodo.efecto; 
             efectoEl.style.display = 'block';
@@ -188,7 +186,6 @@ export function actualizarPanelInfo() {
             efectoEl.style.display = 'none';
         }
 
-        // SECCIÓN MODIFICADORES
         if (nodo.overcast || nodo.undercast || nodo.especial) {
             detallesEl.style.display = 'block';
             
@@ -224,5 +221,4 @@ export function actualizarPanelInfo() {
     }
 
     panel.classList.remove('oculto');
-                    }
-            
+}
