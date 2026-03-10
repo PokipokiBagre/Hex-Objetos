@@ -28,9 +28,8 @@ window.onload = async () => {
     }
 };
 
-// ===================================
-// MOTOR DE FILTRO DE JUGADORES
-// ===================================
+const normalizarNombre = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
+
 function inicializarSidebar() {
     const container = document.getElementById('lista-jugadores');
     if(!container) return;
@@ -40,8 +39,14 @@ function inicializarSidebar() {
         const btn = document.createElement('button');
         btn.className = 'btn-jugador';
         btn.id = 'btn-jug-' + jug.replace(/\s+/g, '-');
-        let inicial = jug.charAt(0).toUpperCase();
-        btn.innerHTML = `<div style="width:24px;height:24px;border-radius:50%;background:rgba(212, 175, 55, 0.8);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;">${inicial}</div> <span>${jug}</span>`;
+        
+        // Uso de imagen de personaje con ruta relativa al servidor
+        btn.innerHTML = `
+            <img src="../img/imgpersonajes/${normalizarNombre(jug)}icon.png" 
+                 onerror="this.src='../img/imgobjetos/no_encontrado.png'" 
+                 style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid var(--gold);">
+            <span>${jug}</span>`;
+            
         btn.onclick = () => window.seleccionarJugador(jug);
         container.appendChild(btn);
     });
