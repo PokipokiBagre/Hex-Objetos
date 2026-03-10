@@ -4,7 +4,7 @@
     --bg-dark: #05000a; --gold: #d4af37; --cyan-magic: #00ffff;
 }
 
-body { margin: 0; padding: 0; overflow: hidden; background-color: var(--bg-dark); font-family: sans-serif; color: #fff; touch-action: none; }
+body { margin: 0; padding: 0; overflow: hidden; background-color: var(--bg-dark); font-family: sans-serif; color: #fff; touch-action: none; overscroll-behavior: none;}
 .oculto { display: none !important; }
 
 #mapa-canvas { 
