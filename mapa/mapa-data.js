@@ -1,16 +1,27 @@
 import { estadoMapa, ESTETICA } from './mapa-state.js';
 
 export const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
+const CSV_ESTADISTICAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOl-ENpkVGioSaquRc1pkuNUyk-vCEQGGSAN3MMtzwcP5AjlLTLbjsc4wAdy3fcQgRhzQAZ2CtRWbx/pub?output=csv';
 
 export async function cargarDatos(barra) {
     try {
-        if(barra) barra.style.width = '30%';
+        if(barra) barra.style.width = '10%';
+        
+        // 1. CARGAMOS A LOS JUGADORES DESDE EL CSV DE ESTADÍSTICAS
+        const csvRes = await fetch(CSV_ESTADISTICAS);
+        const csvText = await csvRes.text();
+        procesarCSVJugadores(csvText);
+        
+        if(barra) barra.style.width = '25%';
+
+        // 2. CARGAMOS LA API PRINCIPAL (NODOS E INVENTARIO)
         const res = await fetch(API_HECHIZOS);
-        if(barra) barra.style.width = '70%';
+        if(barra) barra.style.width = '60%';
 
         const jsonText = await res.text();
         const json = JSON.parse(decodeURIComponent(escape(window.atob(jsonText))));
         
+        procesarInventario(json);
         procesarNodos(json);
         procesarEnlaces(json.String || json.string || json.Strings || []);
         
@@ -19,6 +30,42 @@ export async function cargarDatos(barra) {
     } catch(e) {
         console.error("Error cargando mapa:", e);
         return false;
+    }
+}
+
+function procesarCSVJugadores(csvText) {
+    const lines = csvText.split('\n');
+    if(lines.length < 1) return;
+    const headers = lines[0].split(',').map(h => h.trim().replace(/\r/g, ''));
+    const pIdx = headers.indexOf('Personaje');
+    const jIdx = headers.indexOf('Jugador_Activo');
+    
+    estadoMapa.jugadores = [];
+    if (pIdx > -1 && jIdx > -1) {
+        for(let i = 1; i < lines.length; i++) {
+            let row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            if(row.length > jIdx) {
+                let jActivo = row[jIdx].trim().replace(/\r/g, '');
+                if(jActivo === '1_1') {
+                    estadoMapa.jugadores.push(row[pIdx].trim().replace(/^"|"$/g, ''));
+                }
+            }
+        }
+    }
+}
+
+function procesarInventario(json) {
+    estadoMapa.inventario = {};
+    if (json.inventario) {
+        json.inventario.forEach(row => {
+            let pj = row.Personaje ? row.Personaje.trim() : '';
+            let he = row.Hechizo ? row.Hechizo.trim() : '';
+            if(pj && he) {
+                if(!estadoMapa.inventario[pj]) estadoMapa.inventario[pj] = new Set();
+                // Limpiamos el texto para poder emparejarlo con el Nodo
+                estadoMapa.inventario[pj].add(he.replace(/\s*\(\d+\)$/, '').trim().toLowerCase());
+            }
+        });
     }
 }
 
@@ -70,8 +117,6 @@ function procesarNodos(json) {
     estadoMapa.math.maxXDist = maxXDist;
     estadoMapa.math.maxYDist = maxYDist;
 
-    // DETECCIÓN INTELIGENTE: Si la distancia es gigante, son datos de Gephi crudos.
-    // Si la distancia es normal (ej. 5000), significa que ya guardaste en pantalla y no debemos comprimirlo más.
     const isGephiRaw = maxXDist > 15000 || maxYDist > 15000;
     const radioExpansion = 3500; 
 
@@ -101,11 +146,9 @@ function procesarNodos(json) {
 
         let x, y;
         if (isGephiRaw) {
-            // Fuerza la Elipse de Gephi a volverse un Círculo Perfecto
             x = ((n._rawX - originX) / maxXDist) * radioExpansion;
             y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
         } else {
-            // Carga posiciones absolutas ya guardadas, manteniendo tu orden
             x = n._rawX;
             y = n._rawY;
         }
@@ -134,11 +177,11 @@ function procesarNodos(json) {
             isHexNode: isHexNode,
             x: x,
             y: y,
-            _rawX: x, // REESCRITURA ABSOLUTA: Convierte Gephi en Píxeles de Pantalla
+            _rawX: x, 
             _rawY: y,
             radio: radio,
             incomingSources: [],
-            modificado: isGephiRaw // Si detectó Gephi, te pedirá guardar para asentar las posiciones
+            modificado: isGephiRaw 
         });
     });
 }
@@ -186,11 +229,11 @@ export function actualizarColoresFlechas() {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = ESTETICA.lineaDescubierta; // Violeta sutil (ex-blanca)
+            nodo.arrowColor = ESTETICA.lineaDescubierta; 
         } else if (conocidos > 0) {
-            nodo.arrowColor = ESTETICA.lineaMostaza; // Mostaza
+            nodo.arrowColor = ESTETICA.lineaMostaza; 
         } else {
-            nodo.arrowColor = ESTETICA.lineaRosa; // Rosa
+            nodo.arrowColor = ESTETICA.lineaRosa; 
         }
     });
 }
