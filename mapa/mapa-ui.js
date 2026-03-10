@@ -24,7 +24,9 @@ function redimensionar() {
 
 export function dibujarFrame() {
     if(!ctx) return;
-    const { nodos, enlaces, camara, interaccion, jugadorActivo, vistaJugador } = estadoMapa;
+    
+    // AQUÍ ESTÁ EL SWITCH MODO VISUAL IMPORTADO CORRECTAMENTE
+    const { nodos, enlaces, camara, interaccion, jugadorActivo, vistaJugador, modoVisual } = estadoMapa;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0); 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -96,7 +98,7 @@ export function dibujarFrame() {
                 ctx.setLineDash([]);
                 drawNormal = false;
             } else if (ancestorEdges.has(link)) {
-                ctx.strokeStyle = 'rgba(138, 43, 226, 0.45)'; 
+                ctx.strokeStyle = 'rgba(177, 156, 217, 0.45)'; 
                 ctx.lineWidth = 1.5 / scaleFactor; 
                 ctx.setLineDash([]);
                 drawNormal = false;
@@ -112,6 +114,7 @@ export function dibujarFrame() {
         
         if (drawNormal) {
             if (isPlayerView) {
+                // VISTA PERSONAJE
                 let sP = posesiones.has(link.source);
                 let tP = posesiones.has(link.target);
                 let tA = aprendibles.has(link.target);
@@ -145,10 +148,18 @@ export function dibujarFrame() {
                     arrowMult = 1.5; baseHeadLen = 5;
                 }
             } else {
-                ctx.strokeStyle = link.target.arrowColor; 
-                ctx.lineWidth = 1.5 / scaleFactor; 
-                if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
-                else ctx.setLineDash([]); 
+                // LÓGICA DE SWITCH GLOBAL PARA LÍNEAS
+                if (modoVisual === 'afinidades') {
+                    ctx.strokeStyle = link.target.arrowColor; 
+                    ctx.lineWidth = 1.5 / scaleFactor; 
+                    if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
+                    else ctx.setLineDash([]); 
+                } else {
+                    // MODO DESCUBIERTOS: Todas las líneas estrictamente grises
+                    ctx.strokeStyle = 'rgba(150, 150, 150, 0.3)'; 
+                    ctx.lineWidth = 1.5 / scaleFactor; 
+                    ctx.setLineDash([]); 
+                }
             }
         }
 
@@ -171,7 +182,20 @@ export function dibujarFrame() {
     nodos.forEach(nodo => {
         ctx.globalAlpha = 1.0; 
         
-        let colorAfinidadReal = COLOR_AFINIDAD[nodo.afinidad] || '#888';
+        let colorAfinidadReal;
+
+        // LÓGICA DE SWITCH GLOBAL PARA NODOS
+        if (modoVisual === 'afinidades') {
+            colorAfinidadReal = COLOR_AFINIDAD[nodo.afinidad] || '#888';
+        } else {
+            // MODO DESCUBIERTOS: Solo Violeta / Dorado
+            if (nodo.esConocido) {
+                colorAfinidadReal = 'rgba(177, 156, 217, 1)'; // Violeta Pastel
+            } else {
+                colorAfinidadReal = 'rgba(236, 213, 154, 1)'; // Dorado Champán Pastel
+            }
+        }
+
         if (nodo.isHexNode) colorAfinidadReal = '#ff4444'; 
 
         const isHovered = interaccion.hoveredNode === nodo;
@@ -183,12 +207,12 @@ export function dibujarFrame() {
         const esPrecedente = isPlayerView && rastreo.has(nodo) && !aprendibles.has(nodo) && !tieneElHechizo;
         const esIrrelevantePlayer = isPlayerView && !tieneElHechizo && !aprendibles.has(nodo) && !rastreo.has(nodo);
 
-        // Color de borde y sombra dinámico para vista jugador (IGNORA AFINIDAD SI LO TIENE)
         let colorNodoFinal = colorAfinidadReal;
+        
         if (isPlayerView && tieneElHechizo && !nodo.isHexNode) {
-            colorNodoFinal = 'rgba(138, 43, 226, 1)'; // VIOLETA ABSOLUTO
+            colorNodoFinal = 'rgba(177, 156, 217, 1)'; // Lavanda absoluto si lo tiene
         } else if (isPlayerView && (esAprendibleInmediato || esPrecedente)) {
-            colorNodoFinal = esAprendibleInmediato ? 'rgba(255, 215, 0, 0.8)' : 'rgba(212, 175, 55, 0.4)';
+            colorNodoFinal = esAprendibleInmediato ? 'rgba(236, 213, 154, 0.8)' : 'rgba(212, 196, 146, 0.4)';
         }
 
         if (nodoActivo) {
@@ -234,10 +258,10 @@ export function dibujarFrame() {
                 ctx.globalAlpha = 1.0;
             } else if (esAprendibleInmediato) {
                 ctx.fillStyle = '#222'; ctx.fill();
-                ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'; ctx.fill();
+                ctx.fillStyle = 'rgba(236, 213, 154, 0.3)'; ctx.fill();
             } else if (esPrecedente) {
                 ctx.fillStyle = '#222'; ctx.fill();
-                ctx.fillStyle = 'rgba(212, 175, 55, 0.08)'; ctx.fill();
+                ctx.fillStyle = 'rgba(212, 196, 146, 0.08)'; ctx.fill();
             } else {
                 ctx.fillStyle = '#111'; ctx.fill();
                 if (!isPlayerView) {
@@ -291,9 +315,9 @@ export function dibujarFrame() {
             if (nodo.isHexNode) {
                 ctx.fillStyle = '#ffaaaa';
             } else if (isPlayerView) {
-                if (tieneElHechizo) ctx.fillStyle = 'rgba(180, 100, 255, 1)'; // Violeta claro para texto
-                else if (esAprendibleInmediato) ctx.fillStyle = 'rgba(255, 215, 0, 0.9)'; 
-                else if (esPrecedente) ctx.fillStyle = 'rgba(212, 175, 55, 0.4)'; 
+                if (tieneElHechizo) ctx.fillStyle = 'rgba(177, 156, 217, 1)'; 
+                else if (esAprendibleInmediato) ctx.fillStyle = 'rgba(236, 213, 154, 0.9)'; 
+                else if (esPrecedente) ctx.fillStyle = 'rgba(212, 196, 146, 0.4)'; 
                 else ctx.fillStyle = 'rgba(100, 100, 100, 0.2)'; 
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? ESTETICA.lineaSaliente : '#fff';
