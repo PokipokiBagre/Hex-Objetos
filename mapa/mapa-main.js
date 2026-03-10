@@ -115,8 +115,9 @@ window.ordenarMapaYifanHu = () => {
                 u.x += (d.x / dLen) * limit;
                 u.y += (d.y / dLen) * limit;
                 
-                u._rawX = (u.x / 2500) * math.maxXDist + math.originX;
-                u._rawY = -(u.y / 2500) * math.maxYDist + math.originY;
+                // GUARDADO ABSOLUTO (Evita la compresión futura)
+                u._rawX = (u.x / math.scale) + math.originX;
+                u._rawY = -(u.y / math.scale) + math.originY;
             }
         });
 
@@ -136,7 +137,7 @@ window.cambiarEstadoNodo = (id, valor) => {
             nodo.esConocido = nuevoEstado;
             nodo.modificado = true;
             
-            nodo.radio = nodo.esConocido ? 35 : 28;
+            nodo.radio = nodo.esConocido ? 35 : 28; 
             let baseName = nodo.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim();
             if (nodo.esConocido) {
                 nodo.nombre = `${baseName} (${nodo.hex})`;
@@ -258,8 +259,9 @@ function iniciarEventosInput() {
             n.y += dy / estadoMapa.camara.zoom;
             
             const math = estadoMapa.math;
-            n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
-            n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
+            // GUARDADO ABSOLUTO EN ARRASTRE
+            n._rawX = (n.x / math.scale) + math.originX;
+            n._rawY = -(n.y / math.scale) + math.originY;
 
             n.modificado = true;
             document.getElementById('btn-save-map').classList.remove('oculto');
@@ -287,7 +289,7 @@ function iniciarEventosInput() {
         e.preventDefault();
         const camara = estadoMapa.camara;
         const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
-        const nuevoZoom = Math.max(0.02, Math.min(camara.zoom * zoomDelta, 4)); // PERMITE ALEJARSE MÁS
+        const nuevoZoom = Math.max(0.02, Math.min(camara.zoom * zoomDelta, 4)); 
         
         const mouseX = e.clientX;
         const mouseY = e.clientY;
@@ -301,7 +303,7 @@ function iniciarEventosInput() {
     // TÁCTIL (MÓVIL PROTEGIDO)
     // ===================================
     canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // BLOQUEA ZOOM NATIVO O REFRESH
+        e.preventDefault(); 
         if (e.touches.length === 1) { 
             const touch = e.touches[0];
             const worldPos = getPosicionMundo(touch.clientX, touch.clientY);
@@ -329,7 +331,7 @@ function iniciarEventosInput() {
     }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // BLOQUEA EL SCROLL DEL NAVEGADOR
+        e.preventDefault(); 
         
         if (e.touches.length === 1) { 
             const touch = e.touches[0];
@@ -346,8 +348,8 @@ function iniciarEventosInput() {
                 n.y += dy / estadoMapa.camara.zoom;
                 
                 const math = estadoMapa.math;
-                n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
-                n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
+                n._rawX = (n.x / math.scale) + math.originX;
+                n._rawY = -(n.y / math.scale) + math.originY;
 
                 n.modificado = true;
                 document.getElementById('btn-save-map').classList.remove('oculto');
