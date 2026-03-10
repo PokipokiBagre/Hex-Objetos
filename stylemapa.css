@@ -33,13 +33,14 @@ body { margin: 0; padding: 0; overflow: hidden; background-color: var(--bg-dark)
 .btn-action { background: #004a00; color: white; border-color: #00ff00; }
 .badge-conectado { background: rgba(0,74,0,0.8); color: #00ff00; border: 1px solid #00ff00; padding: 8px 15px; border-radius: 4px; font-weight: bold; font-family: 'Cinzel', serif;}
 
-/* PANEL DE INFORMACIÓN MÁS ANCHO Y HORIZONTAL */
+/* PANEL CORREGIDO (Sin 'relative' y con 30% menos opacidad) */
 .panel-info { 
-    position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); 
+    position: absolute; 
+    bottom: 25px; left: 50%; transform: translateX(-50%); 
     width: 95vw; 
-    max-width: 480px; /* <--- AUMENTADO DE 380px A 480px */
-    background: rgba(10,0,20,0.95); border: 1px solid var(--gold); border-radius: 8px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); transition: opacity 0.2s;
-    position: relative; 
+    max-width: 480px; 
+    background: rgba(10,0,20,0.65); /* OPACIDAD AL 65% (antes 0.95) */
+    border: 1px solid var(--gold); border-radius: 8px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); transition: opacity 0.2s;
 }
 
 .panel-info h3 { margin: 0 0 10px 0; color: var(--cyan-magic); font-family: 'Cinzel', serif; font-size: 1.3em; padding-right: 35px; }
