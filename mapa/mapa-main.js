@@ -28,6 +28,13 @@ window.onload = async () => {
     }
 };
 
+window.cambiarModoVisual = (modo) => {
+    estadoMapa.modoVisual = modo;
+    document.getElementById('mode-descubiertos').classList.toggle('active', modo === 'descubiertos');
+    document.getElementById('mode-afinidades').classList.toggle('active', modo === 'afinidades');
+    dibujarFrame();
+};
+
 const normalizarNombre = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
 
 function inicializarSidebar() {
@@ -59,7 +66,6 @@ window.seleccionarJugador = (nombre) => {
     let activeBtn = document.getElementById(btnId);
     if(activeBtn) activeBtn.classList.add('activo');
     
-    // Ocultar menú en celular tras seleccionar
     const sidebar = document.getElementById('sidebar-jugadores');
     if (sidebar) sidebar.classList.remove('open');
 
