@@ -36,12 +36,42 @@ body { margin: 0; padding: 0; overflow: hidden; background-color: var(--bg-dark)
 .panel-info { 
     position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); 
     width: 90vw; max-width: 380px; background: rgba(10,0,20,0.9); border: 1px solid var(--gold); border-radius: 8px; padding: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.9); transition: opacity 0.2s;
+    /* Necesario para posicionar el botón X respecto a la tarjeta */
+    position: relative; 
 }
-.panel-info h3 { margin: 0 0 10px 0; color: var(--cyan-magic); font-family: 'Cinzel', serif; font-size: 1.2em; }
+
+.panel-info h3 { margin: 0 0 10px 0; color: var(--cyan-magic); font-family: 'Cinzel', serif; font-size: 1.2em; padding-right: 30px; /* Deja espacio para que el texto no pise la X */ }
 .tags-container { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
 .tag { font-size: 0.7em; padding: 3px 6px; border-radius: 4px; border: 1px solid #555; background: #000; font-weight: bold; }
 
 .loading { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-dark); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Cinzel', serif; transition: opacity 0.5s; }
+
+/* NUEVO: ESTILO DEL BOTÓN DE CERRAR X ROJA */
+#btn-cerrar-panel {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
+    background-color: rgba(220, 20, 60, 0.4); /* Rojo traslúcido */
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 50;
+    transition: all 0.2s ease;
+}
+
+#btn-cerrar-panel:hover {
+    background-color: rgba(220, 20, 60, 0.9); /* Más opaco al pasar el mouse */
+    transform: scale(1.1);
+}
 
 /* ADAPTACIÓN A CELULARES */
 @media (max-width: 768px) {
