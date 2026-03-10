@@ -37,7 +37,7 @@ export function dibujarFrame() {
     const scaleFactor = Math.max(camara.zoom, 0.2); 
     const nodoActivo = interaccion.selectedNode || interaccion.hoveredNode;
 
-    // 1. DIBUJAR ENLACES (LÓGICA DE ROL)
+    // 1. DIBUJAR ENLACES
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -52,36 +52,25 @@ export function dibujarFrame() {
         
         if (nodoActivo) {
             if (link.source === nodoActivo) {
-                // SALIENTE: Amarillo Dorado
+                // SALIENTE
                 ctx.strokeStyle = ESTETICA.lineaSaliente;
                 ctx.lineWidth = 6 / scaleFactor;
-                ctx.setLineDash([]);
             } else if (link.target === nodoActivo) {
-                // PRECEDENTE: Morado Violeta
+                // PRECEDENTE
                 ctx.strokeStyle = ESTETICA.lineaPrecedente;
                 ctx.lineWidth = 6 / scaleFactor;
-                ctx.setLineDash([]);
             } else {
-                ctx.strokeStyle = 'rgba(49, 13, 49, 0.15)'; // Apaga lo demás
+                ctx.strokeStyle = 'rgba(49, 13, 49, 0.15)'; 
                 ctx.lineWidth = 1 / scaleFactor; 
-                ctx.setLineDash([]);
             }
         } else {
+            // ESTADO NORMAL: Mismo grosor para todas (Descubiertas, Mostazas y Rosas) y continuas
             ctx.strokeStyle = link.target.arrowColor; 
-            
-            if (ctx.strokeStyle === ESTETICA.lineaDescubierta) {
-                // Líneas descubiertas: Sutiles, delgadas, no molestan
-                ctx.lineWidth = 1.2 / scaleFactor; 
-                ctx.setLineDash([]);
-            } else {
-                // Líneas de incompletos (Mostaza/Rosa): Gruesas y punteadas
-                ctx.lineWidth = 2.8 / scaleFactor; 
-                ctx.setLineDash([12 / scaleFactor, 8 / scaleFactor]);
-            }
+            ctx.lineWidth = 1.5 / scaleFactor; 
         }
 
+        ctx.setLineDash([]); // TODAS las líneas son normales/continuas
         ctx.stroke();
-        ctx.setLineDash([]); 
 
         const headlen = (ctx.lineWidth * 3) + (10 / scaleFactor); 
         ctx.beginPath();
@@ -138,7 +127,7 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. TEXTOS GIGANTES Y LEGIBLES
+        // 3. TEXTOS 
         if (camara.zoom > 0.10 || isHovered || isSelected || nodo.isHexNode) {
             let fontSize = nodo.isHexNode ? 42 : (nodo.esConocido ? 24 : 20);
             if (isHovered || isSelected) fontSize += 8;
@@ -149,7 +138,6 @@ export function dibujarFrame() {
             
             const textY = nodo.y + nodo.radio + (12 / scaleFactor);
 
-            // Borde oscuro para contraste total
             ctx.lineWidth = 6 / scaleFactor;
             ctx.strokeStyle = 'rgba(0,0,0,0.95)'; 
             ctx.strokeText(nodo.nombre, nodo.x, textY);
