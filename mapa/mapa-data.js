@@ -38,7 +38,6 @@ function procesarNodos(json) {
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
-        
         const keyX = Object.keys(n).find(k => k.trim().toLowerCase() === 'x');
         const keyY = Object.keys(n).find(k => k.trim().toLowerCase() === 'y');
         
@@ -58,9 +57,7 @@ function procesarNodos(json) {
     let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
     let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
 
-    // RESTAURADO: Cálculo independiente para X e Y para forzar el círculo
-    let maxXDist = 1;
-    let maxYDist = 1;
+    let maxXDist = 1; let maxYDist = 1;
     todos.forEach(n => {
         let dx = Math.abs(n._rawX - originX);
         let dy = Math.abs(n._rawY - originY);
@@ -93,20 +90,19 @@ function procesarNodos(json) {
         if (esConocido || isHexNode) {
             nombreMostrar = isHexNode ? "HEX" : `${baseName} (${hexCost})`;
         } else {
-        // ... (resto del código igual)
-        let maskName = idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`;
-        nombreMostrar = `${maskName} (${hexCost})`;
+            let maskName = idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`;
+            nombreMostrar = `${maskName} (${hexCost})`;
         }
 
         const radioExpansion = 2500;
         const x = ((n._rawX - originX) / maxXDist) * radioExpansion;
         const y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
 
-        // TAMAÑOS DE NODOS AUMENTADOS PARA NO DESCUBIERTOS
-        let radio = esConocido ? 35 : 28; // <--- Subimos el 20 a 28
+        // TAMAÑOS DEFINITIVOS: 35 descubiertos, 28 sellados, 65 centro
+        let radio = esConocido ? 35 : 28;
         if (isHexNode) radio = 65;
 
-        // Búsqueda flexible de columnas de efectos
+        // Búsqueda inteligente de columnas de efectos
         const extData = (key) => {
             const foundKey = Object.keys(n).find(k => k.trim().toLowerCase().includes(key));
             return foundKey ? n[foundKey] : '';
@@ -121,9 +117,9 @@ function procesarNodos(json) {
             hex: hexCost,
             resumen: n.Resumen || 'Sin descripción',
             efecto: n.Efecto || '',
-            overcast: extData('overcast'), // Extrae "Overcast 100%"
-            undercast: extData('undercast'), // Extrae "Undercast 50%"
-            especial: extData('especial'), // Extrae "Especial"
+            overcast: extData('overcast'), 
+            undercast: extData('undercast'), 
+            especial: extData('especial'),
             esConocido: esConocido,
             isHexNode: isHexNode,
             x: x,
@@ -136,8 +132,6 @@ function procesarNodos(json) {
         });
     });
 }
-// ... (resto de mapa-data.js intacto)
-
 
 function procesarEnlaces(arrayStrings) {
     estadoMapa.enlaces = [];
@@ -152,14 +146,12 @@ function procesarEnlaces(arrayStrings) {
             const nnom = String(n.nombreOriginal).trim().toLowerCase();
             const nidNum = nid.replace(/^hechizo\s+/i, '').trim();
             const nnomNum = nnom.replace(/^hechizo\s+/i, '').trim();
-
             return nid === str || nnom === str || nidNum === strNum || nnomNum === strNum;
         });
     };
 
     arrayStrings.forEach(rel => {
         if (!rel) return;
-        
         const vals = Object.values(rel).map(v => String(v).trim());
         if (vals.length < 2) return;
 
@@ -171,7 +163,6 @@ function procesarEnlaces(arrayStrings) {
             targetNode.incomingSources.push(sourceNode);
         }
     });
-
     actualizarColoresFlechas();
 }
 
@@ -186,11 +177,11 @@ export function actualizarColoresFlechas() {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = 'rgba(255, 255, 255, 0.95)'; 
+            nodo.arrowColor = 'rgba(255, 255, 255, 0.95)'; // Blanca
         } else if (conocidos > 0) {
-            nodo.arrowColor = 'rgba(255, 200, 0, 0.9)'; 
+            nodo.arrowColor = 'rgba(255, 200, 0, 0.9)'; // Mostaza
         } else {
-            nodo.arrowColor = 'rgba(255, 100, 150, 0.7)'; 
+            nodo.arrowColor = 'rgba(255, 100, 150, 0.7)'; // Rosa
         }
     });
 }
