@@ -1,6 +1,6 @@
 import { estadoMapa } from './mapa-state.js';
 import { cargarDatos, actualizarColoresFlechas, API_HECHIZOS } from './mapa-data.js';
-import { inicializarCanvas, dibujarFrame, actualizarPanelInfo } from './mapa-ui.js';
+import { inicializarCanvas, dibujarFrame, actualizarPanelInfo, resetearPosicionPanel } from './mapa-ui.js';
 
 window.onload = async () => {
     try {
@@ -45,10 +45,13 @@ window.abrirMenuOP = () => {
     } 
 };
 
-// NUEVA FUNCIÓN PARA EL BOTÓN 'X' ROJO
+// BOTÓN CERRAR 'X': Limpia TODO y resetea posición
 window.cerrarPanelInfo = () => {
     estadoMapa.interaccion.selectedNode = null;
+    estadoMapa.interaccion.hoveredNode = null; // Evita que se reabra al instante
+    resetearPosicionPanel();
     actualizarPanelInfo();
+    dibujarFrame(); // Actualiza el lienzo al instante
 };
 
 window.ordenarMapaYifanHu = () => {
@@ -256,6 +259,7 @@ function iniciarEventosInput() {
     
     canvas.addEventListener('dblclick', (e) => {
         estadoMapa.interaccion.selectedNode = null;
+        resetearPosicionPanel();
         actualizarPanelInfo();
     });
 
@@ -266,8 +270,10 @@ function iniciarEventosInput() {
         if (nodo) {
             if (estadoMapa.interaccion.selectedNode === nodo) {
                 estadoMapa.interaccion.selectedNode = null;
+                resetearPosicionPanel();
             } else {
                 estadoMapa.interaccion.selectedNode = nodo;
+                resetearPosicionPanel(); // Resetea si abres uno nuevo
             }
             
             if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
@@ -347,8 +353,10 @@ function iniciarEventosInput() {
             if (nodo) {
                 if (estadoMapa.interaccion.selectedNode === nodo) {
                     estadoMapa.interaccion.selectedNode = null;
+                    resetearPosicionPanel();
                 } else {
                     estadoMapa.interaccion.selectedNode = nodo;
+                    resetearPosicionPanel(); // Resetea si abres uno nuevo
                 }
                 
                 if (estadoMapa.esAdmin) estadoMapa.interaccion.draggedNode = nodo;
