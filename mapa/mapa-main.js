@@ -16,7 +16,6 @@ window.onload = async () => {
             setTimeout(() => loadScreen.remove(), 500);
         }
 
-        // Si se detectó formato Gephi en la primera carga, mostramos el botón de Guardar
         if(estadoMapa.nodos.some(n => n.modificado)) {
             document.getElementById('btn-save-map').classList.remove('oculto');
         }
@@ -50,7 +49,7 @@ window.ordenarMapaYifanHu = () => {
     const nodos = estadoMapa.nodos;
     const enlaces = estadoMapa.enlaces;
     
-    const K = 550; // Constante aún más grande para separar los textos crecidos
+    const K = 550; 
     let iteraciones = 150; 
     let temp = 400; 
 
@@ -119,7 +118,7 @@ window.ordenarMapaYifanHu = () => {
                 u.x += (d.x / dLen) * limit;
                 u.y += (d.y / dLen) * limit;
                 
-                // GUARDADO DIRECTO SIN MATEMÁTICAS COMPRESIVAS
+                // GUARDADO ABSOLUTO (Sin matemáticas compresivas)
                 u._rawX = u.x;
                 u._rawY = u.y;
             }
@@ -161,7 +160,7 @@ window.guardarCambiosMapa = async () => {
     const btn = document.getElementById('btn-save-map');
     btn.innerText = "Guardando..."; btn.disabled = true;
 
-    // Aquí enviamos los valores limpios directos de x e y para que tu excel se llene de coordenadas de píxeles
+    // Se envían los valores ABSOLUTOS de pantalla al Excel
     const cambios = estadoMapa.nodos.filter(n => n.modificado).map(n => ({
         id: n.id || n.nombreOriginal, 
         x: n._rawX,
@@ -185,7 +184,7 @@ window.guardarCambiosMapa = async () => {
         const data = await res.json();
         
         if (data.status === 'success') {
-            alert("¡Éxito! Base de datos actualizada con coordenadas fijas.");
+            alert("¡Éxito! Posiciones absolutas guardadas en tu Base de Datos.");
             estadoMapa.nodos.forEach(n => n.modificado = false);
             btn.classList.add('oculto');
         } else {
@@ -199,7 +198,6 @@ window.guardarCambiosMapa = async () => {
     btn.disabled = false;
 };
 
-// AUTO CENTRADO INTELIGENTE (Busca a todos los nodos y encuadra la cámara perfectamente)
 function centrarCamaraAuto() {
     if (estadoMapa.nodos.length === 0) return;
     
@@ -281,7 +279,7 @@ function iniciarEventosInput() {
             n.x += dx / estadoMapa.camara.zoom;
             n.y += dy / estadoMapa.camara.zoom;
             
-            // EL GUARDADO ES ABSOLUTO (Sin dividir, respetando su lugar real en la pantalla)
+            // GUARDADO ABSOLUTO (Sin dividir, respetando su lugar real)
             n._rawX = n.x;
             n._rawY = n.y;
 
@@ -311,7 +309,7 @@ function iniciarEventosInput() {
         e.preventDefault();
         const camara = estadoMapa.camara;
         const zoomDelta = e.deltaY > 0 ? 0.85 : 1.15; 
-        const nuevoZoom = Math.max(0.01, Math.min(camara.zoom * zoomDelta, 4)); // PERMITE ALEJARSE MÁS
+        const nuevoZoom = Math.max(0.01, Math.min(camara.zoom * zoomDelta, 4)); 
         
         const mouseX = e.clientX;
         const mouseY = e.clientY;
