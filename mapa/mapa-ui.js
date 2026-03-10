@@ -8,6 +8,9 @@ export function inicializarCanvas() {
     ctx = canvas.getContext('2d', { alpha: false });
     redimensionar();
     window.addEventListener('resize', redimensionar);
+    
+    // Iniciar Panel Arrastrable
+    hacerPanelArrastrable();
 }
 
 function redimensionar() {
@@ -37,7 +40,35 @@ export function dibujarFrame() {
     const scaleFactor = Math.max(camara.zoom, 0.2); 
     const nodoActivo = interaccion.selectedNode || interaccion.hoveredNode;
 
-    // 1. DIBUJAR ENLACES
+    // LÓGICA RECURSIVA: Buscar Árbol Genealógico
+    const ancestorEdges = new Set();
+    const ancestorNodes = new Set();
+    const outgoingEdges = new Set();
+    const outgoingNodes = new Set();
+
+    if (nodoActivo) {
+        // 1. Encontrar TODO el camino de vuelta al HEX (Precedentes)
+        const encontrarPrecedentes = (n) => {
+            enlaces.forEach(e => {
+                if (e.target === n && !ancestorEdges.has(e)) {
+                    ancestorEdges.add(e);
+                    ancestorNodes.add(e.source);
+                    encontrarPrecedentes(e.source); // Recursividad hacia atrás
+                }
+            });
+        };
+        encontrarPrecedentes(nodoActivo);
+
+        // 2. Encontrar solo los salientes inmediatos
+        enlaces.forEach(e => {
+            if (e.source === nodoActivo) {
+                outgoingEdges.add(e);
+                outgoingNodes.add(e.target);
+            }
+        });
+    }
+
+    // DIBUJAR ENLACES
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -50,29 +81,34 @@ export function dibujarFrame() {
         ctx.moveTo(link.source.x, link.source.y);
         ctx.lineTo(targetX, targetY);
         
+        // Reset Opacidad Global
+        ctx.globalAlpha = 1.0; 
+
         if (nodoActivo) {
-            if (link.source === nodoActivo) {
+            if (outgoingEdges.has(link)) {
                 ctx.strokeStyle = ESTETICA.lineaSaliente;
                 ctx.lineWidth = 6 / scaleFactor;
                 ctx.setLineDash([]);
-            } else if (link.target === nodoActivo) {
+            } else if (ancestorEdges.has(link)) {
                 ctx.strokeStyle = ESTETICA.lineaPrecedente;
                 ctx.lineWidth = 6 / scaleFactor;
                 ctx.setLineDash([]);
             } else {
-                ctx.strokeStyle = 'rgba(49, 13, 49, 0.1)'; // Super difuminado si no está seleccionado
-                ctx.lineWidth = 1 / scaleFactor; 
-                ctx.setLineDash([]);
+                ctx.strokeStyle = link.target.arrowColor; 
+                ctx.lineWidth = 1.5 / scaleFactor; 
+                if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8/scaleFactor, 8/scaleFactor]);
+                else ctx.setLineDash([]);
+                
+                // REDUCIR A 20% EL RESTO DEL MAPA
+                ctx.globalAlpha = 0.2; 
             }
         } else {
             ctx.strokeStyle = link.target.arrowColor; 
             ctx.lineWidth = 1.5 / scaleFactor; 
-            
-            // SOLO LAS LÍNEAS ROJAS (ROSAS) SON PUNTEADAS
             if (ctx.strokeStyle === ESTETICA.lineaRosa) {
                 ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
             } else {
-                ctx.setLineDash([]); // Mostaza y Descubierta son sólidas
+                ctx.setLineDash([]); 
             }
         }
 
@@ -89,8 +125,9 @@ export function dibujarFrame() {
         ctx.fill();
     });
 
-    // 2. DIBUJAR NODOS
+    // DIBUJAR NODOS
     nodos.forEach(nodo => {
+        ctx.globalAlpha = 1.0; // Reset
         let colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         if (!nodo.esConocido) colorAf = '#777'; 
         if (nodo.isHexNode) colorAf = '#ff4444'; 
@@ -98,6 +135,13 @@ export function dibujarFrame() {
         const isHovered = interaccion.hoveredNode === nodo;
         const isSelected = interaccion.selectedNode === nodo;
         
+        if (nodoActivo) {
+            // Opacidad 20% si no es parte del árbol genealógico del seleccionado
+            if (nodo !== nodoActivo && !ancestorNodes.has(nodo) && !outgoingNodes.has(nodo) && !nodo.isHexNode) {
+                ctx.globalAlpha = 0.2;
+            }
+        }
+
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(nodo.x, nodo.y, nodo.radio + (10/scaleFactor), 0, Math.PI * 2);
@@ -134,9 +178,8 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. TEXTOS (AUMENTADOS)
+        // TEXTOS
         if (camara.zoom > 0.08 || isHovered || isSelected || nodo.isHexNode) {
-            // TAMAÑOS NUEVOS: 52 para HEX, 32 para Conocidos, 26 para Ocultos
             let fontSize = nodo.isHexNode ? 52 : (nodo.esConocido ? 32 : 26);
             if (isHovered || isSelected) fontSize += 8;
 
@@ -160,6 +203,8 @@ export function dibujarFrame() {
             ctx.fillText(nodo.nombre, nodo.x, textY);
         }
     });
+
+    ctx.globalAlpha = 1.0; // Purgar estado alfa final
 }
 
 export function actualizarPanelInfo() {
@@ -225,11 +270,77 @@ export function actualizarPanelInfo() {
                 <option value="si" ${nodo.esConocido ? 'selected' : ''}>👁️ SÍ (Descubierto)</option>
                 <option value="no" ${!nodo.esConocido ? 'selected' : ''}>🔒 NO (Sellado)</option>
             </select>
-            <div style="font-size:0.7em; color:#888; margin-top:5px;">(Haz clic en el fondo oscuro para deseleccionar)</div>
         `;
     } else {
         opDiv.innerHTML = '';
     }
 
     panel.classList.remove('oculto');
+}
+
+// SISTEMA DE ARRASTRE DEL PANEL
+function hacerPanelArrastrable() {
+    const el = document.getElementById('panel-info');
+    const header = document.getElementById('info-titulo');
+    header.style.cursor = 'move';
+    header.title = "Arrastra para mover la ventana";
+
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    header.onmousedown = iniciarArrastre;
+    header.ontouchstart = iniciarArrastre;
+
+    function iniciarArrastre(e) {
+        e = e || window.event;
+        if (e.type !== 'touchstart') e.preventDefault();
+        
+        if (e.type === 'touchstart') {
+            pos3 = e.touches[0].clientX;
+            pos4 = e.touches[0].clientY;
+        } else {
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+        }
+        
+        // Desbloquear restricciones CSS dinámicas
+        if (el.style.transform !== "none") {
+            const rect = el.getBoundingClientRect();
+            el.style.transform = "none";
+            el.style.left = rect.left + "px";
+            el.style.top = rect.top + "px";
+            el.style.bottom = "auto";
+            el.style.right = "auto";
+        }
+
+        document.onmouseup = detenerArrastre;
+        document.onmousemove = arrastrar;
+        document.ontouchend = detenerArrastre;
+        document.ontouchmove = arrastrar;
+    }
+
+    function arrastrar(e) {
+        e = e || window.event;
+        let clientX, clientY;
+        if (e.type === 'touchmove') {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            e.preventDefault();
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        pos1 = pos3 - clientX;
+        pos2 = pos4 - clientY;
+        pos3 = clientX;
+        pos4 = clientY;
+        el.style.top = (el.offsetTop - pos2) + "px";
+        el.style.left = (el.offsetLeft - pos1) + "px";
+    }
+
+    function detenerArrastre() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.ontouchend = null;
+        document.ontouchmove = null;
+    }
 }
