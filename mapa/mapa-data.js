@@ -1,4 +1,4 @@
-import { estadoMapa } from './mapa-state.js';
+import { estadoMapa, ESTETICA } from './mapa-state.js';
 
 export const API_HECHIZOS = 'https://script.google.com/macros/s/AKfycby1jLgF-2bGWv0QW0Eg8u7msZ-ab2eQa--olIWQHsin8Kyz0y0xHevK7YyGyMyzq1BWKw/exec';
 
@@ -98,11 +98,9 @@ function procesarNodos(json) {
         const x = ((n._rawX - originX) / maxXDist) * radioExpansion;
         const y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
 
-        // TAMAÑOS DEFINITIVOS: 35 descubiertos, 28 sellados, 65 centro
         let radio = esConocido ? 35 : 28;
         if (isHexNode) radio = 65;
 
-        // Búsqueda inteligente de columnas de efectos
         const extData = (key) => {
             const foundKey = Object.keys(n).find(k => k.trim().toLowerCase().includes(key));
             return foundKey ? n[foundKey] : '';
@@ -169,7 +167,7 @@ function procesarEnlaces(arrayStrings) {
 export function actualizarColoresFlechas() {
     estadoMapa.nodos.forEach(nodo => {
         if (nodo.incomingSources.length === 0) {
-            nodo.arrowColor = 'rgba(255, 255, 255, 0.4)'; 
+            nodo.arrowColor = ESTETICA.lineaBase; 
             return;
         }
         
@@ -177,11 +175,11 @@ export function actualizarColoresFlechas() {
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
         if (conocidos === total) {
-            nodo.arrowColor = 'rgba(255, 255, 255, 0.95)'; // Blanca
+            nodo.arrowColor = ESTETICA.lineaBase; // Por defecto oscuro
         } else if (conocidos > 0) {
-            nodo.arrowColor = 'rgba(255, 200, 0, 0.9)'; // Mostaza
+            nodo.arrowColor = 'rgba(200, 150, 50, 0.6)'; // Mostaza oscuro
         } else {
-            nodo.arrowColor = 'rgba(255, 100, 150, 0.7)'; // Rosa
+            nodo.arrowColor = ESTETICA.lineaNoDescubierto; // Rosa tenue
         }
     });
 }
