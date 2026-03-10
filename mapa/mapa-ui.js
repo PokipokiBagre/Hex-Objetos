@@ -1,4 +1,4 @@
-import { estadoMapa, COLOR_AFINIDAD } from './mapa-state.js';
+import { estadoMapa, COLOR_AFINIDAD, ESTETICA } from './mapa-state.js';
 
 let canvas, ctx;
 
@@ -35,8 +35,10 @@ export function dibujarFrame() {
     ctx.scale(camara.zoom, camara.zoom);
 
     const scaleFactor = Math.max(camara.zoom, 0.4);
+    
+    const nodoActivo = interaccion.selectedNode || interaccion.hoveredNode;
 
-    // 1. DIBUJAR ENLACES
+    // 1. DIBUJAR ENLACES (Lógica de Colores Direccionales)
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -49,24 +51,39 @@ export function dibujarFrame() {
         ctx.moveTo(link.source.x, link.source.y);
         ctx.lineTo(targetX, targetY);
         
-        if (interaccion.hoveredNode === link.source || interaccion.hoveredNode === link.target || 
-            interaccion.selectedNode === link.source || interaccion.selectedNode === link.target) {
-            ctx.strokeStyle = 'rgba(0, 255, 255, 1)';
-            ctx.lineWidth = 6 / scaleFactor;
-            ctx.setLineDash([]);
+        // Asignación de Estética de Rol
+        if (nodoActivo) {
+            if (link.source === nodoActivo) {
+                // SALIENTE: Amarillo Dorado
+                ctx.strokeStyle = ESTETICA.lineaSaliente;
+                ctx.lineWidth = 6 / scaleFactor;
+                ctx.setLineDash([]);
+            } else if (link.target === nodoActivo) {
+                // PRECEDENTE: Morado Violeta
+                ctx.strokeStyle = ESTETICA.lineaPrecedente;
+                ctx.lineWidth = 6 / scaleFactor;
+                ctx.setLineDash([]);
+            } else {
+                // Otras líneas se oscurecen
+                ctx.strokeStyle = ESTETICA.lineaBase;
+                ctx.lineWidth = 1.5 / scaleFactor; 
+                ctx.setLineDash([]);
+            }
         } else {
-            ctx.strokeStyle = link.target.arrowColor || 'rgba(255, 255, 255, 0.5)'; 
+            // Estado Normal sin interacción
+            ctx.strokeStyle = link.target.arrowColor || ESTETICA.lineaBase; 
             ctx.lineWidth = 2.5 / scaleFactor; 
             
-            // LÍNEAS SEGMENTADAS para Mostaza y Rosa
-            if (ctx.strokeStyle !== 'rgba(255, 255, 255, 0.95)' && ctx.strokeStyle !== 'rgba(255, 255, 255, 0.4)') {
+            // Segmentación para nodos no descubiertos
+            if (ctx.strokeStyle !== ESTETICA.lineaBase && ctx.strokeStyle !== ESTETICA.lineaNoDescubierto) {
                 ctx.setLineDash([12 / scaleFactor, 8 / scaleFactor]);
             } else {
                 ctx.setLineDash([]);
             }
         }
+
         ctx.stroke();
-        ctx.setLineDash([]); // Reset para punta de flecha
+        ctx.setLineDash([]); 
 
         const headlen = 16 / scaleFactor;
         ctx.beginPath();
@@ -90,9 +107,9 @@ export function dibujarFrame() {
         if (isSelected) {
             ctx.beginPath();
             ctx.arc(nodo.x, nodo.y, nodo.radio + (8/scaleFactor), 0, Math.PI * 2);
-            ctx.strokeStyle = '#00ffff';
-            ctx.lineWidth = 2 / scaleFactor;
-            ctx.setLineDash([5/scaleFactor, 5/scaleFactor]);
+            ctx.strokeStyle = ESTETICA.lineaSaliente; // Aura dorada al seleccionar
+            ctx.lineWidth = 3 / scaleFactor;
+            ctx.setLineDash([8/scaleFactor, 8/scaleFactor]);
             ctx.stroke();
             ctx.setLineDash([]);
         }
@@ -100,7 +117,7 @@ export function dibujarFrame() {
         ctx.beginPath();
         ctx.arc(nodo.x, nodo.y, nodo.radio, 0, Math.PI * 2);
         
-        ctx.shadowBlur = (isHovered || isSelected) ? 25 : (nodo.isHexNode ? 30 : (nodo.esConocido ? 5 : 0));
+        ctx.shadowBlur = (isHovered || isSelected) ? 35 : (nodo.isHexNode ? 30 : (nodo.esConocido ? 5 : 0));
         ctx.shadowColor = colorAf;
 
         if (nodo.isHexNode) {
@@ -108,7 +125,6 @@ export function dibujarFrame() {
         } else if (nodo.esConocido) {
             ctx.fillStyle = (isHovered || isSelected) ? '#333' : '#111';
         } else {
-            // Fondo Gris Carbón para destacar los no descubiertos
             ctx.fillStyle = (isHovered || isSelected) ? '#444' : '#222'; 
         }
         
@@ -124,27 +140,29 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // 3. TEXTOS (Ajustado para que se vean un poco más lejos)
+        // 3. TEXTOS (Aumentado y mejorado)
         if (camara.zoom > 0.15 || isHovered || isSelected || nodo.isHexNode) {
-            let fontSize = nodo.isHexNode ? 28 : (nodo.esConocido ? 16 : 13);
-            if (isHovered || isSelected) fontSize += 4;
+            // ETIQUETAS MÁS GRANDES: Base 20px (antes 13), Destacado 24px
+            let fontSize = nodo.isHexNode ? 34 : (nodo.esConocido ? 20 : 16);
+            if (isHovered || isSelected) fontSize += 6;
 
             ctx.font = "bold " + fontSize + "px sans-serif";
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             
-            const textY = nodo.y + nodo.radio + (8 / scaleFactor);
+            const textY = nodo.y + nodo.radio + (10 / scaleFactor);
 
-            ctx.lineWidth = 3 / scaleFactor;
-            ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+            // Sombra/Borde negro más grueso para máxima legibilidad
+            ctx.lineWidth = 5 / scaleFactor;
+            ctx.strokeStyle = 'rgba(0,0,0,0.95)';
             ctx.strokeText(nodo.nombre, nodo.x, textY);
             
             if (nodo.isHexNode) {
                 ctx.fillStyle = '#ffaaaa';
             } else if (nodo.esConocido) {
-                ctx.fillStyle = (isHovered || isSelected) ? '#00ffff' : '#fff';
+                ctx.fillStyle = (isHovered || isSelected) ? ESTETICA.lineaSaliente : '#fff';
             } else {
-                ctx.fillStyle = (isHovered || isSelected) ? '#bbb' : '#888'; 
+                ctx.fillStyle = (isHovered || isSelected) ? '#ddd' : '#aaa'; 
             }
             ctx.fillText(nodo.nombre, nodo.x, textY);
         }
