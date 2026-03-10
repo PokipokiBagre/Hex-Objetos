@@ -9,7 +9,6 @@ export function inicializarCanvas() {
     redimensionar();
     window.addEventListener('resize', redimensionar);
     
-    // Iniciar Panel Arrastrable
     hacerPanelArrastrable();
 }
 
@@ -40,26 +39,23 @@ export function dibujarFrame() {
     const scaleFactor = Math.max(camara.zoom, 0.2); 
     const nodoActivo = interaccion.selectedNode || interaccion.hoveredNode;
 
-    // LÓGICA RECURSIVA: Buscar Árbol Genealógico
     const ancestorEdges = new Set();
     const ancestorNodes = new Set();
     const outgoingEdges = new Set();
     const outgoingNodes = new Set();
 
     if (nodoActivo) {
-        // 1. Encontrar TODO el camino de vuelta al HEX (Precedentes)
         const encontrarPrecedentes = (n) => {
             enlaces.forEach(e => {
                 if (e.target === n && !ancestorEdges.has(e)) {
                     ancestorEdges.add(e);
                     ancestorNodes.add(e.source);
-                    encontrarPrecedentes(e.source); // Recursividad hacia atrás
+                    encontrarPrecedentes(e.source); 
                 }
             });
         };
         encontrarPrecedentes(nodoActivo);
 
-        // 2. Encontrar solo los salientes inmediatos
         enlaces.forEach(e => {
             if (e.source === nodoActivo) {
                 outgoingEdges.add(e);
@@ -68,7 +64,6 @@ export function dibujarFrame() {
         });
     }
 
-    // DIBUJAR ENLACES
     enlaces.forEach(link => {
         const dx = link.target.x - link.source.x;
         const dy = link.target.y - link.source.y;
@@ -81,7 +76,6 @@ export function dibujarFrame() {
         ctx.moveTo(link.source.x, link.source.y);
         ctx.lineTo(targetX, targetY);
         
-        // Reset Opacidad Global
         ctx.globalAlpha = 1.0; 
 
         if (nodoActivo) {
@@ -99,7 +93,6 @@ export function dibujarFrame() {
                 if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8/scaleFactor, 8/scaleFactor]);
                 else ctx.setLineDash([]);
                 
-                // REDUCIR A 20% EL RESTO DEL MAPA
                 ctx.globalAlpha = 0.2; 
             }
         } else {
@@ -125,9 +118,8 @@ export function dibujarFrame() {
         ctx.fill();
     });
 
-    // DIBUJAR NODOS
     nodos.forEach(nodo => {
-        ctx.globalAlpha = 1.0; // Reset
+        ctx.globalAlpha = 1.0; 
         let colorAf = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         if (!nodo.esConocido) colorAf = '#777'; 
         if (nodo.isHexNode) colorAf = '#ff4444'; 
@@ -136,7 +128,6 @@ export function dibujarFrame() {
         const isSelected = interaccion.selectedNode === nodo;
         
         if (nodoActivo) {
-            // Opacidad 20% si no es parte del árbol genealógico del seleccionado
             if (nodo !== nodoActivo && !ancestorNodes.has(nodo) && !outgoingNodes.has(nodo) && !nodo.isHexNode) {
                 ctx.globalAlpha = 0.2;
             }
@@ -178,7 +169,6 @@ export function dibujarFrame() {
         ctx.stroke();
         ctx.setLineDash([]); 
 
-        // TEXTOS
         if (camara.zoom > 0.08 || isHovered || isSelected || nodo.isHexNode) {
             let fontSize = nodo.isHexNode ? 52 : (nodo.esConocido ? 32 : 26);
             if (isHovered || isSelected) fontSize += 8;
@@ -204,7 +194,7 @@ export function dibujarFrame() {
         }
     });
 
-    ctx.globalAlpha = 1.0; // Purgar estado alfa final
+    ctx.globalAlpha = 1.0; 
 }
 
 export function actualizarPanelInfo() {
@@ -278,7 +268,18 @@ export function actualizarPanelInfo() {
     panel.classList.remove('oculto');
 }
 
-// SISTEMA DE ARRASTRE DEL PANEL
+// NUEVO: Función para limpiar los estilos de arrastre y devolverlo a la base
+export function resetearPosicionPanel() {
+    const panel = document.getElementById('panel-info');
+    if (panel) {
+        panel.style.top = '';
+        panel.style.left = '';
+        panel.style.bottom = '';
+        panel.style.right = '';
+        panel.style.transform = '';
+    }
+}
+
 function hacerPanelArrastrable() {
     const el = document.getElementById('panel-info');
     const header = document.getElementById('info-titulo');
@@ -302,7 +303,6 @@ function hacerPanelArrastrable() {
             pos4 = e.clientY;
         }
         
-        // Desbloquear restricciones CSS dinámicas
         if (el.style.transform !== "none") {
             const rect = el.getBoundingClientRect();
             el.style.transform = "none";
