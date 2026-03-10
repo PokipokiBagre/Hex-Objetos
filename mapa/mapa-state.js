@@ -2,7 +2,8 @@ export const estadoMapa = {
     esAdmin: false,
     nodos: [],
     enlaces: [],
-    math: { originX: 0, originY: 0, maxXDist: 1, maxYDist: 1 }, 
+    // SCALE absoluto: Evita que el mapa se comprima al alejar nodos
+    math: { originX: 0, originY: 0, scale: 3.5 }, 
     camara: { x: window.innerWidth/2, y: window.innerHeight/2, zoom: 0.8 },
     interaccion: {
         isDraggingBg: false,
@@ -23,10 +24,11 @@ export const COLOR_AFINIDAD = {
     'Oscura': '#c285ff'
 };
 
-// NUEVA ESTÉTICA DE ROL
+// ESTÉTICA ROLERA MEJORADA
 export const ESTETICA = {
-    lineaBase: 'rgba(49, 13, 49, 0.4)',       // Violeta muy oscuro/casi invisible
-    lineaPrecedente: 'rgba(138, 43, 226, 0.9)', // Morado Violeta (Llega al nodo)
-    lineaSaliente: 'rgba(255, 236, 139, 0.9)',  // Amarillo Dorado (Sale del nodo)
-    lineaNoDescubierto: 'rgba(255, 100, 150, 0.3)' // Rosa tenue para lo sellado
+    lineaDescubierta: 'rgba(130, 90, 160, 0.4)', // Violeta grisáceo muy tenue y delgado (EX-BLANCA)
+    lineaMostaza: 'rgba(212, 175, 55, 0.8)',     // Mostaza para incompletos
+    lineaRosa: 'rgba(200, 60, 100, 0.6)',        // Rosa para sellados
+    lineaPrecedente: 'rgba(138, 43, 226, 1)',    // Morado Violeta (Hover/Selección)
+    lineaSaliente: 'rgba(255, 236, 139, 1)'      // Amarillo Dorado (Hover/Selección)
 };
