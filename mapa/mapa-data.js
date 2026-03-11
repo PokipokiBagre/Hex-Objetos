@@ -62,7 +62,6 @@ function procesarInventario(json) {
             let he = row.Hechizo ? row.Hechizo.trim() : '';
             if(pj && he) {
                 if(!estadoMapa.inventario[pj]) estadoMapa.inventario[pj] = new Set();
-                // Limpiamos el texto para poder emparejarlo con el Nodo
                 estadoMapa.inventario[pj].add(he.replace(/\s*\(\d+\)$/, '').trim().toLowerCase());
             }
         });
@@ -81,52 +80,33 @@ function procesarNodos(json) {
     estadoMapa.nodos = [];
     const nodosProcesados = new Set();
     
-    let hexNodeRaw = null;
+    // Primero, encontramos el máximo valor absoluto para saber si necesitamos achicar coordenadas de Gephi gigantes
+    let maxVal = 0;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
         const keyX = Object.keys(n).find(k => k.trim().toLowerCase() === 'x');
         const keyY = Object.keys(n).find(k => k.trim().toLowerCase() === 'y');
         
-        n._rawX = keyX ? parseGephiCoord(n[keyX]) : null;
-        n._rawY = keyY ? parseGephiCoord(n[keyY]) : null;
-
-        if (n._rawX === null) n._rawX = Math.random() * 500;
-        if (n._rawY === null) n._rawY = Math.random() * 500;
-
-        const idStr = String(n.ID || '').trim().toLowerCase();
-        const nomStr = String(n.Nombre || '').trim().toLowerCase();
-        if (idStr === 'hex' || nomStr === 'hex' || idStr === 'hechizo hex') {
-            hexNodeRaw = n; 
-        }
+        let rawX = keyX ? parseGephiCoord(n[keyX]) : null;
+        let rawY = keyY ? parseGephiCoord(n[keyY]) : null;
+        
+        if (rawX !== null && Math.abs(rawX) > maxVal) maxVal = Math.abs(rawX);
+        if (rawY !== null && Math.abs(rawY) > maxVal) maxVal = Math.abs(rawY);
     });
 
-    let originX = hexNodeRaw ? hexNodeRaw._rawX : 0;
-    let originY = hexNodeRaw ? hexNodeRaw._rawY : 0;
-
-    let maxXDist = 1; let maxYDist = 1;
-    todos.forEach(n => {
-        let dx = Math.abs(n._rawX - originX);
-        let dy = Math.abs(n._rawY - originY);
-        if (dx > maxXDist) maxXDist = dx;
-        if (dy > maxYDist) maxYDist = dy;
-    });
-
-    estadoMapa.math.originX = originX;
-    estadoMapa.math.originY = originY;
-    estadoMapa.math.maxXDist = maxXDist;
-    estadoMapa.math.maxYDist = maxYDist;
-
-    const isGephiRaw = maxXDist > 15000 || maxYDist > 15000;
-    const radioExpansion = 3500; 
+    // Si los números son mayores a 10,000, asumimos que viene en formato bruto de Gephi y lo achicamos.
+    // Si no, asumimos que son coordenadas de pantalla ya guardadas y las dejamos intactas.
+    const isGephiRaw = maxVal > 15000;
+    const scaleFactor = isGephiRaw ? (3500 / maxVal) : 1;
 
     todos.forEach(n => {
         if (!n.ID && !n.Nombre) return;
 
         const idReal = n.ID ? n.ID.toString().trim() : '';
         const nombreReal = n.Nombre && n.Nombre.trim() !== "" ? n.Nombre.trim() : idReal;
-
         const idUnico = (idReal || nombreReal).toLowerCase();
+        
         if (nodosProcesados.has(idUnico)) return;
         nodosProcesados.add(idUnico);
 
@@ -135,26 +115,24 @@ function procesarNodos(json) {
         const isHexNode = (idUnico === 'hex' || idUnico === 'hechizo hex');
 
         let baseName = nombreReal.replace(/\s*\(\d+\)$/, '').trim(); 
+        let nombreMostrar = (esConocido || isHexNode) ? 
+            (isHexNode ? "HEX" : `${baseName} (${hexCost})`) : 
+            `${idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`} (${hexCost})`;
+
+        const keyX = Object.keys(n).find(k => k.trim().toLowerCase() === 'x');
+        const keyY = Object.keys(n).find(k => k.trim().toLowerCase() === 'y');
         
-        let nombreMostrar = "";
-        if (esConocido || isHexNode) {
-            nombreMostrar = isHexNode ? "HEX" : `${baseName} (${hexCost})`;
-        } else {
-            let maskName = idReal.toLowerCase().includes('hechizo') ? idReal : `Hechizo ${idReal}`;
-            nombreMostrar = `${maskName} (${hexCost})`;
-        }
+        let rawX = keyX ? parseGephiCoord(n[keyX]) : null;
+        let rawY = keyY ? parseGephiCoord(n[keyY]) : null;
 
-        let x, y;
-        if (isGephiRaw) {
-            x = ((n._rawX - originX) / maxXDist) * radioExpansion;
-            y = -((n._rawY - originY) / maxYDist) * radioExpansion; 
-        } else {
-            x = n._rawX;
-            y = n._rawY;
-        }
+        // Si no hay coordenadas, le damos una posición aleatoria central
+        if (rawX === null) rawX = (Math.random() * 800) - 400;
+        if (rawY === null) rawY = (Math.random() * 800) - 400;
 
-        let radio = esConocido ? 35 : 28;
-        if (isHexNode) radio = 65;
+        let finalX = rawX * scaleFactor;
+        let finalY = rawY * scaleFactor;
+
+        let radio = isHexNode ? 65 : (esConocido ? 35 : 28);
 
         const extData = (key) => {
             const foundKey = Object.keys(n).find(k => k.trim().toLowerCase().includes(key));
@@ -175,12 +153,11 @@ function procesarNodos(json) {
             especial: extData('especial'),
             esConocido: esConocido,
             isHexNode: isHexNode,
-            x: x,
-            y: y,
-            _rawX: x, 
-            _rawY: y,
+            x: finalX,
+            y: finalY,
             radio: radio,
             incomingSources: [],
+            // Si el mapa era de Gephi, forzamos que se marque como modificado para que el usuario pueda guardarlo arreglado.
             modificado: isGephiRaw 
         });
     });
@@ -224,7 +201,6 @@ export function actualizarColoresFlechas() {
             nodo.arrowColor = ESTETICA.lineaDescubierta; 
             return;
         }
-        
         const total = nodo.incomingSources.length;
         const conocidos = nodo.incomingSources.filter(n => n.esConocido).length;
         
