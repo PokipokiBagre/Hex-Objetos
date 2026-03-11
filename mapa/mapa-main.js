@@ -28,14 +28,10 @@ window.onload = async () => {
     }
 };
 
-// NUEVA FUNCIÓN PARA EL SWITCH
 window.cambiarModoVisual = (modo) => {
     estadoMapa.modoVisual = modo;
-    
-    // UI Botones
     document.getElementById('mode-descubiertos').classList.toggle('active', modo === 'descubiertos');
     document.getElementById('mode-afinidades').classList.toggle('active', modo === 'afinidades');
-    
     dibujarFrame();
 };
 
@@ -137,10 +133,12 @@ window.cerrarPanelInfo = () => {
     dibujarFrame(); 
 };
 
+// -------------------------------------------------------------
+// MOTOR FÍSICO CORREGIDO (Sin alteración rara de variables)
+// -------------------------------------------------------------
 window.ordenarMapaYifanHu = () => {
     const nodos = estadoMapa.nodos;
     const enlaces = estadoMapa.enlaces;
-    const math = estadoMapa.math;
     
     const K = 550; 
     let iteraciones = 150; 
@@ -200,7 +198,6 @@ window.ordenarMapaYifanHu = () => {
         nodos.forEach(u => {
             if(u.isHexNode) { 
                 u.x = 0; u.y = 0; 
-                u._rawX = math.originX; u._rawY = math.originY; 
                 return; 
             }
 
@@ -208,11 +205,9 @@ window.ordenarMapaYifanHu = () => {
             const dLen = Math.sqrt(d.x*d.x + d.y*d.y);
             if(dLen > 0) {
                 const limit = Math.min(dLen, temp); 
+                // Actualiza única y exclusivamente la X e Y reales
                 u.x += (d.x / dLen) * limit;
                 u.y += (d.y / dLen) * limit;
-                
-                u._rawX = (u.x / math.maxXDist) + math.originX;
-                u._rawY = -(u.y / math.maxYDist) + math.originY;
             }
         });
 
@@ -252,10 +247,11 @@ window.guardarCambiosMapa = async () => {
     const btn = document.getElementById('btn-save-map');
     btn.innerText = "Guardando..."; btn.disabled = true;
 
+    // AHORA MANDAMOS LA X E Y REAL DIRECTAMENTE.
     const cambios = estadoMapa.nodos.filter(n => n.modificado).map(n => ({
         id: n.id || n.nombreOriginal, 
-        x: n._rawX,
-        y: n._rawY,
+        x: n.x, 
+        y: n.y, 
         conocido: n.esConocido ? 'si' : 'no'
     }));
 
@@ -275,7 +271,7 @@ window.guardarCambiosMapa = async () => {
         const data = await res.json();
         
         if (data.status === 'success') {
-            alert("¡Éxito! Posiciones guardadas en tu Base de Datos.");
+            alert("¡Éxito! Posiciones guardadas permanentemente.");
             estadoMapa.nodos.forEach(n => n.modificado = false);
             btn.classList.add('oculto');
         } else {
@@ -375,12 +371,10 @@ function iniciarEventosInput() {
         } 
         else if (estadoMapa.interaccion.draggedNode) {
             const n = estadoMapa.interaccion.draggedNode;
+            
+            // Arrastre arreglado. Solo actualiza la 'x' e 'y' final.
             n.x += dx / estadoMapa.camara.zoom;
             n.y += dy / estadoMapa.camara.zoom;
-            
-            const math = estadoMapa.math;
-            n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
-            n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
 
             n.modificado = true;
             document.getElementById('btn-save-map').classList.remove('oculto');
@@ -470,10 +464,6 @@ function iniciarEventosInput() {
                 const n = estadoMapa.interaccion.draggedNode;
                 n.x += dx / estadoMapa.camara.zoom;
                 n.y += dy / estadoMapa.camara.zoom;
-                
-                const math = estadoMapa.math;
-                n._rawX = (n.x / 2500) * math.maxXDist + math.originX;
-                n._rawY = -(n.y / 2500) * math.maxYDist + math.originY;
 
                 n.modificado = true;
                 document.getElementById('btn-save-map').classList.remove('oculto');
