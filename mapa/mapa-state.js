@@ -1,6 +1,6 @@
 export const estadoMapa = {
     esAdmin: false,
-    modoVisual: 'descubiertos', // Modo por defecto al cargar (Violeta/Dorado pastel global)
+    modoVisual: 'descubiertos', // MODO POR DEFECTO
     jugadorActivo: 'Todos',
     jugadores: [],
     inventario: {},
@@ -40,6 +40,7 @@ export const ESTETICA = {
     lineaSaliente: 'rgba(236, 213, 154, 0.5)'     
 };
 
+// COLORES SUAVIZADOS
 export const COLORES_JUGADOR = {
     posesionMorada: 'rgba(150, 131, 200, 0.6)', 
     doradoInmediato: 'rgba(236, 213, 154, 0.7)', 
