@@ -28,10 +28,14 @@ window.onload = async () => {
     }
 };
 
+// NUEVA FUNCIÓN PARA EL SWITCH
 window.cambiarModoVisual = (modo) => {
     estadoMapa.modoVisual = modo;
+    
+    // UI Botones
     document.getElementById('mode-descubiertos').classList.toggle('active', modo === 'descubiertos');
     document.getElementById('mode-afinidades').classList.toggle('active', modo === 'afinidades');
+    
     dibujarFrame();
 };
 
@@ -415,7 +419,7 @@ function iniciarEventosInput() {
     }, { passive: false });
 
     canvas.addEventListener('touchstart', (e) => {
-        if (e.target.closest('button') || e.target.closest('.sidebar')) return; 
+        if (e.target.closest('button') || e.target.closest('.sidebar') || e.target.closest('.view-controls')) return; 
         e.preventDefault(); 
         
         if (e.touches.length === 1) { 
@@ -450,7 +454,7 @@ function iniciarEventosInput() {
     }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
-        if (e.target.closest('button') || e.target.closest('.sidebar')) return; 
+        if (e.target.closest('button') || e.target.closest('.sidebar') || e.target.closest('.view-controls')) return; 
         e.preventDefault(); 
         
         if (e.touches.length === 1) { 
