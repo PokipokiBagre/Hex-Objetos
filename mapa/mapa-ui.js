@@ -25,7 +25,7 @@ function redimensionar() {
 export function dibujarFrame() {
     if(!ctx) return;
     
-    // AQUÍ ESTÁ EL SWITCH MODO VISUAL IMPORTADO CORRECTAMENTE
+    // AQUÍ EXTRAEMOS EL MODO VISUAL DEL ESTADO
     const { nodos, enlaces, camara, interaccion, jugadorActivo, vistaJugador, modoVisual } = estadoMapa;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0); 
@@ -114,7 +114,6 @@ export function dibujarFrame() {
         
         if (drawNormal) {
             if (isPlayerView) {
-                // VISTA PERSONAJE
                 let sP = posesiones.has(link.source);
                 let tP = posesiones.has(link.target);
                 let tA = aprendibles.has(link.target);
@@ -148,14 +147,15 @@ export function dibujarFrame() {
                     arrowMult = 1.5; baseHeadLen = 5;
                 }
             } else {
-                // LÓGICA DE SWITCH GLOBAL PARA LÍNEAS
+                // LÓGICA DE SWITCH GLOBAL PARA ENLACES
                 if (modoVisual === 'afinidades') {
+                    // Vista Normal: Color por lógica de requisitos
                     ctx.strokeStyle = link.target.arrowColor; 
                     ctx.lineWidth = 1.5 / scaleFactor; 
                     if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
                     else ctx.setLineDash([]); 
                 } else {
-                    // MODO DESCUBIERTOS: Todas las líneas estrictamente grises
+                    // Vista Descubiertos: TODO GRIS, mismo grosor y opacidad de la vista normal
                     ctx.strokeStyle = 'rgba(150, 150, 150, 0.3)'; 
                     ctx.lineWidth = 1.5 / scaleFactor; 
                     ctx.setLineDash([]); 
@@ -188,7 +188,7 @@ export function dibujarFrame() {
         if (modoVisual === 'afinidades') {
             colorAfinidadReal = COLOR_AFINIDAD[nodo.afinidad] || '#888';
         } else {
-            // MODO DESCUBIERTOS: Solo Violeta / Dorado
+            // Vista Descubiertos: Violeta/Dorado pastel
             if (nodo.esConocido) {
                 colorAfinidadReal = 'rgba(177, 156, 217, 1)'; // Violeta Pastel
             } else {
@@ -208,7 +208,6 @@ export function dibujarFrame() {
         const esIrrelevantePlayer = isPlayerView && !tieneElHechizo && !aprendibles.has(nodo) && !rastreo.has(nodo);
 
         let colorNodoFinal = colorAfinidadReal;
-        
         if (isPlayerView && tieneElHechizo && !nodo.isHexNode) {
             colorNodoFinal = 'rgba(177, 156, 217, 1)'; // Lavanda absoluto si lo tiene
         } else if (isPlayerView && (esAprendibleInmediato || esPrecedente)) {
@@ -319,6 +318,9 @@ export function dibujarFrame() {
                 else if (esAprendibleInmediato) ctx.fillStyle = 'rgba(236, 213, 154, 0.9)'; 
                 else if (esPrecedente) ctx.fillStyle = 'rgba(212, 196, 146, 0.4)'; 
                 else ctx.fillStyle = 'rgba(100, 100, 100, 0.2)'; 
+            } else if (modoVisual === 'descubiertos') {
+                // El texto combina con el nodo en modo descubiertos
+                ctx.fillStyle = colorAfinidadReal;
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? ESTETICA.lineaSaliente : '#fff';
             } else {
