@@ -347,9 +347,18 @@ function iniciarEventosInput() {
         actualizarPanelInfo();
     });
 
-    canvas.addEventListener('mousedown', (e) => {
+canvas.addEventListener('mousedown', (e) => {
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
         const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
+
+        // --- HOOK DE EDICIÓN ---
+        if (window.mapaEditor && window.mapaEditor.activa) {
+            window.mapaEditor.onMouseDown(e, nodo, worldPos);
+            estadoMapa.interaccion.lastMouseX = e.clientX;
+            estadoMapa.interaccion.lastMouseY = e.clientY;
+            return;
+        }
+        // -----------------------
 
         if (nodo) {
             if (estadoMapa.interaccion.selectedNode === nodo) {
@@ -374,17 +383,25 @@ function iniciarEventosInput() {
         const dy = e.clientY - estadoMapa.interaccion.lastMouseY;
         const worldPos = getPosicionMundo(e.clientX, e.clientY);
 
+        // --- HOOK DE EDICIÓN ---
+        if (window.mapaEditor && window.mapaEditor.activa) {
+            window.mapaEditor.onMouseMove(e, dx, dy, worldPos);
+            estadoMapa.interaccion.lastMouseX = e.clientX;
+            estadoMapa.interaccion.lastMouseY = e.clientY;
+            const nodoBajoCursor = obtenerNodoEnCursor(worldPos.x, worldPos.y);
+            canvas.style.cursor = nodoBajoCursor ? 'pointer' : (window.mapaEditor.herramienta === 'enlace' ? 'crosshair' : 'grab');
+            return;
+        }
+        // -----------------------
+
         if (estadoMapa.interaccion.isDraggingBg) {
             estadoMapa.camara.x += dx;
             estadoMapa.camara.y += dy;
         } 
         else if (estadoMapa.interaccion.draggedNode) {
             const n = estadoMapa.interaccion.draggedNode;
-            
-            // Arrastre arreglado. Solo actualiza la 'x' e 'y' final.
             n.x += dx / estadoMapa.camara.zoom;
             n.y += dy / estadoMapa.camara.zoom;
-
             n.modificado = true;
             document.getElementById('btn-save-map').classList.remove('oculto');
         } 
@@ -396,12 +413,19 @@ function iniciarEventosInput() {
                 canvas.style.cursor = nodoBajoCursor ? 'pointer' : 'grab';
             }
         }
-
         estadoMapa.interaccion.lastMouseX = e.clientX;
         estadoMapa.interaccion.lastMouseY = e.clientY;
     });
 
-    canvas.addEventListener('mouseup', () => {
+    canvas.addEventListener('mouseup', (e) => {
+        // --- HOOK DE EDICIÓN ---
+        if (window.mapaEditor && window.mapaEditor.activa) {
+            const worldPos = getPosicionMundo(e.clientX, e.clientY);
+            const nodo = obtenerNodoEnCursor(worldPos.x, worldPos.y);
+            window.mapaEditor.onMouseUp(e, nodo);
+            return;
+        }
+        // -----------------------
         estadoMapa.interaccion.isDraggingBg = false;
         estadoMapa.interaccion.draggedNode = null;
         canvas.style.cursor = estadoMapa.interaccion.hoveredNode ? 'pointer' : 'grab';
