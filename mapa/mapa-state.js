@@ -37,8 +37,6 @@ window.mapaColores = {
 
 export const COLOR_AFINIDAD = window.mapaColores;
 export const ESTETICA = { /* ... resto de tu código igual ... */
-
-export const ESTETICA = {
     lineaDescubierta: 'rgba(210, 190, 230, 0.2)', 
     lineaMostaza: 'rgba(212, 175, 55, 0.3)',       
     lineaRosa: 'rgba(200, 60, 100, 0.25)',         
