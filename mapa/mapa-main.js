@@ -113,12 +113,21 @@ window.abrirMenuOP = () => {
         alert("Modo OP Desactivado."); 
         document.getElementById('btn-save-map').classList.add('oculto');
         document.getElementById('btn-ordenar').classList.add('oculto');
+        
+        // APAGA EL EDITOR
+        document.getElementById('btn-editar-mapa').classList.add('oculto');
+        if (window.mapaEditor) window.mapaEditor.desactivar(); 
+        
         estadoMapa.interaccion.selectedNode = null;
         actualizarPanelInfo(); 
     } else { 
         if (prompt("Contraseña MÁSTER:") === atob('Y2FuZXk=')) { 
             estadoMapa.esAdmin = true; 
             document.getElementById('btn-ordenar').classList.remove('oculto');
+            
+            // ENCIENDE EL EDITOR
+            document.getElementById('btn-editar-mapa').classList.remove('oculto'); 
+            
             alert("Modo OP Activado.\n- TOCA un nodo para fijar su menú.\n- Usa 'Auto-Ordenar' para organizar el mapa.");
             actualizarPanelInfo(); 
         } 
