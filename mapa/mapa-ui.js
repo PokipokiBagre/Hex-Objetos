@@ -147,15 +147,12 @@ export function dibujarFrame() {
                     arrowMult = 1.5; baseHeadLen = 5;
                 }
             } else {
-                // LÓGICA DE SWITCH GLOBAL PARA ENLACES
                 if (modoVisual === 'afinidades') {
-                    // Vista Normal: Color por lógica de requisitos
                     ctx.strokeStyle = link.target.arrowColor; 
                     ctx.lineWidth = 1.5 / scaleFactor; 
                     if (ctx.strokeStyle === ESTETICA.lineaRosa) ctx.setLineDash([8 / scaleFactor, 8 / scaleFactor]);
                     else ctx.setLineDash([]); 
                 } else {
-                    // Vista Descubiertos: TODO GRIS, mismo grosor y opacidad de la vista normal
                     ctx.strokeStyle = 'rgba(150, 150, 150, 0.3)'; 
                     ctx.lineWidth = 1.5 / scaleFactor; 
                     ctx.setLineDash([]); 
@@ -174,9 +171,9 @@ export function dibujarFrame() {
         ctx.lineTo(targetX, targetY);
         ctx.fillStyle = ctx.strokeStyle;
         ctx.fill();
-    });
+    }); // <-- ESTA LLAVE FALTABA Y CAUSÓ EL PANTALLAZO NEGRO
 
- // --- HOOK DIBUJO DE EDICIÓN ---
+    // --- HOOK DIBUJO DE EDICIÓN ---
     if (window.mapaEditor && window.mapaEditor.activa) {
         // 1. Dibujar enlace temporal (flechas múltiples SOLO si hay SHIFT presionado)
         if (window.mapaEditor.tempLink) {
@@ -253,7 +250,6 @@ export function dibujarFrame() {
 
         // LÓGICA DE SWITCH GLOBAL PARA NODOS
         if (modoVisual === 'afinidades') {
-            // Busca en mapaColores, si no existe o es nuevo, crea un color gris por defecto
             colorAfinidadReal = window.mapaColores[nodo.afinidad] ? window.mapaColores[nodo.afinidad].t : '#aaaaaa';
         } else {
             // Vista Descubiertos: Violeta/Dorado pastel
@@ -387,7 +383,6 @@ export function dibujarFrame() {
                 else if (esPrecedente) ctx.fillStyle = 'rgba(212, 196, 146, 0.4)'; 
                 else ctx.fillStyle = 'rgba(100, 100, 100, 0.2)'; 
             } else if (modoVisual === 'descubiertos') {
-                // El texto combina con el nodo en modo descubiertos
                 ctx.fillStyle = colorAfinidadReal;
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? ESTETICA.lineaSaliente : '#fff';
@@ -410,7 +405,10 @@ export function actualizarPanelInfo() {
     if (!nodo) { panel.classList.add('oculto'); return; }
 
     document.getElementById('info-titulo').innerText = nodo.nombre;
-    const colorAfinidad = COLOR_AFINIDAD[nodo.afinidad] || '#888';
+    
+    // CORRECCIÓN: Leer color dinámico del objeto global
+    const colorData = window.mapaColores[nodo.afinidad];
+    const colorAfinidad = colorData ? colorData.t : '#888';
     
     if (nodo.esConocido || nodo.isHexNode) {
         document.getElementById('info-titulo').style.color = colorAfinidad;
