@@ -11,23 +11,20 @@ if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
 if (!estadoUI.hexLog) estadoUI.hexLog = {};
 
 // ============================================================================
-// 1. MOTOR DE RENDERIZADO UNIVERSAL (LA SOLUCIÓN AL TIEMPO REAL)
+// 1. MOTOR DE RENDERIZADO UNIVERSAL
 // ============================================================================
 window.sincronizarUI = () => {
-    // 1. Guardar siempre el estado localmente
     localStorage.setItem('hex_stats_v2', JSON.stringify({ stats: statsGlobal, party: estadoUI.party }));
     window.actualizarBotonSync();
 
-    // 2. Guardar la posición exacta del scroll de la ventana principal
     const scrollVentana = window.scrollY;
 
-    // 3. REPINTAR EL FONDO (La vista principal que esté activa)
     if (estadoUI.vistaActual === 'detalle') {
         const contenedor = document.getElementById('vista-detalle');
         if (contenedor && !contenedor.classList.contains('oculto')) {
             const h = contenedor.getBoundingClientRect().height;
-            contenedor.style.minHeight = h + 'px'; // Prevenir saltos visuales
-            dibujarDetalle(); // ESTO ACTUALIZA LA FICHA TRAS EL MODAL
+            contenedor.style.minHeight = h + 'px'; 
+            dibujarDetalle(); 
             requestAnimationFrame(() => contenedor.style.minHeight = '');
         }
     } else if (estadoUI.vistaActual === 'catalogo') {
@@ -42,19 +39,16 @@ window.sincronizarUI = () => {
         }
     }
 
-    // 4. REPINTAR EL MODAL OP (Si está abierto)
     const modal = document.getElementById('modal-op');
     if (modal && !modal.classList.contains('oculto')) {
         const modalBody = document.getElementById('modal-op-body');
         if (modalBody) {
-            // Guardar scroll interno del modal para que no salte al tope al hacer clic
             const scrollModal = modalBody.scrollTop; 
             modalBody.innerHTML = dibujarPanelEdicionOP();
             modalBody.scrollTop = scrollModal; 
         }
     }
 
-    // 5. Restaurar el scroll de la ventana
     window.scrollTo(0, scrollVentana);
 };
 
@@ -70,10 +64,8 @@ function recalcularVidas(p, accionMutadora) {
     const preMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); 
     const preMag = calcMagT();
 
-    // EJECUTAR EL CAMBIO (Sumar +1, -5, etc)
     accionMutadora();
 
-    // RECALCULAR DESPUÉS DEL CAMBIO
     const postFisBase = p.afinidadesBase.fisica || 0; 
     const postFis = calcFisT();
     const postMagBase = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0), 0); 
@@ -98,16 +90,18 @@ function recalcularVidas(p, accionMutadora) {
 window.recalcularBases = () => { 
     const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; 
     if(confirm(`¿Recalcular Corazones Óptimos de ${n.toUpperCase()}?`)) { 
+        const calcMagT = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0), 0);
+        
         p.baseVidaRojaMax = 10; 
         p.vidaRojaActual = calcularVidaRojaMax(p); 
-        p.baseVidaAzul = getMysticBonus(p); 
+        p.baseVidaAzul = Math.floor(calcMagT / 4); // CÁLCULO MEJORADO (Afinidad Total)
         p.vidaAzul = p.baseVidaAzul; 
+        
         window.encolarCambio(n); 
         window.sincronizarUI(); 
     } 
 };
 
-// Controladores de mutación llamados por los botones
 window.modificarBuff = (statId, c) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+c); window.encolarCambio(n); window.sincronizarUI(); };
 window.modBaseTop = (statId, c) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+c); }); window.encolarCambio(n); window.sincronizarUI(); };
 window.modBaseAfin = (statId, c) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+c)); window.encolarCambio(n); window.sincronizarUI(); };
@@ -118,6 +112,24 @@ window.modEstado = (estId, c) => { const n=estadoUI.personajeSeleccionado; const
 window.toggleEstado = (estId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estId] = !p.estados[estId]; window.encolarCambio(n); window.sincronizarUI(); };
 window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); window.sincronizarUI(); };
 
+// RESTAURADO: FUNCIÓN DE CLONACIÓN
+window.ejecutarClonacion = (tipo) => {
+    const s = document.getElementById('clon-source'); if(!s) return; const sn = s.value; if(!sn) return alert("Selecciona origen.");
+    const tn = estadoUI.personajeSeleccionado; const orig = statsGlobal[sn]; const dest = statsGlobal[tn];
+    if(!confirm(`¿Clonar de ${sn} hacia ${tn}?`)) return;
+    if (['estados','completo','stats_puros'].includes(tipo)) dest.estados = JSON.parse(JSON.stringify(orig.estados));
+    if (['efectosExtras','completo'].includes(tipo)) { dest.buffs = JSON.parse(JSON.stringify(orig.buffs)); dest.hechizosEfecto = JSON.parse(JSON.stringify(orig.hechizosEfecto||{})); }
+    if (['hex','completo','stats_puros'].includes(tipo)) dest.hex = orig.hex;
+    if (['completo','stats_puros'].includes(tipo)) { 
+        dest.vidaRojaActual = orig.vidaRojaActual; dest.baseVidaRojaMax = orig.baseVidaRojaMax; dest.vidaRojaMax = orig.vidaRojaMax;
+        dest.vidaAzul = orig.vidaAzul; dest.baseVidaAzul = orig.baseVidaAzul; dest.guardaDorada = orig.guardaDorada; dest.baseGuardaDorada = orig.baseGuardaDorada;
+        dest.afinidadesBase = JSON.parse(JSON.stringify(orig.afinidadesBase)); dest.afinidades = JSON.parse(JSON.stringify(orig.afinidades));
+        dest.vex = orig.vex; if(tipo==='completo') dest.iconoOverride = orig.iconoOverride || sn;
+    }
+    window.encolarCambio(tn); 
+    window.sincronizarUI(); 
+    s.value = ""; 
+};
 
 // ============================================================================
 // 3. SISTEMA DE HEX Y PARTY 
@@ -223,7 +235,7 @@ window.abrirModalOP = () => {
         const content = document.getElementById('hex-modal-content');
         content.style.left = ''; content.style.top = '';
         content.style.position = 'relative'; content.style.transform = 'none';
-        window.sincronizarUI(); // Pinta el interior al abrir
+        window.sincronizarUI(); 
     }
 };
 
