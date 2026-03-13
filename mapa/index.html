@@ -14,7 +14,10 @@
             <h2 style="margin:0; color:var(--gold); text-shadow:0 0 10px rgba(212,175,55,0.5);">MAPA DE HECHIZOS</h2>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button id="btn-ordenar" class="btn-action oculto" style="background:#003366; border-color:#00ffff;" onclick="window.ordenarMapaYifanHu()">🌀 Auto-Ordenar</button>
-                <button id="btn-save-map" class="btn-action oculto" onclick="window.guardarCambiosMapa()">💾 Guardar Cambios</button>
+                <button id="btn-save-map" class="btn-action oculto" onclick="window.guardarCambiosMapa()">💾 Guardar Movimientos</button>
+                
+                <button id="btn-editar-mapa" class="btn-action oculto" style="background:#4a004a; border-color:#ff00ff;" onclick="window.toggleModoEdicion()">✏️ Editor Estructural</button>
+                
                 <button onclick="window.abrirMenuOP()" style="background:#2e004f; color:var(--gold); border:1px dashed var(--gold); padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold; font-family:'Cinzel';">⚙️ Acceso OP</button>
                 
                 <div class="view-controls">
@@ -55,6 +58,10 @@
 
             <div id="info-op"></div>
         </div>
+        
+        <div id="panel-edicion-avanzada" class="sidebar oculto" style="right: 0; left: auto; width: 350px; pointer-events: auto; background: rgba(15,0,30,0.95); border-left: 2px solid var(--gold); overflow-y: auto;">
+            </div>
+
     </div>
 
     <canvas id="mapa-canvas"></canvas>
@@ -67,5 +74,5 @@
     </div>
 
     <script type="module" src="mapa-main.js"></script>
-</body>
+    <script type="module" src="mapa-edicion.js"></script> </body>
 </html>
