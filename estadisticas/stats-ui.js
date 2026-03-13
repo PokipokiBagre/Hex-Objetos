@@ -342,14 +342,60 @@ export function dibujarDetalle() {
     contenedor.innerHTML = html;
 }
 
+function genCard(f, tipoAccion) {
+    let btns = ''; let clickMod = '';
+    if (tipoAccion === 'buff') clickMod = 'window.modificarBuff'; 
+    else if (tipoAccion === 'baseTop') clickMod = 'window.modBaseTop'; 
+    else if (tipoAccion === 'baseAfin') clickMod = 'window.modBaseAfin'; 
+    else if (tipoAccion === 'spellEffTop') clickMod = 'window.modSpellEffTop'; 
+    else if (tipoAccion === 'spellEffAfin') clickMod = 'window.modSpellEffAfin'; 
+    else if (tipoAccion === 'form') clickMod = 'window.modForm';
+
+    const visualVal = f.val !== undefined ? f.val : 0;
+    const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
+    const attrInput = tipoAccion === 'form' ? `oninput="window.updateCreationAfinitySum()"` : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
+    const paramId = tipoAccion === 'form' ? inputId : f.id;
+    
+    // RESTAURADO EL INPUT EN TODAS LAS CARDS
+    let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
+
+    if (f.esHex) {
+        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 10)">+10</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -10)">-10</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 50)">+50</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -50)">-50</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00; border-color:#00ff00;" onclick="${clickMod}('${paramId}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -100)">-100</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#ff00ff;" onclick="${clickMod}('${paramId}', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -500)">-500</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#ff00ff;" onclick="${clickMod}('${paramId}', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -1000)">-1000</button></div>`;
+    } else {
+        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 1)">+1</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -1)">-1</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus5" onclick="${clickMod}('${paramId}', 5)">+5</button><button type="button" class="btn-minus5" onclick="${clickMod}('${paramId}', -5)">-5</button></div>
+                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', 10)">+10</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', -10)">-10</button></div>`;
+    }
+    
+    return `<div class="edit-card"><h4>${f.label}</h4>${inputHtml}${btns}</div>`;
+}
+
 export function dibujarPanelEdicionOP() {
     const nombre = estadoUI.personajeSeleccionado; const p = statsGlobal[nombre];
     if(!p) return ``;
     
-    const pVidaDanoBase = [ { id: 'baseVidaAzul', label: 'C. Azules (BASE)', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada (BASE)', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo (BASE)', val: p.baseDanoRojo }, { id: 'danoAzul', label: 'Daño Azul (BASE)', val: p.baseDanoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (BASE)', val: p.baseElimDorada } ];
+    // RESTAURADOS: Todos ahora pasan por la función generadora `genCard` para que TENGAN LA CASILLA <input>
+    const pVidaBase = [ 
+        { id: 'vidaRojaMax', label: 'Límite Rojo (BASE)', val: p.baseVidaRojaMax }, 
+        { id: 'vidaAzul', label: 'C. Azules (BASE)', val: p.baseVidaAzul }, 
+        { id: 'guardaDorada', label: 'Guarda Dorada (BASE)', val: p.baseGuardaDorada } 
+    ];
+    const pVidaExt = [ 
+        { id: 'vidaRojaMaxExtra', label: 'Límite Rojo <span style="color:#00ff00">(EXT)</span>', val: p.buffs.vidaRojaMaxExtra }, 
+        { id: 'vidaAzulExtra', label: 'C. Azules <span style="color:#00ff00">(EXT)</span>', val: p.buffs.vidaAzulExtra }, 
+        { id: 'guardaDoradaExtra', label: 'G. Dorada <span style="color:#00ff00">(EXT)</span>', val: p.buffs.guardaDoradaExtra } 
+    ];
+
+    const pDanoBase = [ { id: 'danoRojo', label: 'Daño Rojo (BASE)', val: p.baseDanoRojo }, { id: 'danoAzul', label: 'Daño Azul (BASE)', val: p.baseDanoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (BASE)', val: p.baseElimDorada } ];
+    
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física (BASE)', val: p.afinidadesBase.fisica }, { id: 'energetica', label: 'Energética (BASE)', val: p.afinidadesBase.energetica }, { id: 'espiritual', label: 'Espiritual (BASE)', val: p.afinidadesBase.espiritual }, { id: 'mando', label: 'Mando (BASE)', val: p.afinidadesBase.mando }, { id: 'psiquica', label: 'Psíquica (BASE)', val: p.afinidadesBase.psiquica }, { id: 'oscura', label: 'Oscura (BASE)', val: p.afinidadesBase.oscura } ];
 
     const pAfinidadesSpellEff = [ { id: 'fisica', label: 'Física (ALT)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (ALT)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (ALT)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (ALT)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (ALT)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (ALT)', val: p.hechizosEfecto.oscura }, { id: 'danoRojo', label: 'Daño Rojo (ALT)', val: p.hechizosEfecto.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (ALT)', val: p.hechizosEfecto.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (ALT)', val: p.hechizosEfecto.elimDorada } ];
+    
     const pBuffs = [ { id: 'fisica', label: 'Física (EXT)', val: p.buffs.fisica }, { id: 'energetica', label: 'Energética (EXT)', val: p.buffs.energetica }, { id: 'espiritual', label: 'Espiritual (EXT)', val: p.buffs.espiritual }, { id: 'mando', label: 'Mando (EXT)', val: p.buffs.mando }, { id: 'psiquica', label: 'Psíquica (EXT)', val: p.buffs.psiquica }, { id: 'oscura', label: 'Oscura (EXT)', val: p.buffs.oscura }, { id: 'danoRojo', label: 'Daño Rojo (EXT)', val: p.buffs.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (EXT)', val: p.buffs.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (EXT)', val: p.buffs.elimDorada } ];
 
     let html = `
@@ -382,41 +428,13 @@ export function dibujarPanelEdicionOP() {
 
         <h3 style="color:#fff; border-bottom:1px dashed #ff4444; padding-bottom:5px; text-align:left; margin-top:20px;">2. Límites de Vitalidad y Defensa (BASE y EXT)</h3>
         <div class="edit-grid-3">
-            <div class="edit-card">
-                <h4>Límite Rojo (BASE)</h4>
-                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('vidaRojaMax', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('vidaRojaMax', -1)">-1</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('vidaRojaMax', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('vidaRojaMax', -5)">-5</button></div>
-            </div>
-            <div class="edit-card">
-                <h4>C. Azules (BASE)</h4>
-                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('vidaAzul', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('vidaAzul', -1)">-1</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('vidaAzul', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('vidaAzul', -5)">-5</button></div>
-            </div>
-            <div class="edit-card">
-                <h4>Guarda Dorada (BASE)</h4>
-                <div class="btn-row"><button type="button" class="btn-plus" onclick="window.modBaseTop('guardaDorada', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modBaseTop('guardaDorada', -1)">-1</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus5" onclick="window.modBaseTop('guardaDorada', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modBaseTop('guardaDorada', -5)">-5</button></div>
-            </div>
-            <div class="edit-card">
-                <h4>Límite Rojo <span style="color:#00ff00">(EXT)</span></h4>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaRojaMaxExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaRojaMaxExtra', -1)">-1</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaRojaMaxExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaRojaMaxExtra', -5)">-5</button></div>
-            </div>
-            <div class="edit-card">
-                <h4>C. Azules <span style="color:#00ff00">(EXT)</span></h4>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('vidaAzulExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('vidaAzulExtra', -1)">-1</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('vidaAzulExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('vidaAzulExtra', -5)">-5</button></div>
-            </div>
-            <div class="edit-card">
-                <h4>G. Dorada <span style="color:#00ff00">(EXT)</span></h4>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#330066;" onclick="window.modificarBuff('guardaDoradaExtra', 1)">+1</button><button type="button" class="btn-minus" onclick="window.modificarBuff('guardaDoradaExtra', -1)">-1</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus5" style="background:#004a4a;" onclick="window.modificarBuff('guardaDoradaExtra', 5)">+5</button><button type="button" class="btn-minus5" onclick="window.modificarBuff('guardaDoradaExtra', -5)">-5</button></div>
-            </div>
+            ${pVidaBase.map(f => genCard(f, 'baseTop')).join('')}
+            ${pVidaExt.map(f => genCard(f, 'buff')).join('')}
         </div>
 
         <h3 style="color:#fff; border-bottom:1px dashed var(--gold); padding-bottom:5px; text-align:left; margin-top:30px;">3. Afinidades y Atributos BASE (Permanentes)</h3>
         <div class="edit-grid-3">
-            ${pVidaDanoBase.filter(f => !f.id.includes('Vida') && !f.id.includes('Guarda')).map(f => genCard(f, 'baseAfin')).join('')}
+            ${pDanoBase.map(f => genCard(f, 'baseTop')).join('')}
             ${pAfinidadesBase.map(f => genCard(f, 'baseAfin')).join('')}
         </div>
 
@@ -577,37 +595,6 @@ export function dibujarHexOP() {
     return html;
 }
 
-function genCard(f, tipoAccion) {
-    let btns = ''; let clickMod = '';
-    if (tipoAccion === 'buff') clickMod = 'window.modificarBuff'; 
-    else if (tipoAccion === 'baseTop') clickMod = 'window.modBaseTop'; 
-    else if (tipoAccion === 'baseAfin') clickMod = 'window.modBaseAfin'; 
-    else if (tipoAccion === 'spellEffTop') clickMod = 'window.modSpellEffTop'; 
-    else if (tipoAccion === 'spellEffAfin') clickMod = 'window.modSpellEffAfin'; 
-    else if (tipoAccion === 'form') clickMod = 'window.modForm';
-
-    const visualVal = f.val !== undefined ? f.val : 0;
-    const inputId = tipoAccion === 'form' ? f.id : `inp-${tipoAccion}-${f.id}`;
-    const attrInput = tipoAccion === 'form' ? `oninput="window.updateCreationAfinitySum()"` : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
-    const paramId = tipoAccion === 'form' ? inputId : f.id;
-    
-    let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
-
-    if (f.esHex) {
-        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 10)">+10</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -10)">-10</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 50)">+50</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -50)">-50</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#004a00; border-color:#00ff00;" onclick="${clickMod}('${paramId}', 100)">+100</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -100)">-100</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#ff00ff;" onclick="${clickMod}('${paramId}', 500)">+500</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -500)">-500</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#ff00ff;" onclick="${clickMod}('${paramId}', 1000)">+1000</button><button type="button" class="btn-minus" style="background:#4a0000; border-color:#ff0000;" onclick="${clickMod}('${paramId}', -1000)">-1000</button></div>`;
-    } else {
-        btns = `<div class="btn-row"><button type="button" class="btn-plus" onclick="${clickMod}('${paramId}', 1)">+1</button><button type="button" class="btn-minus" onclick="${clickMod}('${paramId}', -1)">-1</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus5" onclick="${clickMod}('${paramId}', 5)">+5</button><button type="button" class="btn-minus5" onclick="${clickMod}('${paramId}', -5)">-5</button></div>
-                <div class="btn-row"><button type="button" class="btn-plus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', 10)">+10</button><button type="button" class="btn-minus" style="background:#4a004a; border-color:#8a008a;" onclick="${clickMod}('${paramId}', -10)">-10</button></div>`;
-    }
-    
-    return `<div class="edit-card"><h4>${f.label}</h4>${inputHtml}${btns}</div>`;
-}
-
 export function dibujarFormularioCrear() {
     const pEnergia = [ { id:'npc-hex', label:'HEX Inicial', val:0, esHex:true }, { id:'npc-vex', label:'VEX Inicial', val:0, esHex:true } ];
     const pVidaDano = [ { id:'npc-vra', label:'Corazones Actuales', val:10 }, { id:'npc-vrm', label:'Corazones (Límite Máx)', val:10 }, { id:'npc-va', label:'Corazones Azules', val:0 }, { id:'npc-gd', label:'Guarda Dorada', val:0 }, { id:'npc-dr', label:'Daño Rojo', val:1 }, { id:'npc-da', label:'Daño Azul', val:0 }, { id:'npc-ed', label:'Elim. Dorada', val:0 } ];
@@ -650,11 +637,3 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
-
-
-
-
-
-
-
-
