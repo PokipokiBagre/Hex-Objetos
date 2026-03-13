@@ -8,7 +8,8 @@ const editor = {
     tempLink: null,
     boxStart: null,
     boxCurrent: null,
-    hasDragged: false, // <-- NUEVO: Para saber si movimos la cámara o hicimos clic
+    hasDragged: false, 
+    isShiftPressed: false, // <-- NUEVO: Rastreador de tecla Shift
     cambiosPendientes: { nodos: {}, enlaces: [] }
 };
 
@@ -49,7 +50,8 @@ editor.setHerramienta = (herr) => {
 
 // --- INTERACCIÓN CON RATÓN AVANZADA ---
 editor.onMouseDown = (e, nodo, worldPos) => {
-    editor.hasDragged = false; // Reiniciamos el medidor de arrastre
+    editor.hasDragged = false; 
+    editor.isShiftPressed = e.shiftKey; // Detecta si Shift se está presionando
 
     if (editor.herramienta === 'enlace') {
         if (nodo) {
@@ -72,7 +74,6 @@ editor.onMouseDown = (e, nodo, worldPos) => {
                 editor.boxStart = { ...worldPos };
                 editor.boxCurrent = { ...worldPos };
             } else {
-                // YA NO LIMPIAMOS LA SELECCIÓN AQUÍ PARA PERMITIR MOVER LA CÁMARA
                 estadoMapa.interaccion.isDraggingBg = true;
             }
         }
@@ -81,7 +82,8 @@ editor.onMouseDown = (e, nodo, worldPos) => {
 };
 
 editor.onMouseMove = (e, dx, dy, worldPos) => {
-    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) editor.hasDragged = true; // Detecta si es un movimiento real
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) editor.hasDragged = true; 
+    editor.isShiftPressed = e.shiftKey; // Actualiza estado del Shift mientras mueves el ratón
 
     if (editor.tempLink) {
         editor.tempLink.endX = worldPos.x;
@@ -102,10 +104,12 @@ editor.onMouseMove = (e, dx, dy, worldPos) => {
 };
 
 editor.onMouseUp = (e, nodo) => {
+    editor.isShiftPressed = e.shiftKey;
+    
     if (editor.tempLink) {
         if (nodo && nodo !== editor.tempLink.source) {
-            // NUEVO: FLECHAS MÚLTIPLES CON SHIFT
-            if (e.shiftKey && editor.seleccionMultiple.has(editor.tempLink.source)) {
+            // NUEVO: Verifica si hay shift Y si el nodo origen es parte de un grupo
+            if (e.shiftKey && editor.seleccionMultiple.has(editor.tempLink.source) && editor.seleccionMultiple.size > 1) {
                 editor.seleccionMultiple.forEach(n => {
                     if (n !== nodo) crearEnlace(n, nodo);
                 });
@@ -125,6 +129,21 @@ editor.onMouseUp = (e, nodo) => {
                 editor.seleccionMultiple.add(n);
             }
         });
+        editor.boxStart = null;
+        editor.boxCurrent = null;
+        renderPanelEdicion();
+    } else if (estadoMapa.interaccion.isDraggingBg) {
+        if (!editor.hasDragged && !e.shiftKey) {
+            editor.seleccionMultiple.clear();
+            renderPanelEdicion();
+        }
+    }
+    
+    estadoMapa.interaccion.isDraggingBg = false;
+    estadoMapa.interaccion.draggedNode = null;
+};
+
+        
         editor.boxStart = null;
         editor.boxCurrent = null;
         renderPanelEdicion();
