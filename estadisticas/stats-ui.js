@@ -157,19 +157,14 @@ export function dibujarResumenVisual() {
             const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
             s.costo = info ? (parseInt(info.HEX) || 0) : 0;
             
-            // LÓGICA DE ENMASCARAMIENTO 
-            if (info && (!info.Conocido || String(info.Conocido).trim().toLowerCase() !== 'si')) {
-                s.isMasked = true;
-                s.displayName = info.ID || "Hechizo Sellado";
-            } else {
-                s.isMasked = false;
-                s.displayName = s.Hechizo;
-            }
+            // NUEVA LÓGICA: Mostrar nombre siempre, pero marcar si no está descubierto
+            s.isUndiscovered = (info && (!info.Conocido || String(info.Conocido).trim().toLowerCase() !== 'si'));
+            s.displayName = s.Hechizo;
         });
         const topSpells = mySpells.sort((a,b) => b.costo - a.costo).slice(0, 10);
         let spellsHtml = topSpells.map(s => {
-            if (s.isMasked) {
-                return `<span class="mini-spell-tag copy-wrap" style="color:#666; border-color:#333; font-style:italic;" title="Información Sellada" onclick="window.copySilently('${s.displayName}', event)">🔒 ${s.displayName}</span>`;
+            if (s.isUndiscovered) {
+                return `<span class="mini-spell-tag copy-wrap" style="color:var(--gold); border-color:#b8860b; font-style:italic;" title="${s.displayName} (No Descubierto - ${s.costo} HEX)" onclick="window.copySilently('${s.displayName.replace(/'/g, "\\'")}', event)">🔒 ${s.displayName}</span>`;
             } else {
                 return `<span class="mini-spell-tag copy-wrap" title="${s.displayName} (${s.costo} HEX)" onclick="window.copySilently('${s.displayName.replace(/'/g, "\\'")}', event)">${s.displayName}</span>`;
             }
@@ -273,21 +268,15 @@ export function dibujarDetalle() {
     const countMis = myMissions.length;
     const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower);
     
-    // --- SOLUCIÓN DEL CRASHEO: allNodos DEFINIDO AQUÍ ---
     const allNodos = [...(dbExtra.hechizos.nodos||[]), ...(dbExtra.hechizos.nodosOcultos||[])];
 
     mySpells.forEach(s => {
         const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
         s.costo = info ? (parseInt(info.HEX) || 0) : 0;
         
-        // LÓGICA DE ENMASCARAMIENTO
-        if (info && (!info.Conocido || String(info.Conocido).trim().toLowerCase() !== 'si')) {
-            s.isMasked = true;
-            s.displayName = info.ID || "Hechizo Sellado";
-        } else {
-            s.isMasked = false;
-            s.displayName = s.Hechizo;
-        }
+        // NUEVA LÓGICA: Mostrar nombre siempre, colorear amarillo si no está descubierto
+        s.isUndiscovered = (info && (!info.Conocido || String(info.Conocido).trim().toLowerCase() !== 'si'));
+        s.displayName = s.Hechizo;
     });
     mySpells.sort((a,b) => a.displayName.localeCompare(b.displayName));
     
@@ -424,8 +413,8 @@ export function dibujarDetalle() {
         </h3>
         <div class="spell-grid-4" style="margin-top: 20px;">
             ${mySpells.map(s => {
-                if (s.isMasked) {
-                    return `<button type="button" class="spell-button" style="background: #050505; border: 1px dashed #333; color: #666; font-style: italic; padding: 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: left; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.copySilently('${s.displayName}', event)">🔒 ${s.displayName}</button>`;
+                if (s.isUndiscovered) {
+                    return `<button type="button" class="spell-button" style="background: #1a1a00; border: 1px dashed #b8860b; color: var(--gold); font-style: italic; padding: 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: left; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onmouseover="this.style.background='#332b00'; this.style.borderColor='#ffd700';" onmouseout="this.style.background='#1a1a00'; this.style.borderColor='#b8860b';" onclick="window.copySilently('${s.displayName.replace(/'/g, "\\'")}', event)">🔒 ${s.displayName}</button>`;
                 } else {
                     return `<button type="button" class="spell-button" style="background: #0a1128; border: 1px solid #1a365d; color: #c0d6e4; padding: 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: left; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onmouseover="this.style.background='#1a365d'; this.style.borderColor='#4a90e2';" onmouseout="this.style.background='#0a1128'; this.style.borderColor='#1a365d';" onclick="window.copySilently('${s.displayName.replace(/'/g, "\\'")}', event)">🔹 ${s.displayName}</button>`;
                 }
@@ -797,4 +786,5 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
