@@ -38,7 +38,7 @@ export function calcularVexMax(p) {
     return p.vex || 0;
 }
 
-// CORRECCIÓN MATEMÁTICA: Ahora toma el TOTAL de las estadísticas mágicas, no solo la base.
+// CORRECCIÓN MATEMÁTICA: Ahora consolida el TOTAL de las estadísticas antes de calcular el bono.
 export function getMysticBonus(p) {
     if (!p) return 0;
     const t = (k) => (p.afinidadesBase?.[k]||0) + (p.hechizos?.[k]||0) + (p.hechizosEfecto?.[k]||0) + (p.buffs?.[k]||0);
