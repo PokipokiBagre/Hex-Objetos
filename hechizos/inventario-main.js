@@ -280,15 +280,76 @@ window.limpiarLogCasteo = () => {
     const t = document.getElementById('log-casteo-textarea'); 
     if(t) t.value = ''; 
 };
-
-window.onEnterJump = (e, nextId) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const nextEl = document.getElementById(nextId);
-        if (nextEl) nextEl.focus();
+// 1. EVENTO DE RUEDA DEL RATÓN PARA CANTIDAD DE HECHIZOS
+window.scrollCasteo = (e) => {
+    e.preventDefault();
+    const input = document.getElementById('cast-num');
+    if(!input) return;
+    let val = parseInt(input.value) || 3;
+    if (e.deltaY < 0) val++; // Scroll hacia arriba (Aumentar)
+    else val--;              // Scroll hacia abajo (Disminuir)
+    
+    val = Math.max(1, Math.min(50, val));
+    if(input.value != val) {
+        input.value = val;
+        window.generarFilasCasteo();
     }
 };
 
+// 2. CONTROLADOR MAESTRO DE TECLADO (FLECHAS Y TABULADOR)
+window.onGridKeydown = (e, row, col) => {
+    const num = parseInt(document.getElementById('cast-num').value) || 3;
+    
+    // A. Autocompletado con la tecla TAB (Solo en la columna 1: Hechizo)
+    if (e.key === 'Tab' && col === 1) {
+        const input = document.getElementById(`spell-${row}`);
+        const val = input.value.toLowerCase();
+        if (val) {
+            const pj = estadoUI.personajeSeleccionado;
+            const invReal = db.hechizos.inventario.filter(i => i.Personaje === pj).map(i => i.Hechizo);
+            invReal.sort((a, b) => a.localeCompare(b)); // Ordenar alfabéticamente
+            
+            const match = invReal.find(h => h.toLowerCase().startsWith(val));
+            if (match && match.toLowerCase() !== val) {
+                e.preventDefault(); // Evita el salto por defecto
+                input.value = match; // Autocompleta el nombre
+                window.actualizarAfinidadCasteo(row); // Actualiza la afinidad
+                document.getElementById(`afinidad-${row}`)?.focus(); // Salta a la derecha
+                return;
+            }
+        }
+    }
+
+    // B. Navegación con Flechas Arriba y Abajo
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault(); // Bloquea que los números sumen/resten nativamente
+        let nextRow = e.key === 'ArrowUp' ? Math.max(0, row - 1) : Math.min(num - 1, row + 1);
+        const mapCol = {0: 'dado', 1: 'spell', 2: 'afinidad'};
+        document.getElementById(`${mapCol[col]}-${nextRow}`)?.focus();
+    } 
+    // C. Navegación con Flechas Izquierda y Derecha
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const target = e.target;
+        let shouldMove = false;
+        
+        if (target.type === 'number') {
+            shouldMove = true; // Si es un número, salta inmediato
+        } else if (target.type === 'text') {
+            // Si es texto, solo salta si el cursor está en el borde de la palabra
+            if (e.key === 'ArrowLeft' && target.selectionStart === 0) shouldMove = true;
+            if (e.key === 'ArrowRight' && target.selectionEnd === target.value.length) shouldMove = true;
+        }
+
+        if (shouldMove) {
+            e.preventDefault();
+            const mapCol = {0: 'dado', 1: 'spell', 2: 'afinidad'};
+            let nextCol = e.key === 'ArrowLeft' ? Math.max(0, col - 1) : Math.min(2, col + 1);
+            document.getElementById(`${mapCol[nextCol]}-${row}`)?.focus();
+        }
+    }
+};
+
+// 3. GENERADOR DE FILAS ACTUALIZADO PARA USAR EL NUEVO CONTROLADOR
 window.generarFilasCasteo = () => {
     const contenedor = document.getElementById('casteo-filas');
     if (!contenedor) return;
@@ -314,16 +375,16 @@ window.generarFilasCasteo = () => {
                 <label style="color:var(--gold); font-size:0.8em;">DADO (1-100)</label>
                 <div style="display:flex; gap:5px;">
                     <button onclick="window.lanzarDado(${i})" class="dice-btn" title="Lanzar Dado">🎲</button>
-                    <input type="number" id="dado-${i}" class="input-casteo" placeholder="0" min="1" max="100" onkeydown="window.onEnterJump(event, 'spell-${i}')">
+                    <input type="number" id="dado-${i}" class="input-casteo" placeholder="0" min="1" max="100" onkeydown="window.onGridKeydown(event, ${i}, 0)">
                 </div>
             </div>
             <div class="casteo-input-group" style="flex: 2;">
                 <label style="color:var(--gold); font-size:0.8em;">BUSCAR HECHIZO</label>
-                <input type="text" list="spells-list-${pj}" id="spell-${i}" class="input-casteo" placeholder="Escribe o selecciona..." onchange="window.actualizarAfinidadCasteo(${i})" onkeydown="window.onEnterJump(event, 'dado-${i+1}')">
+                <input type="text" list="spells-list-${pj}" id="spell-${i}" class="input-casteo" placeholder="Escribe o selecciona..." onchange="window.actualizarAfinidadCasteo(${i})" onkeydown="window.onGridKeydown(event, ${i}, 1)">
             </div>
             <div class="casteo-input-group" style="flex: 0.8;">
                 <label style="color:var(--gold); font-size:0.8em;" id="afinidad-label-${i}">AFINIDAD</label>
-                <input type="number" id="afinidad-${i}" class="input-casteo" value="0">
+                <input type="number" id="afinidad-${i}" class="input-casteo" value="0" onkeydown="window.onGridKeydown(event, ${i}, 2)">
             </div>
             <div class="casteo-result" id="result-${i}">
                 <span style="color:#888; text-align:center; font-style:italic;">Esperando conjuro...</span>
