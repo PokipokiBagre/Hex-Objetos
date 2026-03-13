@@ -1,4 +1,4 @@
-import { statsGlobal, estadoUI, listaEstados, guardar } from './stats-state.js';
+import { statsGlobal, listaEstados, estadoUI, dbExtra } from './stats-state.js';
 import { cargarTodoDesdeCSV, procesarTextoCSV, cargarDiccionarioEstados } from './stats-data.js';
 import { dibujarCatalogo, dibujarResumenVisual, dibujarDetalle, dibujarMenuOP, dibujarHexOP, dibujarFormularioCrear, dibujarPanelEdicionOP } from './stats-ui.js';
 import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMysticBonus } from './stats-logic.js';
@@ -190,33 +190,43 @@ window.cerrarModalOP = () => {
 function repintarConScroll(vista) {
     const scrollY = window.scrollY; 
     
+    // 1. SIEMPRE actualizar el Modal si está abierto (sin cerrarlo)
+    const modal = document.getElementById('modal-op');
     const modalBody = document.getElementById('modal-op-body');
-    if (!document.getElementById('modal-op').classList.contains('oculto') && modalBody) {
+    if (modal && !modal.classList.contains('oculto') && modalBody) {
         const modalScrollTop = modalBody.scrollTop;
         modalBody.innerHTML = dibujarPanelEdicionOP();
         requestAnimationFrame(() => modalBody.scrollTop = modalScrollTop);
     }
 
+    // 2. Actualizar la vista principal correspondiente
     const containerId = vista === 'detalle' ? 'vista-detalle' : 'sub-vista-op'; 
     const container = document.getElementById(containerId);
     
     if (container) {
         const h = container.getBoundingClientRect().height; container.style.minHeight = h + 'px';
-        if (vista === 'detalle') dibujarDetalle(); 
-        else {
+        if (vista === 'detalle') {
+            dibujarDetalle(); 
+        } else {
             if (estadoUI.vistaActual === 'hex') container.innerHTML = dibujarHexOP();
             else if (estadoUI.vistaActual === 'crear') container.innerHTML = dibujarFormularioCrear();
         }
         if (estadoUI.vistaActual === 'hex') updateHexLogText();
-        window.scrollTo(0, scrollY); requestAnimationFrame(() => container.style.minHeight = '');
+        
+        window.scrollTo(0, scrollY); 
+        requestAnimationFrame(() => container.style.minHeight = '');
     } else {
-        refrescarVistas(); window.scrollTo(0, scrollY);
+        // Fallback seguro: refrescar todo si algo raro pasa (pero no cerrando el modal intencionalmente)
+        refrescarVistas(false); // Pasamos flag para NO cerrar el modal
+        window.scrollTo(0, scrollY);
     }
 }
 
-function refrescarVistas() {
+// Se modificó para recibir un flag que evite cerrar el modal accidentalmente
+function refrescarVistas(cerrarModal = true) {
     ['vista-catalogo', 'vista-resumen', 'vista-detalle', 'vista-op'].forEach(id => document.getElementById(id).classList.add('oculto'));
-    window.cerrarModalOP(); 
+    
+    if (cerrarModal) window.cerrarModalOP(); 
 
     if (estadoUI.vistaActual === 'catalogo') { document.getElementById('vista-catalogo').classList.remove('oculto'); dibujarCatalogo(); }
     else if (estadoUI.vistaActual === 'resumen') { document.getElementById('vista-resumen').classList.remove('oculto'); dibujarResumenVisual(); }
@@ -325,7 +335,20 @@ function recalcularVidas(p, accion) {
     const fMax = calcularVidaRojaMax(p); if (p.vidaRojaActual > fMax) p.vidaRojaActual = fMax;
 }
 
-window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { p.baseVidaRojaMax = 10; p.vidaRojaActual = calcularVidaRojaMax(p); p.baseVidaAzul = getMysticBonus(p); p.vidaAzul = p.baseVidaAzul; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); } };
+window.recalcularBases = () => { 
+    const n = estadoUI.personajeSeleccionado; 
+    const p = statsGlobal[n]; 
+    if(!p) return; 
+    if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { 
+        p.baseVidaRojaMax = 10; 
+        p.vidaRojaActual = calcularVidaRojaMax(p); 
+        p.baseVidaAzul = getMysticBonus(p); // Ahora traerá el total correcto
+        p.vidaAzul = p.baseVidaAzul; 
+        window.encolarCambio(n); 
+        guardar(); 
+        repintarConScroll('detalle'); 
+    } 
+};
 
 window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
 window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
@@ -408,11 +431,9 @@ async function iniciar() {
             setTimeout(() => loader.classList.add('oculto'), 500); 
         }
 
-        // --- NUEVA LÓGICA DE LECTURA DE URL PARA ABRIR FICHA DIRECTAMENTE ---
         const urlParams = new URLSearchParams(window.location.search);
         const pjQuery = urlParams.get('pj');
         
-        // Limpiamos el hash por si viene con "#detalle-linda" o "#inventario-linda"
         let hashQuery = window.location.hash.replace('#detalle-', '').replace('#inventario-', '');
         if (hashQuery) hashQuery = decodeURIComponent(hashQuery).replace(/_/g, ' ');
 
@@ -425,12 +446,10 @@ async function iniciar() {
                 estadoUI.vistaActual = 'detalle';
             }
         }
-        // ----------------------------------------------------------------------
-
     } 
     catch (error) { console.error("Error crítico:", error); } 
     finally { 
-        refrescarVistas(); 
+        refrescarVistas(true); // Inicialización normal, cerrando modales por defecto
         if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
