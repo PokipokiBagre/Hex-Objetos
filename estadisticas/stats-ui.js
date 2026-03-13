@@ -356,7 +356,6 @@ function genCard(f, tipoAccion) {
     const attrInput = tipoAccion === 'form' ? `oninput="window.updateCreationAfinitySum()"` : `onchange="window.cambioManual('${f.id}', this.value, '${tipoAccion}')"`;
     const paramId = tipoAccion === 'form' ? inputId : f.id;
     
-    // RESTAURADO EL INPUT EN TODAS LAS CARDS
     let inputHtml = `<input type="number" id="${inputId}" value="${visualVal}" ${attrInput} style="width:80%; text-align:center; background:#000; color:white; border:1px dashed var(--gold); margin-bottom:10px; font-size:1.5em; padding:5px; box-sizing:border-box;">`;
 
     if (f.esHex) {
@@ -378,14 +377,14 @@ export function dibujarPanelEdicionOP() {
     const nombre = estadoUI.personajeSeleccionado; const p = statsGlobal[nombre];
     if(!p) return ``;
     
-    // RESTAURADOS: Todos ahora pasan por la función generadora `genCard` para que TENGAN LA CASILLA <input>
+    // RESTAURADO EL SISTEMA GEN_CARD EN LA SECCION 2 PARA QUE MUESTREN LOS NÚMEROS E INPUTS
     const pVidaBase = [ 
         { id: 'vidaRojaMax', label: 'Límite Rojo (BASE)', val: p.baseVidaRojaMax }, 
         { id: 'vidaAzul', label: 'C. Azules (BASE)', val: p.baseVidaAzul }, 
         { id: 'guardaDorada', label: 'Guarda Dorada (BASE)', val: p.baseGuardaDorada } 
     ];
     const pVidaExt = [ 
-        { id: 'vidaRojaMaxExtra', label: 'Límite Rojo <span style="color:#00ff00">(EXT)</span>', val: p.buffs.vidaRojaMaxExtra }, 
+        { id: 'vidaRojaMaxExtra', label: 'Lím. Rojo <span style="color:#00ff00">(EXT)</span>', val: p.buffs.vidaRojaMaxExtra }, 
         { id: 'vidaAzulExtra', label: 'C. Azules <span style="color:#00ff00">(EXT)</span>', val: p.buffs.vidaAzulExtra }, 
         { id: 'guardaDoradaExtra', label: 'G. Dorada <span style="color:#00ff00">(EXT)</span>', val: p.buffs.guardaDoradaExtra } 
     ];
