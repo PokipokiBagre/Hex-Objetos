@@ -245,6 +245,9 @@ export function dibujarGrimorioGrid() {
 
         const tituloReal = (info.Nombre && info.Nombre.trim() !== '') ? info.Nombre : item.Hechizo;
         const titulo = isHidden ? (info.ID || item.Hechizo) : tituloReal;
+        
+        // NUEVO: Agregado el ID del hechizo para que se vea siempre
+        const subTitulo = info.ID ? `<span style="display:block; color:#888; font-size:0.7em; font-style:italic; margin-bottom:10px; text-transform:uppercase;">ID: ${info.ID}</span>` : '';
 
         const res = isHidden ? '<i style="color:#ff4444;">Información Sellada (Hechizo no descubierto).</i>' : getValInfo(info, ['resumen', 'Resumen']);
         const efe = isHidden ? '' : getValInfo(info, ['efecto', 'Efecto']);
@@ -253,7 +256,8 @@ export function dibujarGrimorioGrid() {
         const btnVis = (estadoUI.esAdmin && info.Nombre) ? `<button onclick="window.toggleVisibilidad('${info.ID}', '${safeStr(info.Nombre)}', '${isKnown ? 'no' : 'si'}')" class="btn-nav" style="background:#111; color:#aaa; border-color:#555; width:100%; margin-top:10px; font-size:0.8em; padding:5px;">${isKnown ? '👁️ Ocultar Hechizo Globalmente' : '🙈 Hacer Público'}</button>` : '';
 
         html += `<div class="spell-card" style="border-top-color: ${col.b};">
-                    <h3 style="color:${isHidden ? '#666' : col.t}">${titulo}</h3>
+                    <h3 style="color:${isHidden ? '#666' : col.t}; margin-bottom:2px;">${titulo}</h3>
+                    ${subTitulo}
                     <div class="spell-tags">
                         <span class="spell-tag tag-hex">HEX: ${item["Hechizo Hex"] || info.HEX || 0}</span>
                         <span class="spell-tag" style="border-color:${col.b}; color:${col.t};">${item["Hechizo Afinidad"] || info.Afinidad}</span>
