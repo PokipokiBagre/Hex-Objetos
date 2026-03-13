@@ -491,67 +491,128 @@ export function dibujarTransferencia() {
     drawnHEXPreserveFocus('panel-transferencia', html);
 }
 
+// ============================================================================
+// FUNCIONES DE CREACIÓN (FORJAS)
+// ============================================================================
+
+// Función Auxiliar: Lee la base de datos y crea listas dinámicas de sugerencias
+function generarDatalistsDinamicos() {
+    // Valores base obligatorios
+    const tipos = new Set(['Consumible', 'Herramienta', 'Accesorio', 'Equipo']);
+    const mats = new Set(['Cristal', 'Metal', 'Orgánico', 'Sagrado']);
+    const rars = new Set(['Común', 'Raro', 'Legendario']);
+
+    // Añade cualquier tipo nuevo que hayas inventado en el pasado
+    Object.values(objGlobal).forEach(obj => {
+        if (obj.tipo && obj.tipo !== '-') tipos.add(obj.tipo.trim());
+        if (obj.mat && obj.mat !== '-') mats.add(obj.mat.trim());
+        if (obj.rar && obj.rar !== '-') rars.add(obj.rar.trim());
+    });
+
+    return `
+        <datalist id="dl-tipos">${[...tipos].sort().map(t => `<option value="${t}">`).join('')}</datalist>
+        <datalist id="dl-mats">${[...mats].sort().map(m => `<option value="${m}">`).join('')}</datalist>
+        <datalist id="dl-rars">${[...rars].sort().map(r => `<option value="${r}">`).join('')}</datalist>
+    `;
+}
+
 // CREACIÓN INDIVIDUAL
 export function dibujarCreacionObjeto() {
-    let html = `<h2>Creación Rápida (1 Objeto)</h2>
+    let html = `
+    ${generarDatalistsDinamicos()}
+    <h2>Creación Rápida (1 Objeto)</h2>
     <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
         <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateCreationLog()" style="width:95%">
+        
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-            <select id="new-obj-tipo" class="search-bar" style="width:100%"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
-            <select id="new-obj-mat" class="search-bar" style="width:100%"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
+            <input type="text" id="new-obj-tipo" list="dl-tipos" class="search-bar" style="width:100%" placeholder="Tipo (Ej: Consumible)" value="Consumible">
+            <input type="text" id="new-obj-mat" list="dl-mats" class="search-bar" style="width:100%" placeholder="Material (Ej: Metal)" value="Metal">
         </div>
+        
         <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
-        <select id="new-obj-rar" class="search-bar" style="width:95%; margin-top:10px;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
-        <h3 style="margin-top:20px; font-size:1em;">Entregar a (Opcional)</h3>
+        
+        <input type="text" id="new-obj-rar" list="dl-rars" class="search-bar" style="width:95%; margin-top:10px;" placeholder="Rareza (Ej: Común)" value="Común">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:25px; margin-bottom:10px; border-bottom:1px solid #444; padding-bottom:10px;">
+            <h3 style="margin:0; font-size:1em; color:var(--gold);">Entregar a (Opcional)</h3>
+            <button onclick="window.toggleMostrarNPCs()" style="background:#222; color:#fff; border:1px solid var(--gold); border-radius:4px; padding:5px 10px; font-size:0.85em; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#333'" onmouseout="this.style.background='#222'">
+                ${estadoUI.mostrarNPCsCrea ? '👁️ Ocultar NPCs' : '🎭 Mostrar NPCs'}
+            </button>
+        </div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
+    
     Object.keys(invGlobal).sort().forEach(j => {
-        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px;"><label>${j}:</label><input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()"></div>`;
+        const p = statsGlobal[j];
+        if (!estadoUI.mostrarNPCsCrea && (!p || !p.isPlayer)) return;
+
+        html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px; display:flex; justify-content:space-between; align-items:center;">
+                    <label style="color:${(p && p.isPlayer) ? 'white' : '#aaa'};">${j}:</label>
+                    <input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()" style="width:60px; background:#000; color:white; border:1px solid #555; text-align:center;">
+                 </div>`;
     });
+    
     html += `</div>
         <div style="margin-top:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;"></textarea>
-            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button>
+            <textarea id="copy-log-crea" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px; resize:none;"></textarea>
+            <button onclick="window.copyToClipboard('copy-log-crea')" style="width:100%; background:#d4af37; color:#120024; font-weight:bold; cursor:pointer;">COPIAR REGISTRO</button>
         </div>
-        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold;">FORJAR Y REPARTIR</button>
-        <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
+        <button onclick="window.ejecutarAgregarObjeto()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold; padding:12px; cursor:pointer;">FORJAR Y REPARTIR</button>
+        <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444; padding:12px; cursor:pointer;">CANCELAR</button>
     </div>`;
     drawnHEXPreserveFocus('panel-creacion', html);
 }
 
-// CREACIÓN MÚLTIPLE (5 OBJETOS)
+// CREACIÓN MÚLTIPLE (6 OBJETOS EN 3 COLUMNAS)
 export function dibujarCreacionMulti() {
-    let html = `<h2>Forja Múltiple (5 Objetos)</h2>
-    <div class="container-hex" style="max-width:800px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
+    let html = `
+    ${generarDatalistsDinamicos()}
+    <h2>Forja Múltiple (6 Objetos)</h2>
+    <div class="container-hex" style="max-width:1100px; background:rgba(15,0,30,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
         
-        <h3 style="margin-top:0; font-size:1.1em; color:var(--gold);">Destinatario del Loot (Opcional)</h3>
-        <select id="multi-player-dest" class="search-bar" style="width:100%; margin-bottom:20px;">
+        <h3 style="margin:0; font-size:1.1em; color:var(--gold);">Destinatario del Loot Completo (Opcional)</h3>
+        <select id="multi-player-dest" class="search-bar" onchange="window.updateCreationMultiLog()" style="width:100%; max-width:400px; margin-bottom:20px;">
             <option value="">-- Nadie (Solo Crear en Catálogo) --</option>
             ${Object.keys(invGlobal).sort().map(j => `<option value="${j}">${j}</option>`).join('')}
         </select>
         
-        <div id="multi-creation-container">`;
+        <div id="multi-creation-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">`;
     
-    for(let i=1; i<=5; i++) {
+    for(let i=1; i<=6; i++) {
         html += `
-        <div style="border: 1px dashed #555; padding: 15px; border-radius: 8px; margin-bottom: 15px; background:#0a0014;">
+        <div style="border: 1px dashed #555; padding: 15px; border-radius: 8px; background:#0a0014; display:flex; flex-direction:column; justify-content:space-between;">
             <h4 style="margin:0 0 10px 0; color:var(--cyan-magic); text-align:left;">Objeto ${i}</h4>
-            <input type="text" id="new-obj-name-${i}" class="search-bar" placeholder="Nombre del Objeto..." style="width:95%; margin-bottom:10px;">
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 100px; gap:10px; margin-bottom:10px;">
-                <select id="new-obj-tipo-${i}" class="search-bar" style="margin:0; width:100%;"><option>Consumible</option><option>Herramienta</option><option>Accesorio</option><option>Equipo</option></select>
-                <select id="new-obj-mat-${i}" class="search-bar" style="margin:0; width:100%;"><option>Cristal</option><option>Metal</option><option>Orgánico</option><option>Sagrado</option></select>
-                <select id="new-obj-rar-${i}" class="search-bar" style="margin:0; width:100%;"><option>Común</option><option>Raro</option><option>Legendario</option></select>
-                <input type="number" id="new-obj-cant-${i}" class="search-bar" value="1" min="1" title="Cantidad a Entregar" style="margin:0; width:100%;">
+            <input type="text" id="new-obj-name-${i}" class="search-bar" placeholder="Nombre del Objeto..." oninput="window.updateCreationMultiLog()" style="width:95%; margin-bottom:10px;">
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;">
+                <input type="text" id="new-obj-tipo-${i}" list="dl-tipos" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Tipo..." value="Consumible">
+                <input type="text" id="new-obj-mat-${i}" list="dl-mats" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Material..." value="Cristal">
             </div>
-            <textarea id="new-obj-eff-${i}" class="search-bar" placeholder="Efecto o Descripción..." style="width:95%; height:45px; margin:0;"></textarea>
+            
+            <div style="display:grid; grid-template-columns: 1fr 80px; gap:5px; margin-bottom:10px;">
+                <input type="text" id="new-obj-rar-${i}" list="dl-rars" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Rareza..." value="Común">
+                <input type="number" id="new-obj-cant-${i}" class="search-bar" value="1" min="1" title="Cantidad" oninput="window.updateCreationMultiLog()" style="margin:0; width:100%; text-align:center;">
+            </div>
+            
+            <textarea id="new-obj-eff-${i}" class="search-bar" placeholder="Efecto o Descripción..." oninput="window.updateCreationMultiLog()" style="width:95%; height:50px; margin:0; resize:none;"></textarea>
         </div>`;
     }
 
     html += `</div>
-        <button onclick="window.ejecutarAgregarMulti()" style="width:100%; margin-top:20px; background:#006400; font-weight:bold; font-size:1.2em; padding:15px;">🔨 FORJAR MASIVAMENTE 🔨</button>
-        <button onclick="window.mostrarPagina('op-menu')" style="width:100%; margin-top:10px; background:#444;">CANCELAR</button>
+        
+        <div style="margin-top:25px; background:#1a0033; padding:15px; border:1px dashed #d4af37; border-radius:8px;">
+            <h4 style="color:var(--gold); margin:0 0 10px 0; text-align:left;">Log de Forja Masiva</h4>
+            <textarea id="copy-log-crea-multi" class="search-bar" readonly style="width:95%; height:100px; font-size:0.85em; margin-bottom:10px; resize:none; background:#000; color:#fff;"></textarea>
+            <button onclick="window.copyToClipboard('copy-log-crea-multi')" style="width:100%; max-width:400px; background:#d4af37; color:#120024; font-weight:bold; cursor:pointer; padding:10px; border-radius:4px; border:none;">COPIAR REGISTRO MASIVO</button>
+        </div>
+
+        <div style="display:flex; gap:15px; margin-top:25px; justify-content:center;">
+            <button onclick="window.ejecutarAgregarMulti()" style="flex:2; max-width:400px; background:linear-gradient(135deg, #004a00 0%, #006600 100%); color:white; font-weight:bold; font-size:1.2em; padding:15px; border-radius:8px; cursor:pointer; border:none;">🔨 FORJAR MASIVAMENTE 🔨</button>
+            <button onclick="window.mostrarPagina('op-menu')" style="flex:1; max-width:200px; background:#444; color:white; font-weight:bold; font-size:1.1em; padding:15px; border-radius:8px; cursor:pointer; border:none;">CANCELAR</button>
+        </div>
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
+
 
 
 
