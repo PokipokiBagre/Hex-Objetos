@@ -21,6 +21,7 @@ export function calcularVidaRojaMax(p) {
     const efectos = p.hechizosEfecto?.vidaRojaMaxExtra || 0;
     const buffs = p.buffs?.vidaRojaMaxExtra || 0;
     
+    // Cálculo Dinámico (Física Total / 2 - Física Base / 2)
     const fisBase = p.afinidadesBase?.fisica || 0;
     const fisTotal = fisBase + (p.hechizos?.fisica || 0) + (p.hechizosEfecto?.fisica || 0) + (p.buffs?.fisica || 0);
     const bonusFisica = Math.floor(fisTotal / 2) - Math.floor(fisBase / 2);
@@ -37,7 +38,7 @@ export function calcularVexMax(p) {
     return p.vex || 0;
 }
 
-// CORRECCIÓN MATEMÁTICA: Ahora consolida el TOTAL de las estadísticas mágicas antes de dividir por 4
+// CORRECCIÓN MATEMÁTICA: Ahora toma el TOTAL ABSOLUTO de todas las estadísticas mágicas
 export function getMysticBonus(p) {
     if (!p) return 0;
     const t = (k) => (p.afinidadesBase?.[k]||0) + (p.hechizos?.[k]||0) + (p.hechizosEfecto?.[k]||0) + (p.buffs?.[k]||0);
