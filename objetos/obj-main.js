@@ -1,4 +1,4 @@
-import { invGlobal, objGlobal, historial, estadoUI, guardar } from './obj-state.js';
+import { invGlobal, objGlobal, statsGlobal, historial, estadoUI, guardar } from './obj-state.js';
 import { cargarTodoDesdeCSV, sincronizarObjetosBD } from './obj-data.js';
 import { modificar, modificarMulti, transferir, descargarLogExcel, descargarEstadoExcel, agregarObjetoManual, agregarObjetosMulti } from './obj-logic.js';
 import { refrescarUI, dibujarMenuOP, dibujarInventarios, dibujarCatalogo, dibujarControl, dibujarCreacionObjeto, dibujarCreacionMulti, dibujarGrillaPersonajes, dibujarPartyLoot, dibujarTransferencia, dibujarResumenVisual } from './obj-ui.js';
@@ -48,6 +48,8 @@ window.descargarInventariosJPG = async () => {
 async function iniciar() {
     if (performance.getEntriesByType("navigation")[0]?.type === "reload") { localStorage.removeItem('hex_obj_v4'); }
     const cache = localStorage.getItem('hex_obj_v4');
+    const loader = document.getElementById('loader');
+
     if (!cache) { 
         await cargarTodoDesdeCSV(); 
     } else { 
@@ -55,6 +57,9 @@ async function iniciar() {
         Object.assign(invGlobal, p.inv); Object.assign(objGlobal, p.obj); historial.push(...(p.his || [])); 
         if(p.modoSync !== undefined) estadoUI.modoSincronizado = p.modoSync;
         if(p.colaCambios) estadoUI.colaCambios = p.colaCambios;
+        
+        // El await que faltaba para cargar stats/identidades
+        await cargarTodoDesdeCSV(); 
     }
     
     estadoUI.cambiosSesion = {};
@@ -101,7 +106,7 @@ async function iniciar() {
     window.limpiarLog = () => { estadoUI.cambiosSesion = {}; estadoUI.logCopy = ""; refrescarUI(); };
     window.copyToClipboard = (id) => { const area = document.getElementById(id); area.select(); document.execCommand('copy'); };
     
-    // Al cambiar la página se RECONGELA el orden de todo (para que no salten al editarlos)
+    // Al cambiar la página se RECONGELA el orden de todo
     window.mostrarPagina = (id) => { 
         estadoUI.vistaActual = id;
         estadoUI.resetCacheOrder = true; 
@@ -117,14 +122,12 @@ async function iniciar() {
     const _session = 'Y2FuZXk=';
     window.ejecutarSyncLog = () => { 
         if (estadoUI.esAdmin) { 
-            // Si ya era OP y le da al botón, abre el panel general
             window.mostrarPagina('op-menu'); 
             return; 
         } 
         const i = prompt("Acceso Restringido OP:"); 
         if (i === atob(_session)) { 
             estadoUI.esAdmin = true; 
-            // No cambia de página, solo refresca para inyectar los botones de edición
             refrescarUI(); 
         } 
     };
@@ -141,6 +144,7 @@ async function iniciar() {
         modificar(j, o, c, () => { refrescarUI(); window.actualizarBotonSyncObj(); });
     };
 
+    // CONTROLES DE PARTY LOOT
     window.togglePartyLoot = (player, isChecked) => {
         if (isChecked && !estadoUI.partyLoot.includes(player)) estadoUI.partyLoot.push(player);
         if (!isChecked) estadoUI.partyLoot = estadoUI.partyLoot.filter(p => p !== player);
@@ -158,6 +162,30 @@ async function iniciar() {
         modificarMulti(estadoUI.partyLoot, item, cant, () => { refrescarUI(); window.actualizarBotonSyncObj(); });
     };
 
+    window.toggleMostrarNPCsLoot = () => { 
+        estadoUI.mostrarNPCsLoot = !estadoUI.mostrarNPCsLoot; 
+        refrescarUI(); 
+    };
+
+    window.seleccionarTodosJugadores = () => {
+        Object.keys(invGlobal).forEach(j => {
+            const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === j.toLowerCase());
+            const p = key ? statsGlobal[key] : null;
+            if(p && p.isPlayer && !estadoUI.partyLoot.includes(j)) estadoUI.partyLoot.push(j);
+        });
+        refrescarUI();
+    };
+
+    window.seleccionarTodosNPCs = () => {
+        Object.keys(invGlobal).forEach(j => {
+            const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === j.toLowerCase());
+            const p = key ? statsGlobal[key] : null;
+            if((!p || !p.isPlayer) && !estadoUI.partyLoot.includes(j)) estadoUI.partyLoot.push(j);
+        });
+        refrescarUI();
+    };
+
+    // CONTROLES DE MERCADO DE TRANSFERENCIAS
     window.setTransOrigen = (val) => { estadoUI.transOrigen = val; refrescarUI(); };
     window.setTransDestino = (val) => { estadoUI.transDestino = val; refrescarUI(); };
     window.setTransMult = (val) => { estadoUI.transMult = val; refrescarUI(); };
@@ -176,6 +204,7 @@ async function iniciar() {
         transferir(origen, dest, item, cantToPass, () => { refrescarUI(); window.actualizarBotonSyncObj(); });
     };
 
+    // FILTROS Y BÚSQUEDAS
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
     window.setFiltro = (tipo, valor) => { if(tipo === 'rol') estadoUI.filtroRol = valor; if(tipo === 'act') estadoUI.filtroAct = valor; refrescarUI(); };
@@ -187,7 +216,7 @@ async function iniciar() {
     window.mostrarCreacionObjeto = () => { window.mostrarPagina('crear'); };
     window.mostrarCreacionMulti = () => { window.mostrarPagina('crear-multi'); };
     
-// --- LÓGICA DE CREACIÓN INDIVIDUAL ---
+    // LÓGICA DE CREACIÓN INDIVIDUAL
     window.toggleMostrarNPCs = () => {
         estadoUI.mostrarNPCsCrea = !estadoUI.mostrarNPCsCrea;
         refrescarUI();
@@ -208,11 +237,11 @@ async function iniciar() {
         agregarObjetoManual(d, rep, () => { window.mostrarPagina('op-menu'); window.actualizarBotonSyncObj(); });
     };
 
-    // --- LÓGICA DE CREACIÓN MÚLTIPLE (6 OBJETOS) ---
+    // LÓGICA DE CREACIÓN MÚLTIPLE (6 OBJETOS)
     window.updateCreationMultiLog = () => {
         const destPlayer = document.getElementById('multi-player-dest').value;
         let l = [];
-        for(let i=1; i<=6; i++) { // Ahora lee 6 espacios
+        for(let i=1; i<=6; i++) { 
             const n = document.getElementById(`new-obj-name-${i}`)?.value.trim();
             const e = document.getElementById(`new-obj-eff-${i}`)?.value.trim();
             const c = parseInt(document.getElementById(`new-obj-cant-${i}`)?.value) || 0;
@@ -228,7 +257,7 @@ async function iniciar() {
     window.ejecutarAgregarMulti = () => {
         const destPlayer = document.getElementById('multi-player-dest').value;
         let listaNuevos = [];
-        for(let i=1; i<=6; i++) { // Ahora procesa 6 espacios
+        for(let i=1; i<=6; i++) { 
             const nombre = document.getElementById(`new-obj-name-${i}`).value.trim();
             if(!nombre) continue;
             const tipo = document.getElementById(`new-obj-tipo-${i}`).value;
@@ -244,10 +273,10 @@ async function iniciar() {
         });
     };
 
-window.descargarEstadoExcel = descargarEstadoExcel; 
+    window.descargarEstadoExcel = descargarEstadoExcel; 
     window.descargarLogExcel = descargarLogExcel;
     
-    // --- NUEVA LÓGICA DE LECTURA DE URL ---
+    // --- LÓGICA DE LECTURA DE URL ---
     const urlParams = new URLSearchParams(window.location.search);
     const pjQuery = urlParams.get('pj');
     let hashQuery = window.location.hash.replace('#inventario-', '');
@@ -269,30 +298,4 @@ window.descargarEstadoExcel = descargarEstadoExcel;
     }
 }
 
-// --- NUEVOS CONTROLES PARA LOOT PARTY ---
-window.toggleMostrarNPCsLoot = () => { 
-    estadoUI.mostrarNPCsLoot = !estadoUI.mostrarNPCsLoot; 
-    refrescarUI(); 
-};
-
-window.seleccionarTodosJugadores = () => {
-    Object.keys(invGlobal).forEach(j => {
-        const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === j.toLowerCase());
-        const p = key ? statsGlobal[key] : null;
-        if(p && p.isPlayer && !estadoUI.partyLoot.includes(j)) estadoUI.partyLoot.push(j);
-    });
-    refrescarUI();
-};
-
-window.seleccionarTodosNPCs = () => {
-    Object.keys(invGlobal).forEach(j => {
-        const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === j.toLowerCase());
-        const p = key ? statsGlobal[key] : null;
-        if((!p || !p.isPlayer) && !estadoUI.partyLoot.includes(j)) estadoUI.partyLoot.push(j);
-    });
-    refrescarUI();
-};
 iniciar();
-
-
-
