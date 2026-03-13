@@ -175,21 +175,22 @@ export function dibujarFrame() {
         ctx.fillStyle = ctx.strokeStyle;
         ctx.fill();
     });
-  // --- HOOK DIBUJO DE EDICIÓN ---
+
+ // --- HOOK DIBUJO DE EDICIÓN ---
     if (window.mapaEditor && window.mapaEditor.activa) {
-        // 1. Dibujar enlace temporal (flechas múltiples si hay selección masiva)
+        // 1. Dibujar enlace temporal (flechas múltiples SOLO si hay SHIFT presionado)
         if (window.mapaEditor.tempLink) {
             const temp = window.mapaEditor.tempLink;
             const seleccion = window.mapaEditor.seleccionMultiple;
             
-            // Determinar desde qué nodos salen las flechas
-            const nodosOrigen = (seleccion.has(temp.source) && seleccion.size > 1) 
+            // Determinar desde qué nodos salen las flechas (VERIFICA SHIFT AHORA)
+            const nodosOrigen = (window.mapaEditor.isShiftPressed && seleccion.has(temp.source) && seleccion.size > 1) 
                 ? Array.from(seleccion) 
                 : [temp.source];
 
             nodosOrigen.forEach(nodoOrg => {
                 const angle = Math.atan2(temp.endY - nodoOrg.y, temp.endX - nodoOrg.x);
-                const headlen = 18 / scaleFactor;
+                const headlen = 18 / scaleFactor; // Tamaño de la punta
                 
                 // Línea punteada
                 ctx.beginPath();
