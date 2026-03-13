@@ -23,22 +23,17 @@ export const estadoMapa = {
     }
 };
 
-const coloresGuardados = JSON.parse(localStorage.getItem('hex_map_colors')) || {};
-
-window.mapaColores = {}; // Se llenará desde Google Sheets
+window.mapaColores = {}; // Se llenará dinámicamente desde Google Sheets
 export const COLOR_AFINIDAD = window.mapaColores;
-// ... (Mantén tu const ESTETICA y COLORES_JUGADOR abajo)
 
-export const COLOR_AFINIDAD = window.mapaColores;
-export const ESTETICA = { /* ... resto de tu código igual ... */
+export const ESTETICA = {
     lineaDescubierta: 'rgba(210, 190, 230, 0.2)', 
     lineaMostaza: 'rgba(212, 175, 55, 0.3)',       
     lineaRosa: 'rgba(200, 60, 100, 0.25)',         
     lineaPrecedente: 'rgba(177, 156, 217, 0.5)',   
-    lineaSaliente: 'rgba(236, 213, 154, 0.5)'     
+    lineaSaliente: 'rgba(236, 213, 154, 0.5)'      
 };
 
-// COLORES SUAVIZADOS
 export const COLORES_JUGADOR = {
     posesionMorada: 'rgba(150, 131, 200, 0.6)', 
     doradoInmediato: 'rgba(236, 213, 154, 0.7)', 
