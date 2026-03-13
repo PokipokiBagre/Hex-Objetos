@@ -29,7 +29,7 @@ export const COLOR_AFINIDAD = {
     'Espiritual': '#7df0a7',
     'Mando': '#a4d3f2',
     'Psíquica': '#dcb1f0',
-    'Oscura': '#c285ff'
+    'Oscura': '#ff526f'
 };
 
 export const ESTETICA = {
