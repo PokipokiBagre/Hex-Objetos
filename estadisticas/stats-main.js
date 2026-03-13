@@ -266,12 +266,21 @@ window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; est
 
 window.abrirMenuOP = () => { 
     if (estadoUI.esAdmin) { 
-        estadoUI.vistaActual = estadoUI.vistaActual === 'detalle' ? 'detalle' : 'hex';
+        // Si ya es admin y le da clic desde detalle, que se quede en detalle.
+        if (estadoUI.vistaActual !== 'detalle') {
+            estadoUI.vistaActual = 'hex';
+        }
         refrescarVistas(); 
         return; 
     }
     const pass = prompt("Acceso Restringido MÁSTER. Contraseña:");
-    if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; estadoUI.vistaActual = 'hex'; refrescarVistas(); } 
+    if (pass === atob('Y2FuZXk=')) { 
+        estadoUI.esAdmin = true; 
+        if (estadoUI.vistaActual !== 'detalle') {
+            estadoUI.vistaActual = 'hex'; 
+        }
+        refrescarVistas(); 
+    } 
 };
 
 window.mostrarPaginaOP = (subvista) => { estadoUI.vistaActual = subvista; refrescarVistas(); };
@@ -403,5 +412,62 @@ async function iniciar() {
     finally { refrescarVistas(); }
 }
 
+window.toggleCrearRol = () => { const btn = document.getElementById('btn-crear-rol'); if (btn.dataset.val === 'npc') { btn.dataset.val = 'jugador'; btn.innerText = '🎭 ROL: JUGADOR'; btn.style.background = '#003300'; btn.style.borderColor = '#00e676'; } else { btn.dataset.val = 'npc'; btn.innerText = '🎭 ROL: NPC'; btn.style.background = '#330000'; btn.style.borderColor = '#ff1744'; } };
+window.toggleCrearAct = () => { const btn = document.getElementById('btn-crear-act'); if (btn.dataset.val === 'activo') { btn.dataset.val = 'inactivo'; btn.innerText = '🌟 ESTADO: INACTIVO'; btn.style.background = '#330000'; btn.style.borderColor = '#ff1744'; } else { btn.dataset.val = 'activo'; btn.innerText = '🌟 ESTADO: ACTIVO'; btn.style.background = '#003300'; btn.style.borderColor = '#00e676'; } };
+window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','psi','osc'].reduce((acc,id)=>acc+(parseInt(document.getElementById('npc-'+id)?.value)||0),0); const d = document.getElementById('creation-affinity-sum-display'); if(d) d.innerText = `Total Afinidades: ${s}`; };
+
+window.modForm = (inputId, cantidad) => {
+    const input = document.getElementById(inputId);
+    if(input) {
+        input.value = Math.max(0, (parseInt(input.value)||0) + cantidad);
+        if(inputId.startsWith('npc-fis') || inputId.startsWith('npc-ene') || inputId.startsWith('npc-esp') || inputId.startsWith('npc-man') || inputId.startsWith('npc-psi') || inputId.startsWith('npc-osc')) {
+            window.updateCreationAfinitySum();
+        }
+    }
+};
+
+window.ejecutarCreacionNPC = () => {
+    const nombre = document.getElementById('npc-nombre').value.trim(); if(!nombre) return alert("Falta nombre.");
+    if(statsGlobal[nombre]) return alert("Ya existe un personaje con ese nombre.");
+    const pV = (id) => parseInt(document.getElementById(id).value)||0;
+    let stInit = {}; listaEstados.forEach(e => { stInit[e.id] = (e.tipo === 'numero') ? 0 : false; });
+    statsGlobal[nombre] = {
+        isPlayer: document.getElementById('btn-crear-rol').dataset.val === 'jugador', isNPC: document.getElementById('btn-crear-rol').dataset.val === 'npc', isActive: document.getElementById('btn-crear-act').dataset.val === 'activo', 
+        hex: pV('npc-hex'), asistencia: 1, vex: pV('npc-vex'), vidaRojaActual: pV('npc-vra'), vidaRojaMax: pV('npc-vrm'), baseVidaRojaMax: pV('npc-vrm'),
+        vidaAzul: pV('npc-va'), baseVidaAzul: pV('npc-va'), guardaDorada: pV('npc-gd'), baseGuardaDorada: pV('npc-gd'), 
+        danoRojo: pV('npc-dr'), baseDanoRojo: pV('npc-dr'), danoAzul: pV('npc-da'), baseDanoAzul: pV('npc-da'), elimDorada: pV('npc-ed'), baseElimDorada: pV('npc-ed'),
+        afinidades: { fisica:pV('npc-fis'), energetica:pV('npc-ene'), espiritual:pV('npc-esp'), mando:pV('npc-man'), psiquica:pV('npc-psi'), oscura:pV('npc-osc') },
+        afinidadesBase: { fisica:pV('npc-fis'), energetica:pV('npc-ene'), espiritual:pV('npc-esp'), mando:pV('npc-man'), psiquica:pV('npc-psi'), oscura:pV('npc-osc') },
+        hechizos: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
+        hechizosEfecto: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
+        buffs: { fisica:0, energetica:0, espiritual:0, mando:0, psiquica:0, oscura:0, danoRojo:0, danoAzul:0, elimDorada:0, vidaRojaMaxExtra:0, vidaAzulExtra:0, guardaDoradaExtra:0 },
+        estados: stInit, iconoOverride: ""
+    };
+    window.encolarCambio(nombre); 
+    estadoUI.personajeSeleccionado = nombre; 
+    estadoUI.vistaActual = 'detalle'; 
+    window.sincronizarUI(); 
+};
+
+// --- NUEVA FUNCIÓN: BORRAR PERSONAJE DESDE EL CATÁLOGO ---
+window.borrarPersonaje = (nombre, event) => {
+    event.stopPropagation(); // Evita que se abra la ficha al clickear la X
+    if(confirm(`⚠️ ESTÁS A PUNTO DE ELIMINAR A ${nombre.toUpperCase()}.\n\n¿Estás completamente seguro? Esto lo borrará de la pantalla y enviará la orden al servidor.`)) {
+        if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
+        
+        // Agregamos una bandera secreta para que Apps Script sepa que debe borrar la fila
+        estadoUI.colaCambios.stats[nombre] = { __ELIMINAR_PERSONAJE__: true }; 
+        
+        delete statsGlobal[nombre]; // Lo borramos localmente
+        
+        // Si estaba en la party, lo sacamos
+        const pIdx = estadoUI.party.indexOf(nombre);
+        if(pIdx !== -1) estadoUI.party[pIdx] = null;
+        
+        window.sincronizarUI();
+    }
+};
+
 iniciar();
+
 
