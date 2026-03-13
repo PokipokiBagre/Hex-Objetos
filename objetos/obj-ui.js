@@ -41,30 +41,75 @@ const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 const normalizarNombre = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
 
 export function dibujarGrillaPersonajes() {
-    let html = `<h2 style="margin-top:0;">Inventarios</h2><div class="catalogo-grid">`;
+    estadoUI.filtroRol = estadoUI.filtroRol || 'Jugadores';
+    estadoUI.filtroAct = estadoUI.filtroAct || 'Activos';
+
+    let html = `
+    <h2 style="margin-top:0; text-align:center; font-family:'Cinzel'; color:var(--gold);">Inventarios de Personajes</h2>
+    <div style="display:flex; justify-content:center; gap:20px; margin-bottom:30px; flex-wrap:wrap; border-bottom:2px solid #222; padding-bottom:15px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px;">
+        <div class="filter-group" style="margin:0; display:flex; gap:10px;">
+            <button onclick="window.setFiltro('rol', 'Todos')" class="${estadoUI.filtroRol === 'Todos' ? 'btn-active' : ''}">👥 Todos</button>
+            <button onclick="window.setFiltro('rol', 'Jugadores')" class="${estadoUI.filtroRol === 'Jugadores' ? 'btn-active' : ''}">⚔️ Jugadores</button>
+            <button onclick="window.setFiltro('rol', 'NPCs')" class="${estadoUI.filtroRol === 'NPCs' ? 'btn-active' : ''}">🎭 NPCs</button>
+        </div>
+        <div class="filter-group" style="margin:0; display:flex; gap:10px;">
+            <button onclick="window.setFiltro('act', 'Todos')" class="${estadoUI.filtroAct === 'Todos' ? 'btn-active' : ''}">🌟 Ambos</button>
+            <button onclick="window.setFiltro('act', 'Activos')" class="${estadoUI.filtroAct === 'Activos' ? 'btn-active' : ''}">🟢 Activos</button>
+            <button onclick="window.setFiltro('act', 'Inactivos')" class="${estadoUI.filtroAct === 'Inactivos' ? 'btn-active' : ''}">🔴 Inactivos</button>
+        </div>
+    </div>
+    <div class="catalogo-grid">`;
     
-    // Función de limpieza interna para no fallar
     const norm = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
 
-    Object.keys(invGlobal).sort().forEach(j => {
+    const getSortValue = (p) => { if (p.isPlayer && p.isActive) return 1; if (!p.isPlayer && p.isActive) return 2; if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5; };
+    
+    // Usar statsGlobal asegura que aparezcan INCLUSO si no tienen ni 1 objeto
+    const sortedNames = Object.keys(statsGlobal).sort((a, b) => { 
+        const valA = getSortValue(statsGlobal[a]); const valB = getSortValue(statsGlobal[b]); 
+        if (valA !== valB) return valA - valB; 
+        return a.localeCompare(b); 
+    });
+
+    sortedNames.forEach(j => {
+        const p = statsGlobal[j];
+        if (estadoUI.filtroRol === 'Jugadores' && !p.isPlayer) return; 
+        if (estadoUI.filtroRol === 'NPCs' && p.isPlayer) return;
+        if (estadoUI.filtroAct === 'Activos' && !p.isActive) return; 
+        if (estadoUI.filtroAct === 'Inactivos' && p.isActive) return;
+
         let countComun = 0, countRaro = 0, countLeg = 0;
-        Object.keys(invGlobal[j]).forEach(o => {
-            if (invGlobal[j][o] > 0) {
-                const rar = objGlobal[o] ? objGlobal[o].rar : 'Común';
-                if (rar === 'Legendario') countLeg += invGlobal[j][o];
-                else if (rar === 'Raro') countRaro += invGlobal[j][o];
-                else countComun += invGlobal[j][o];
-            }
-        });
         
-        const jSafe = j.replace(/'/g, "\\'"); // Protege nombres con apóstrofes
+        if(invGlobal[j]) {
+            Object.keys(invGlobal[j]).forEach(o => {
+                if (invGlobal[j][o] > 0) {
+                    const rar = objGlobal[o] ? objGlobal[o].rar : 'Común';
+                    if (rar === 'Legendario') countLeg += invGlobal[j][o];
+                    else if (rar === 'Raro') countRaro += invGlobal[j][o];
+                    else countComun += invGlobal[j][o];
+                }
+            });
+        }
         
+        const jSafe = j.replace(/'/g, "\\'"); 
+        const iconoMuestra = norm(p.iconoOverride || j);
+        
+        let borderStyle = ""; let bgStyle = "background: #11001c;"; 
+        if (p.isPlayer && p.isActive) { borderStyle = "border: 2px solid var(--gold); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);"; } 
+        else if (!p.isPlayer && p.isActive) { borderStyle = "border: 2px solid #00ffff; box-shadow: 0 4px 10px rgba(0, 255, 255, 0.1);"; bgStyle = "background: #060b19;"; } 
+        else if (!p.isPlayer && !p.isActive) { borderStyle = "border: 2px solid #444;"; bgStyle = "background: #0a0a0a;"; } 
+        else if (p.isPlayer && !p.isActive) { borderStyle = "border: 2px solid #cc0000; box-shadow: 0 4px 10px rgba(204, 0, 0, 0.2);"; bgStyle = "background: #1a0000;"; }
+
+        const claseInactiva = p.isActive ? '' : 'inactive-card';
+
         html += `
-        <div class="char-card player-card" onclick="window.abrirInventario('${jSafe}')">
-            <img src="../img/imgpersonajes/${norm(j)}icon.png" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-            <h3>${j}</h3>
-            <p>Comunes: <b style="color:white">${countComun}</b></p>
-            <p>Raros: <b style="color:#8a2be2">${countRaro}</b> | Legendarios: <b style="color:var(--gold)">${countLeg}</b></p>
+        <div class="char-card player-card ${claseInactiva}" style="${borderStyle} ${bgStyle} padding: 15px; border-radius: 12px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" onclick="window.abrirInventario('${jSafe}')">
+            <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2); margin-bottom: 10px;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+            <h3 style="margin: 0 0 10px 0; font-family: 'Cinzel', serif; font-size: 1.2em; text-transform: uppercase;">${j}</h3>
+            <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 6px;">
+                <p style="margin: 0; font-size: 0.85em; color: #ddd;">Comunes: <strong style="color: white;">${countComun}</strong></p>
+                <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #ddd;">Raros: <strong style="color: #8a2be2;">${countRaro}</strong> | Legendarios: <strong style="color: var(--gold);">${countLeg}</strong></p>
+            </div>
         </div>`;
     });
     html += `</div>`;
@@ -507,6 +552,7 @@ export function dibujarCreacionMulti() {
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
+
 
 
 
