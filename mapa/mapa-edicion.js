@@ -8,6 +8,7 @@ const editor = {
     tempLink: null,
     boxStart: null,
     boxCurrent: null,
+    hasDragged: false, // <-- NUEVO: Para saber si movimos la cámara o hicimos clic
     cambiosPendientes: { nodos: {}, enlaces: [] }
 };
 
@@ -48,12 +49,13 @@ editor.setHerramienta = (herr) => {
 
 // --- INTERACCIÓN CON RATÓN AVANZADA ---
 editor.onMouseDown = (e, nodo, worldPos) => {
+    editor.hasDragged = false; // Reiniciamos el medidor de arrastre
+
     if (editor.herramienta === 'enlace') {
         if (nodo) {
             editor.tempLink = { source: nodo, startX: nodo.x, startY: nodo.y, endX: worldPos.x, endY: worldPos.y };
         }
     } else {
-        // Herramienta Selector
         if (nodo) {
             if (e.shiftKey) {
                 if (editor.seleccionMultiple.has(nodo)) editor.seleccionMultiple.delete(nodo);
@@ -67,11 +69,10 @@ editor.onMouseDown = (e, nodo, worldPos) => {
             estadoMapa.interaccion.draggedNode = nodo;
         } else {
             if (e.shiftKey) {
-                // Iniciar Caja de Selección Multiple
                 editor.boxStart = { ...worldPos };
                 editor.boxCurrent = { ...worldPos };
             } else {
-                editor.seleccionMultiple.clear();
+                // YA NO LIMPIAMOS LA SELECCIÓN AQUÍ PARA PERMITIR MOVER LA CÁMARA
                 estadoMapa.interaccion.isDraggingBg = true;
             }
         }
@@ -80,11 +81,12 @@ editor.onMouseDown = (e, nodo, worldPos) => {
 };
 
 editor.onMouseMove = (e, dx, dy, worldPos) => {
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) editor.hasDragged = true; // Detecta si es un movimiento real
+
     if (editor.tempLink) {
         editor.tempLink.endX = worldPos.x;
         editor.tempLink.endY = worldPos.y;
     } else if (editor.boxStart) {
-        // Arrastrar Caja de Selección
         editor.boxCurrent = { ...worldPos };
     } else if (estadoMapa.interaccion.draggedNode) {
         const z = estadoMapa.camara.zoom;
@@ -102,11 +104,17 @@ editor.onMouseMove = (e, dx, dy, worldPos) => {
 editor.onMouseUp = (e, nodo) => {
     if (editor.tempLink) {
         if (nodo && nodo !== editor.tempLink.source) {
-            crearEnlace(editor.tempLink.source, nodo);
+            // NUEVO: FLECHAS MÚLTIPLES CON SHIFT
+            if (e.shiftKey && editor.seleccionMultiple.has(editor.tempLink.source)) {
+                editor.seleccionMultiple.forEach(n => {
+                    if (n !== nodo) crearEnlace(n, nodo);
+                });
+            } else {
+                crearEnlace(editor.tempLink.source, nodo);
+            }
         }
         editor.tempLink = null;
     } else if (editor.boxStart) {
-        // Finalizar Caja de Selección
         const minX = Math.min(editor.boxStart.x, editor.boxCurrent.x);
         const maxX = Math.max(editor.boxStart.x, editor.boxCurrent.x);
         const minY = Math.min(editor.boxStart.y, editor.boxCurrent.y);
@@ -120,27 +128,37 @@ editor.onMouseUp = (e, nodo) => {
         editor.boxStart = null;
         editor.boxCurrent = null;
         renderPanelEdicion();
+    } else if (estadoMapa.interaccion.isDraggingBg) {
+        // NUEVO: Solo borra la selección si hicimos CLIC en el fondo sin arrastrar la cámara
+        if (!editor.hasDragged && !e.shiftKey) {
+            editor.seleccionMultiple.clear();
+            renderPanelEdicion();
+        }
     }
+    
     estadoMapa.interaccion.isDraggingBg = false;
     estadoMapa.interaccion.draggedNode = null;
 };
 
-// --- CREACIÓN LÓGICA E ID SECUENCIAL ---
+// --- CREACIÓN LÓGICA E ID INTELIGENTE (RECICLAJE) ---
 function getNextId() {
-    let max = 0;
+    const usedIds = new Set();
     estadoMapa.nodos.forEach(n => {
-        const num = parseInt((n.id || n.nombreOriginal).replace(/\D/g, ''));
-        if (!isNaN(num) && num > max) max = num;
+        const match = (n.id || n.nombreOriginal).match(/\d+/); // Extrae el número del ID
+        if (match) usedIds.add(parseInt(match[0]));
     });
-    return max + 1;
+    
+    let i = 1;
+    while (usedIds.has(i)) i++; // Busca el primer hueco libre (Ej: si falta el 664, lo toma)
+    return i;
 }
 
 window.crearNodoNuevo = () => {
     const newIdNum = getNextId();
     const nuevo = {
         id: `Hechizo ${newIdNum}`,
-        nombreOriginal: `Hechizo ${newIdNum}`,
-        nombre: `Hechizo ${newIdNum} (0)`,
+        nombreOriginal: `Nuevo Hechizo ${newIdNum}`,
+        nombre: `Nuevo Hechizo ${newIdNum} (0)`,
         afinidad: 'Física',
         clase: 'Clase 1',
         hex: 0,
@@ -185,7 +203,6 @@ window.actualizarDatoNodo = (campo, valor) => {
         }
         registrarCambioNodo(n);
     });
-    // Si editamos una afinidad, redibujar panel para actualizar el gestor de colores
     if(campo === 'afinidad') renderPanelEdicion();
 };
 
@@ -211,6 +228,7 @@ window.actualizarColorPersonalizado = (afinidad, hexColor) => {
     let borderHex = `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
     
     window.mapaColores[afinidad] = { t: hexColor, b: borderHex };
+    localStorage.setItem('hex_map_colors', JSON.stringify(window.mapaColores)); // GUARDADO EN NAVEGADOR
 };
 
 window.eliminarSeleccion = () => {
@@ -272,7 +290,6 @@ function renderPanelEdicion() {
     const panel = document.getElementById('panel-edicion-avanzada');
     if (!panel) return;
 
-    // Extraer afinidades únicas para la lista dinámica
     const afinidadesExistentes = new Set();
     estadoMapa.nodos.forEach(n => { if (n.afinidad && n.afinidad !== '-') afinidadesExistentes.add(n.afinidad); });
 
@@ -285,7 +302,7 @@ function renderPanelEdicion() {
                     <h3 style="color:#00ffff; text-align:center; font-family:'Cinzel'; border-bottom:1px solid #00ffff; margin-top:0; padding-top:10px; padding-bottom:10px;">Herramientas</h3>
                     <div style="display:flex; gap:10px; margin-bottom: 15px;">
                         <button onclick="window.mapaEditor.setHerramienta('cursor')" style="flex:1; background:${editor.herramienta==='cursor' ? '#00ffff' : '#222'}; color:${editor.herramienta==='cursor' ? '#000' : '#fff'}; border:1px solid #00ffff;">👆 Select</button>
-                        <button onclick="window.mapaEditor.setHerramienta('enlace')" style="flex:1; background:${editor.herramienta==='enlace' ? '#00ffff' : '#222'}; color:${editor.herramienta==='enlace' ? '#000' : '#fff'}; border:1px solid #00ffff;" title="Arrastra de un nodo a otro">↗️ Flecha</button>
+                        <button onclick="window.mapaEditor.setHerramienta('enlace')" style="flex:1; background:${editor.herramienta==='enlace' ? '#00ffff' : '#222'}; color:${editor.herramienta==='enlace' ? '#000' : '#fff'}; border:1px solid #00ffff;" title="SHIFT + Soltar para conectar a varios">↗️ Flecha</button>
                     </div>
                     <button onclick="window.crearNodoNuevo()" style="width:100%; background:#004a00; color:#fff; border:1px solid #00ff00; padding:10px;">➕ Crear Nodo Aquí</button>
                 </div>
@@ -294,12 +311,15 @@ function renderPanelEdicion() {
     const cands = Array.from(editor.seleccionMultiple);
     
     if (cands.length === 0) {
-        html += `<p style="color:#888; text-align:center; font-size:0.9em; margin-top:20px; line-height: 1.5;"><i>Haz clic en cualquier nodo para editarlo.<br><br>Mantén pulsado <b>SHIFT y arrastra</b> para hacer una caja de selección múltiple.</i></p>`;
+        html += `<p style="color:#888; text-align:center; font-size:0.9em; margin-top:20px; line-height: 1.5;"><i>Haz clic en cualquier nodo para editarlo.<br><br>Mantén pulsado <b>SHIFT y arrastra</b> en el fondo para encerrar múltiples nodos.</i></p>`;
     } 
     else if (cands.length > 1) {
         html += `<h4 style="color:var(--gold); text-align:center;">Edición Masiva (${cands.length} nodos)</h4>
                  <div style="display:grid; grid-template-columns:1fr; gap:10px;">
                     <div><label style="font-size:0.8em; color:#aaa;">Forzar Costo HEX:</label><input type="number" step="50" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                    <div><label style="font-size:0.8em; color:#aaa;">Forzar Clase:</label><select onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;">
+                        <option value="">- Ignorar -</option><option value="Clase 1">Clase 1</option><option value="Clase 2">Clase 2</option><option value="Clase 3">Clase 3</option><option value="Clase 4">Clase 4</option><option value="Clase 5">Clase 5</option>
+                    </select></div>
                     <div><label style="font-size:0.8em; color:#aaa;">Forzar Afinidad:</label><input type="text" list="dl-edit-afinidad" placeholder="- Escribe o Selecciona -" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
                  </div>
                  <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; color:white; padding:10px; margin-top:20px;">🗑️ Destruir Todos</button>`;
@@ -313,7 +333,9 @@ function renderPanelEdicion() {
                     
                     <div style="display:flex; gap:10px;">
                         <div style="flex:1;"><label style="color:#aaa;">Costo HEX:</label><input type="number" step="50" value="${n.hex}" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
-                        <div style="flex:1;"><label style="color:#aaa;">Clase:</label><input type="text" value="${n.clase}" onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                        <div style="flex:1;"><label style="color:#aaa;">Clase:</label><select onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;">
+                            <option value="Clase 1" ${n.clase==='Clase 1'?'selected':''}>Clase 1</option><option value="Clase 2" ${n.clase==='Clase 2'?'selected':''}>Clase 2</option><option value="Clase 3" ${n.clase==='Clase 3'?'selected':''}>Clase 3</option><option value="Clase 4" ${n.clase==='Clase 4'?'selected':''}>Clase 4</option><option value="Clase 5" ${n.clase==='Clase 5'?'selected':''}>Clase 5</option>
+                        </select></div>
                     </div>
                     
                     <div><label style="color:#aaa;">Afinidad (Infinita):</label><input type="text" list="dl-edit-afinidad" value="${n.afinidad}" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
@@ -328,7 +350,7 @@ function renderPanelEdicion() {
                  <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; color:white; padding:10px; margin-top:15px;">🗑️ Destruir Nodo</button>`;
     }
 
-    // --- NUEVO: GESTOR DE COLORES EN TIEMPO REAL ---
+    // --- GESTOR DE COLORES EN TIEMPO REAL ---
     html += `<hr style="border-color:#444; margin-top:20px;">
              <details style="background:rgba(0,0,0,0.5); padding:10px; border-radius:6px; border:1px dashed #555;">
                 <summary style="color:#aaa; cursor:pointer; font-size:0.9em;">🎨 Gestor de Colores de Afinidad</summary>
