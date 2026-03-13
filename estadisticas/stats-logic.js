@@ -40,10 +40,14 @@ export function calcularVexMax(p) {
 
 export function getMysticBonus(p) {
     if (!p) return 0;
-    const ene = p.afinidadesBase?.energetica || 0;
-    const esp = p.afinidadesBase?.espiritual || 0;
-    const man = p.afinidadesBase?.mando || 0;
-    const psi = p.afinidadesBase?.psiquica || 0;
+    // Función auxiliar para sacar el total de una afinidad
+    const total = (k) => (p.afinidadesBase?.[k]||0) + (p.hechizos?.[k]||0) + (p.hechizosEfecto?.[k]||0) + (p.buffs?.[k]||0);
+    
+    const ene = total('energetica');
+    const esp = total('espiritual');
+    const man = total('mando');
+    const psi = total('psiquica');
+    
     return Math.floor((ene + esp + man + psi) / 4);
 }
 
