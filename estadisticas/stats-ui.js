@@ -116,14 +116,13 @@ export function dibujarCatalogo() {
             <h3 style="margin: 0 0 10px 0; font-family: 'Cinzel', serif; font-size: 1.2em; text-transform: uppercase;">${nombre}</h3>
             <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 6px;">
                 <p style="margin: 0; font-size: 0.9em; color: #ddd;">HEX: <strong style="color: var(--gold);">${p.hex}</strong></p>
-                <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #ddd;">VEX: <strong style="color: #4a90e2;">${calcularVexMax(p)}</strong></p>
+                <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #4a90e2;">VEX: <strong style="color: #4a90e2;">${calcularVexMax(p)}</strong></p>
             </div>
         </div>`;
     }); 
     contenedor.innerHTML = html + `</div>`;
 }
 
-// TOTALMENTE RESTAURADO AL HTML/CSS ORIGINAL PARA EVITAR ROTURAS, PERO CON LAS MEJORAS DE DATOS
 export function dibujarResumenVisual() {
     const contenedor = document.getElementById('vista-resumen');
     let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px; font-family:'Cinzel'; text-shadow:0 0 10px rgba(212,175,55,0.8);">Visión Táctica de la Party</h2>
@@ -157,9 +156,24 @@ export function dibujarResumenVisual() {
         mySpells.forEach(s => {
             const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
             s.costo = info ? (parseInt(info.HEX) || 0) : 0;
+            
+            // ENMASCARAMIENTO DE HECHIZOS
+            if (info && (!info.Conocido || String(info.Conocido).trim().toLowerCase() !== 'si')) {
+                s.isMasked = true;
+                s.displayName = info.ID || "Hechizo Sellado";
+            } else {
+                s.isMasked = false;
+                s.displayName = s.Hechizo;
+            }
         });
         const topSpells = mySpells.sort((a,b) => b.costo - a.costo).slice(0, 10);
-        let spellsHtml = topSpells.map(s => `<span class="mini-spell-tag copy-wrap" title="${s.Hechizo} (${s.costo} HEX)" onclick="window.copySilently('${s.Hechizo.replace(/'/g, "\\'")}', event)">${s.Hechizo}</span>`).join('');
+        let spellsHtml = topSpells.map(s => {
+            if (s.isMasked) {
+                return `<span class="mini-spell-tag copy-wrap" style="color:#666; border-color:#333; font-style:italic;" title="Información Sellada" onclick="window.copySilently('${s.displayName}', event)">🔒 ${s.displayName}</span>`;
+            } else {
+                return `<span class="mini-spell-tag copy-wrap" title="${s.displayName} (${s.costo} HEX)" onclick="window.copySilently('${s.displayName.replace(/'/g, "\\'")}', event)">${s.displayName}</span>`;
+            }
+        }).join('');
         
         const mayorAf = getMayorAfinidad(p);
         const mKey = afiMap[mayorAf] || 'fisica';
@@ -171,7 +185,6 @@ export function dibujarResumenVisual() {
         const vidas = generarVidasHTML(p);
         const vexVisual = calcularVexMax(p);
 
-        // Estructura restaurada a la original para garantizar el CSS Grid de dos columnas
         html += `
         <div class="resumen-row" onclick="window.abrirDetalle('${nombre}')" style="background:#111; border-color:#333;">
             <div class="resumen-left">
@@ -258,7 +271,22 @@ export function dibujarDetalle() {
     const countObj = dbExtra.objetosCount[pjNameLower] || 0;
     const myMissions = dbExtra.misionesActivas ? (dbExtra.misionesActivas[pjNameLower] || []) : [];
     const countMis = myMissions.length;
-    const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower).sort((a,b) => a.Hechizo.localeCompare(b.Hechizo));
+    const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower);
+    
+    mySpells.forEach(s => {
+        const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
+        s.costo = info ? (parseInt(info.HEX) || 0) : 0;
+        
+        // ENMASCARAMIENTO DE HECHIZOS
+        if (info && (!info.Conocido || String(info.Conocido).trim().toLowerCase() !== 'si')) {
+            s.isMasked = true;
+            s.displayName = info.ID || "Hechizo Sellado";
+        } else {
+            s.isMasked = false;
+            s.displayName = s.Hechizo;
+        }
+    });
+    mySpells.sort((a,b) => a.displayName.localeCompare(b.displayName));
     
     const afiMap = { 'Física':'fisica', 'Energética':'energetica', 'Espiritual':'espiritual', 'Mando':'mando', 'Psíquica':'psiquica', 'Oscura':'oscura' };
     const mayorAf = getMayorAfinidad(p);
@@ -392,7 +420,13 @@ export function dibujarDetalle() {
             <span style="font-size:0.5em; color:#888; font-family: sans-serif; text-transform: none;">* Clic para copiar al portapapeles</span>
         </h3>
         <div class="spell-grid-4" style="margin-top: 20px;">
-            ${mySpells.map(s => `<button type="button" class="spell-button" style="background: #0a1128; border: 1px solid #1a365d; color: #c0d6e4; padding: 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: left; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onmouseover="this.style.background='#1a365d'; this.style.borderColor='#4a90e2';" onmouseout="this.style.background='#0a1128'; this.style.borderColor='#1a365d';" onclick="window.copySilently('${s.Hechizo.replace(/'/g, "\\'")}', event)">🔹 ${s.Hechizo}</button>`).join('') || '<div style="grid-column:1/-1; text-align:center; color:#666; padding:20px; font-style: italic; background: #050505; border-radius: 8px;">Este personaje aún no ha registrado ningún hechizo en su Grimorio.</div>'}
+            ${mySpells.map(s => {
+                if (s.isMasked) {
+                    return `<button type="button" class="spell-button" style="background: #050505; border: 1px dashed #333; color: #666; font-style: italic; padding: 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: left; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onclick="window.copySilently('${s.displayName}', event)">🔒 ${s.displayName}</button>`;
+                } else {
+                    return `<button type="button" class="spell-button" style="background: #0a1128; border: 1px solid #1a365d; color: #c0d6e4; padding: 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; text-align: left; font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" onmouseover="this.style.background='#1a365d'; this.style.borderColor='#4a90e2';" onmouseout="this.style.background='#0a1128'; this.style.borderColor='#1a365d';" onclick="window.copySilently('${s.displayName.replace(/'/g, "\\'")}', event)">🔹 ${s.displayName}</button>`;
+                }
+            }).join('') || '<div style="grid-column:1/-1; text-align:center; color:#666; padding:20px; font-style: italic; background: #050505; border-radius: 8px;">Este personaje aún no ha registrado ningún hechizo en su Grimorio.</div>'}
         </div>
     </div>`;
 
@@ -457,7 +491,6 @@ export function dibujarPanelEdicionOP() {
     const nombre = estadoUI.personajeSeleccionado; const p = statsGlobal[nombre];
     if(!p) return ``;
     
-    const pVidaDanoBase = [ { id: 'baseVidaAzul', label: 'C. Azules (BASE)', val: p.baseVidaAzul }, { id: 'baseGuardaDorada', label: 'G. Dorada (BASE)', val: p.baseGuardaDorada }, { id: 'danoRojo', label: 'Daño Rojo (BASE)', val: p.baseDanoRojo }, { id: 'danoAzul', label: 'Daño Azul (BASE)', val: p.baseDanoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (BASE)', val: p.baseElimDorada } ];
     const pAfinidadesBase = [ { id: 'fisica', label: 'Física (BASE)', val: p.afinidadesBase.fisica }, { id: 'energetica', label: 'Energética (BASE)', val: p.afinidadesBase.energetica }, { id: 'espiritual', label: 'Espiritual (BASE)', val: p.afinidadesBase.espiritual }, { id: 'mando', label: 'Mando (BASE)', val: p.afinidadesBase.mando }, { id: 'psiquica', label: 'Psíquica (BASE)', val: p.afinidadesBase.psiquica }, { id: 'oscura', label: 'Oscura (BASE)', val: p.afinidadesBase.oscura } ];
 
     const pAfinidadesSpellEff = [ { id: 'fisica', label: 'Física (ALT)', val: p.hechizosEfecto.fisica }, { id: 'energetica', label: 'Energética (ALT)', val: p.hechizosEfecto.energetica }, { id: 'espiritual', label: 'Espiritual (ALT)', val: p.hechizosEfecto.espiritual }, { id: 'mando', label: 'Mando (ALT)', val: p.hechizosEfecto.mando }, { id: 'psiquica', label: 'Psíquica (ALT)', val: p.hechizosEfecto.psiquica }, { id: 'oscura', label: 'Oscura (ALT)', val: p.hechizosEfecto.oscura }, { id: 'danoRojo', label: 'Daño Rojo (ALT)', val: p.hechizosEfecto.danoRojo }, { id: 'danoAzul', label: 'Daño Azul (ALT)', val: p.hechizosEfecto.danoAzul }, { id: 'elimDorada', label: 'Elim. Dorada (ALT)', val: p.hechizosEfecto.elimDorada } ];
@@ -521,7 +554,9 @@ export function dibujarPanelEdicionOP() {
 
         ${renderHeader(3, 'Atributos y Afinidades BASE (Permanentes)', '#fff')}
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px;">
-            ${pVidaDanoBase.filter(f => !f.id.includes('Vida') && !f.id.includes('Guarda')).map(f => genCard(f, 'baseAfin')).join('')}
+            ${genCard({id: 'danoRojo', label: 'Daño Rojo (BASE)', val: p.baseDanoRojo}, 'baseTop')}
+            ${genCard({id: 'danoAzul', label: 'Daño Azul (BASE)', val: p.baseDanoAzul}, 'baseTop')}
+            ${genCard({id: 'elimDorada', label: 'Elim. Dorada (BASE)', val: p.baseElimDorada}, 'baseTop')}
             ${pAfinidadesBase.map(f => genCard(f, 'baseAfin')).join('')}
         </div>
 
