@@ -1,11 +1,14 @@
 export let invGlobal = {}; 
 export let objGlobal = {}; 
+export let statsGlobal = {}; // NUEVO: Para guardar si son Jugadores/Activos
 export let historial = []; 
 export let estadoUI = {
     vistaActual: 'grilla',
     jugadorInv: null, 
     filtroRar: 'Todos', 
     filtroMat: 'Todos',
+    filtroRol: 'Jugadores', // Valor por defecto
+    filtroAct: 'Activos',   // Valor por defecto
     busquedaOP: "", 
     busquedaCat: "", 
     busquedaInv: "", 
@@ -22,10 +25,9 @@ export let estadoUI = {
     editModo: 1,
     colaCambios: {}, 
     
-    // Variables para congelar el orden visual
     resetCacheOrder: true,
-    cachedSortKeys: null, // Para el panel de Control OP
-    cachedInvOrders: {}   // Para las tablas y resumen de cada jugador
+    cachedSortKeys: null, 
+    cachedInvOrders: {}   
 };
 
 export function guardar() { 
