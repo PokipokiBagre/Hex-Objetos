@@ -14,12 +14,27 @@ export async function cargarDatos(barra) {
         
         if(barra) barra.style.width = '25%';
 
-        // 2. CARGAMOS LA API PRINCIPAL (NODOS E INVENTARIO)
+        // 2. CARGAMOS LA API PRINCIPAL (NODOS, INVENTARIO Y AFINIDADES)
         const res = await fetch(API_HECHIZOS);
         if(barra) barra.style.width = '60%';
 
         const jsonText = await res.text();
         const json = JSON.parse(decodeURIComponent(escape(window.atob(jsonText))));
+        
+        // --- NUEVO: PROCESAR COLORES DESDE EL EXCEL ---
+        window.mapaColores = {};
+        if (json.afinidades && json.afinidades.length > 0) {
+            json.afinidades.forEach(row => {
+                if (row[0]) {
+                    // row[0] es el nombre de afinidad, row[1] el color hex principal, row[2] el color de borde (opcional)
+                    window.mapaColores[row[0].trim()] = { 
+                        t: row[1] ? row[1].toString().trim() : '#ffffff', 
+                        b: row[2] ? row[2].toString().trim() : '#555555' 
+                    };
+                }
+            });
+        }
+        // ----------------------------------------------
         
         procesarInventario(json);
         procesarNodos(json);
