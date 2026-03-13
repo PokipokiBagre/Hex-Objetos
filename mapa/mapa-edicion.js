@@ -4,8 +4,10 @@ import { API_HECHIZOS, actualizarColoresFlechas } from './mapa-data.js';
 const editor = {
     activa: false,
     seleccionMultiple: new Set(),
-    herramienta: 'cursor', // 'cursor' para mover/editar, 'enlace' para crear flechas
+    herramienta: 'cursor', 
     tempLink: null,
+    boxStart: null,
+    boxCurrent: null,
     cambiosPendientes: { nodos: {}, enlaces: [] }
 };
 
@@ -19,7 +21,7 @@ window.toggleModoEdicion = () => {
     if (editor.activa) {
         panel.classList.remove('oculto');
         btn.style.background = '#00ffff'; btn.style.color = '#000';
-        document.getElementById('panel-info').classList.add('oculto'); // Oculta el panel normal de ver
+        document.getElementById('panel-info').classList.add('oculto'); 
         estadoMapa.interaccion.selectedNode = null;
         renderPanelEdicion();
     } else {
@@ -34,6 +36,8 @@ editor.desactivar = () => {
     if(btn) { btn.style.background = '#4a004a'; btn.style.color = 'var(--gold)'; }
     editor.seleccionMultiple.clear();
     editor.tempLink = null;
+    editor.boxStart = null;
+    editor.boxCurrent = null;
     editor.herramienta = 'cursor';
 };
 
@@ -42,14 +46,14 @@ editor.setHerramienta = (herr) => {
     renderPanelEdicion();
 };
 
-// --- INTERACCIÓN CON RATÓN Y SHIFT PARA MULTI-SELECCIÓN ---
+// --- INTERACCIÓN CON RATÓN AVANZADA ---
 editor.onMouseDown = (e, nodo, worldPos) => {
     if (editor.herramienta === 'enlace') {
         if (nodo) {
-            // Empezar a trazar una flecha desde el centro del nodo origen
             editor.tempLink = { source: nodo, startX: nodo.x, startY: nodo.y, endX: worldPos.x, endY: worldPos.y };
         }
     } else {
+        // Herramienta Selector
         if (nodo) {
             if (e.shiftKey) {
                 if (editor.seleccionMultiple.has(nodo)) editor.seleccionMultiple.delete(nodo);
@@ -60,10 +64,16 @@ editor.onMouseDown = (e, nodo, worldPos) => {
                     editor.seleccionMultiple.add(nodo);
                 }
             }
-            estadoMapa.interaccion.draggedNode = nodo; // Para mover en grupo
+            estadoMapa.interaccion.draggedNode = nodo;
         } else {
-            editor.seleccionMultiple.clear();
-            estadoMapa.interaccion.isDraggingBg = true;
+            if (e.shiftKey) {
+                // Iniciar Caja de Selección Multiple
+                editor.boxStart = { ...worldPos };
+                editor.boxCurrent = { ...worldPos };
+            } else {
+                editor.seleccionMultiple.clear();
+                estadoMapa.interaccion.isDraggingBg = true;
+            }
         }
         renderPanelEdicion();
     }
@@ -71,11 +81,12 @@ editor.onMouseDown = (e, nodo, worldPos) => {
 
 editor.onMouseMove = (e, dx, dy, worldPos) => {
     if (editor.tempLink) {
-        // La punta de la flecha sigue al ratón
         editor.tempLink.endX = worldPos.x;
         editor.tempLink.endY = worldPos.y;
+    } else if (editor.boxStart) {
+        // Arrastrar Caja de Selección
+        editor.boxCurrent = { ...worldPos };
     } else if (estadoMapa.interaccion.draggedNode) {
-        // Mover todos los nodos seleccionados al mismo tiempo
         const z = estadoMapa.camara.zoom;
         editor.seleccionMultiple.forEach(n => {
             n.x += dx / z;
@@ -94,24 +105,48 @@ editor.onMouseUp = (e, nodo) => {
             crearEnlace(editor.tempLink.source, nodo);
         }
         editor.tempLink = null;
+    } else if (editor.boxStart) {
+        // Finalizar Caja de Selección
+        const minX = Math.min(editor.boxStart.x, editor.boxCurrent.x);
+        const maxX = Math.max(editor.boxStart.x, editor.boxCurrent.x);
+        const minY = Math.min(editor.boxStart.y, editor.boxCurrent.y);
+        const maxY = Math.max(editor.boxStart.y, editor.boxCurrent.y);
+
+        estadoMapa.nodos.forEach(n => {
+            if (n.x >= minX && n.x <= maxX && n.y >= minY && n.y <= maxY) {
+                editor.seleccionMultiple.add(n);
+            }
+        });
+        editor.boxStart = null;
+        editor.boxCurrent = null;
+        renderPanelEdicion();
     }
     estadoMapa.interaccion.isDraggingBg = false;
     estadoMapa.interaccion.draggedNode = null;
 };
 
-// --- CREACIÓN DE ELEMENTOS ---
+// --- CREACIÓN LÓGICA E ID SECUENCIAL ---
+function getNextId() {
+    let max = 0;
+    estadoMapa.nodos.forEach(n => {
+        const num = parseInt((n.id || n.nombreOriginal).replace(/\D/g, ''));
+        if (!isNaN(num) && num > max) max = num;
+    });
+    return max + 1;
+}
+
 window.crearNodoNuevo = () => {
-    const idNum = Math.floor(Math.random() * 90000) + 10000;
+    const newIdNum = getNextId();
     const nuevo = {
-        id: `Hechizo ${idNum}`,
-        nombreOriginal: `Nuevo Hechizo ${idNum}`,
-        nombre: `Nuevo Hechizo ${idNum} (0)`,
+        id: `Hechizo ${newIdNum}`,
+        nombreOriginal: `Hechizo ${newIdNum}`,
+        nombre: `Hechizo ${newIdNum} (0)`,
         afinidad: 'Física',
         clase: 'Clase 1',
         hex: 0,
         resumen: '', efecto: '', overcast: '', undercast: '', especial: '',
         esConocido: false, isHexNode: false,
-        x: ((window.innerWidth/2) - estadoMapa.camara.x) / estadoMapa.camara.zoom, // Aparece en el centro exacto de la pantalla
+        x: ((window.innerWidth/2) - estadoMapa.camara.x) / estadoMapa.camara.zoom,
         y: ((window.innerHeight/2) - estadoMapa.camara.y) / estadoMapa.camara.zoom,
         radio: 28, incomingSources: [], modificado: true, _esNuevo: true
     };
@@ -125,7 +160,7 @@ window.crearNodoNuevo = () => {
 };
 
 function crearEnlace(source, target) {
-    if (estadoMapa.enlaces.some(e => e.source === source && e.target === target)) return; // No duplicar
+    if (estadoMapa.enlaces.some(e => e.source === source && e.target === target)) return; 
     
     const newLink = { source, target };
     estadoMapa.enlaces.push(newLink);
@@ -135,7 +170,7 @@ function crearEnlace(source, target) {
     actualizarColoresFlechas();
 }
 
-// --- ACTUALIZACIÓN DE DATOS DESDE EL PANEL ---
+// --- ACTUALIZACIÓN DE DATOS ---
 window.actualizarDatoNodo = (campo, valor) => {
     editor.seleccionMultiple.forEach(n => {
         n[campo] = valor;
@@ -150,6 +185,8 @@ window.actualizarDatoNodo = (campo, valor) => {
         }
         registrarCambioNodo(n);
     });
+    // Si editamos una afinidad, redibujar panel para actualizar el gestor de colores
+    if(campo === 'afinidad') renderPanelEdicion();
 };
 
 function registrarCambioNodo(n) {
@@ -164,11 +201,22 @@ function registrarCambioNodo(n) {
     };
 }
 
+window.actualizarColorPersonalizado = (afinidad, hexColor) => {
+    // Oscurecer color para el borde
+    let c = hexColor.substring(1);
+    let rgb = parseInt(c, 16);
+    let r = Math.max(0, (rgb >> 16) - 50);
+    let g = Math.max(0, ((rgb >> 8) & 0x00FF) - 50);
+    let b = Math.max(0, (rgb & 0x0000FF) - 50);
+    let borderHex = `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+    
+    window.mapaColores[afinidad] = { t: hexColor, b: borderHex };
+};
+
 window.eliminarSeleccion = () => {
     if(!confirm("¿Destruir los nodos seleccionados y todas las flechas conectadas a ellos?")) return;
     
     editor.seleccionMultiple.forEach(n => {
-        // Cortar todas las flechas que toquen a este nodo
         estadoMapa.enlaces = estadoMapa.enlaces.filter(e => {
             if (e.source === n || e.target === n) {
                 editor.cambiosPendientes.enlaces.push({ source: e.source.id, target: e.target.id, eliminado: true });
@@ -177,15 +225,11 @@ window.eliminarSeleccion = () => {
             return true;
         });
         
-        // Quitar de los registros de padres
         estadoMapa.nodos.forEach(other => {
             other.incomingSources = other.incomingSources.filter(s => s !== n);
         });
 
-        // Borrar el nodo del mapa visual
         estadoMapa.nodos = estadoMapa.nodos.filter(x => x !== n);
-        
-        // Añadir a la cola para borrarlo en Google Sheets
         editor.cambiosPendientes.nodos[n.id] = { idOriginal: n.id, eliminado: true };
     });
     
@@ -195,10 +239,7 @@ window.eliminarSeleccion = () => {
 };
 
 window.guardarEdicionAvanzada = async () => {
-    // Si la persona solo movió nodos y nunca les cambió el texto, los registramos para que se guarde su nueva (X, Y)
-    estadoMapa.nodos.forEach(n => {
-        if(n.modificado) registrarCambioNodo(n);
-    });
+    estadoMapa.nodos.forEach(n => { if(n.modificado) registrarCambioNodo(n); });
 
     const payload = {
         accion: 'guardar_edicion_completa',
@@ -206,10 +247,10 @@ window.guardarEdicionAvanzada = async () => {
         enlaces: editor.cambiosPendientes.enlaces
     };
 
-    if (payload.nodos.length === 0 && payload.enlaces.length === 0) return alert("No has hecho ningún cambio estructural aún.");
+    if (payload.nodos.length === 0 && payload.enlaces.length === 0) return alert("No has hecho ningún cambio estructural.");
 
     const btn = document.getElementById('btn-save-editor');
-    btn.innerText = "Sincronizando Estructura..."; btn.disabled = true;
+    btn.innerText = "Sincronizando..."; btn.disabled = true;
 
     try {
         const res = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify(payload) });
@@ -221,70 +262,86 @@ window.guardarEdicionAvanzada = async () => {
         } else {
             alert("Fallo del servidor: " + data.message);
         }
-    } catch(e) { alert("Google bloqueó la subida. Verifica tu conexión."); }
+    } catch(e) { alert("Error de Red."); }
     
     btn.innerText = "💾 GUARDAR ESTRUCTURA"; btn.disabled = false;
 };
 
-// --- INTERFAZ HTML DE LA BARRA LATERAL ---
+// --- INTERFAZ HTML DEL EDITOR ---
 function renderPanelEdicion() {
     const panel = document.getElementById('panel-edicion-avanzada');
     if (!panel) return;
 
-    let html = `<h3 style="color:#00ffff; text-align:center; font-family:'Cinzel'; border-bottom:1px solid #00ffff; padding-bottom:10px;">Herramientas</h3>
-                
-                <div style="display:flex; gap:10px; margin-bottom: 20px;">
-                    <button onclick="window.mapaEditor.setHerramienta('cursor')" style="flex:1; background:${editor.herramienta==='cursor' ? '#00ffff' : '#222'}; color:${editor.herramienta==='cursor' ? '#000' : '#fff'}; border:1px solid #00ffff;">👆 Seleccionar</button>
-                    <button onclick="window.mapaEditor.setHerramienta('enlace')" style="flex:1; background:${editor.herramienta==='enlace' ? '#00ffff' : '#222'}; color:${editor.herramienta==='enlace' ? '#000' : '#fff'}; border:1px solid #00ffff;" title="Clic en un Nodo y arrastra hacia otro para conectarlos">↗️ Flecha</button>
+    // Extraer afinidades únicas para la lista dinámica
+    const afinidadesExistentes = new Set();
+    estadoMapa.nodos.forEach(n => { if (n.afinidad && n.afinidad !== '-') afinidadesExistentes.add(n.afinidad); });
+
+    let dataListHTML = `<datalist id="dl-edit-afinidad">`;
+    afinidadesExistentes.forEach(a => dataListHTML += `<option value="${a}">`);
+    dataListHTML += `</datalist>`;
+
+    let html = `${dataListHTML}
+                <div style="position:sticky; top:0; background:rgba(15,0,30,0.95); z-index:10; padding-bottom:10px;">
+                    <h3 style="color:#00ffff; text-align:center; font-family:'Cinzel'; border-bottom:1px solid #00ffff; margin-top:0; padding-top:10px; padding-bottom:10px;">Herramientas</h3>
+                    <div style="display:flex; gap:10px; margin-bottom: 15px;">
+                        <button onclick="window.mapaEditor.setHerramienta('cursor')" style="flex:1; background:${editor.herramienta==='cursor' ? '#00ffff' : '#222'}; color:${editor.herramienta==='cursor' ? '#000' : '#fff'}; border:1px solid #00ffff;">👆 Select</button>
+                        <button onclick="window.mapaEditor.setHerramienta('enlace')" style="flex:1; background:${editor.herramienta==='enlace' ? '#00ffff' : '#222'}; color:${editor.herramienta==='enlace' ? '#000' : '#fff'}; border:1px solid #00ffff;" title="Arrastra de un nodo a otro">↗️ Flecha</button>
+                    </div>
+                    <button onclick="window.crearNodoNuevo()" style="width:100%; background:#004a00; color:#fff; border:1px solid #00ff00; padding:10px;">➕ Crear Nodo Aquí</button>
                 </div>
-                <button onclick="window.crearNodoNuevo()" style="width:100%; background:#004a00; color:#fff; border:1px solid #00ff00; padding:10px; margin-bottom:20px;">➕ Crear Nodo Nuevo Aquí</button>
-                <hr style="border-color:#444;">`;
+                <hr style="border-color:#444; margin-top:0;">`;
 
     const cands = Array.from(editor.seleccionMultiple);
     
     if (cands.length === 0) {
-        html += `<p style="color:#888; text-align:center; font-size:0.9em; margin-top:20px; line-height: 1.5;"><i>Haz clic en cualquier nodo para editarlo.<br><br>Mantén pulsado <b>SHIFT</b> y haz clic en varios para editarlos o moverlos en grupo.</i></p>`;
+        html += `<p style="color:#888; text-align:center; font-size:0.9em; margin-top:20px; line-height: 1.5;"><i>Haz clic en cualquier nodo para editarlo.<br><br>Mantén pulsado <b>SHIFT y arrastra</b> para hacer una caja de selección múltiple.</i></p>`;
     } 
     else if (cands.length > 1) {
         html += `<h4 style="color:var(--gold); text-align:center;">Edición Masiva (${cands.length} nodos)</h4>
                  <div style="display:grid; grid-template-columns:1fr; gap:10px;">
-                    <div><label style="font-size:0.8em; color:#aaa;">Forzar Costo HEX:</label><input type="number" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;"></div>
-                    <div><label style="font-size:0.8em; color:#aaa;">Forzar Afinidad:</label><select onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;">
-                        <option value="">- Ignorar -</option><option>Física</option><option>Energética</option><option>Espiritual</option><option>Mando</option><option>Psíquica</option><option>Oscura</option>
-                    </select></div>
+                    <div><label style="font-size:0.8em; color:#aaa;">Forzar Costo HEX:</label><input type="number" step="50" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                    <div><label style="font-size:0.8em; color:#aaa;">Forzar Afinidad:</label><input type="text" list="dl-edit-afinidad" placeholder="- Escribe o Selecciona -" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
                  </div>
                  <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; color:white; padding:10px; margin-top:20px;">🗑️ Destruir Todos</button>`;
     } 
     else {
         const n = cands[0];
         html += `<h4 style="color:var(--gold); text-align:center; margin-top:0;">Propiedades de Nodo</h4>
-                 <div style="display:flex; flex-direction:column; gap:8px; font-size:0.85em;">
-                    <div><label style="color:#aaa;">ID Excel (Hechizo 24):</label><input type="text" value="${n.id}" onchange="window.actualizarDatoNodo('id', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;"></div>
-                    <div><label style="color:#aaa;">Nombre del Hechizo:</label><input type="text" value="${n.nombreOriginal}" onchange="window.actualizarDatoNodo('nombreOriginal', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;"></div>
+                 <div style="display:flex; flex-direction:column; gap:10px; font-size:0.85em;">
+                    <div><label style="color:#aaa;">ID Excel:</label><input type="text" value="${n.id}" onchange="window.actualizarDatoNodo('id', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                    <div><label style="color:#aaa;">Nombre Visible:</label><input type="text" value="${n.nombreOriginal}" onchange="window.actualizarDatoNodo('nombreOriginal', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
                     
                     <div style="display:flex; gap:10px;">
-                        <div style="flex:1;"><label style="color:#aaa;">Costo HEX:</label><input type="number" value="${n.hex}" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;"></div>
-                        <div style="flex:1;"><label style="color:#aaa;">Clase:</label><input type="text" value="${n.clase}" onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;"></div>
+                        <div style="flex:1;"><label style="color:#aaa;">Costo HEX:</label><input type="number" step="50" value="${n.hex}" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                        <div style="flex:1;"><label style="color:#aaa;">Clase:</label><input type="text" value="${n.clase}" onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
                     </div>
                     
-                    <div><label style="color:#aaa;">Afinidad:</label><select onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;">
-                        <option value="Física" ${n.afinidad==='Física'?'selected':''}>Física</option>
-                        <option value="Energética" ${n.afinidad==='Energética'?'selected':''}>Energética</option>
-                        <option value="Espiritual" ${n.afinidad==='Espiritual'?'selected':''}>Espiritual</option>
-                        <option value="Mando" ${n.afinidad==='Mando'?'selected':''}>Mando</option>
-                        <option value="Psíquica" ${n.afinidad==='Psíquica'?'selected':''}>Psíquica</option>
-                        <option value="Oscura" ${n.afinidad==='Oscura'?'selected':''}>Oscura</option>
-                    </select></div>
+                    <div><label style="color:#aaa;">Afinidad (Infinita):</label><input type="text" list="dl-edit-afinidad" value="${n.afinidad}" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
 
-                    <div><label style="color:#aaa;">Resumen Breve:</label><textarea onchange="window.actualizarDatoNodo('resumen', this.value)" style="width:100%; height:40px; background:#000; color:#fff; border:1px solid #555; padding:5px; resize:none;">${n.resumen}</textarea></div>
-                    <div><label style="color:#aaa;">Efecto Mecánico:</label><textarea onchange="window.actualizarDatoNodo('efecto', this.value)" style="width:100%; height:50px; background:#000; color:#fff; border:1px solid #555; padding:5px; resize:none;">${n.efecto}</textarea></div>
+                    <div><label style="color:#aaa;">Resumen Breve:</label><textarea onchange="window.actualizarDatoNodo('resumen', this.value)" style="width:100%; box-sizing:border-box; height:40px; background:#000; color:#fff; border:1px solid #555; padding:8px; resize:none;">${n.resumen}</textarea></div>
+                    <div><label style="color:#aaa;">Efecto Mecánico:</label><textarea onchange="window.actualizarDatoNodo('efecto', this.value)" style="width:100%; box-sizing:border-box; height:50px; background:#000; color:#fff; border:1px solid #555; padding:8px; resize:none;">${n.efecto}</textarea></div>
                     
-                    <div><label style="color:#ff7777;">Overcast (Doble Dado):</label><input type="text" value="${n.overcast}" onchange="window.actualizarDatoNodo('overcast', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;"></div>
-                    <div><label style="color:#77aaff;">Undercast (Medio Dado):</label><input type="text" value="${n.undercast}" onchange="window.actualizarDatoNodo('undercast', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;"></div>
-                    <div><label style="color:var(--gold);">Regla Especial:</label><input type="text" value="${n.especial}" onchange="window.actualizarDatoNodo('especial', this.value)" style="width:100%; background:#000; color:#fff; border:1px solid #555; padding:5px;"></div>
+                    <div><label style="color:#ff7777;">Overcast (Doble Dado):</label><input type="text" value="${n.overcast}" onchange="window.actualizarDatoNodo('overcast', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                    <div><label style="color:#77aaff;">Undercast (Medio Dado):</label><input type="text" value="${n.undercast}" onchange="window.actualizarDatoNodo('undercast', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                    <div><label style="color:var(--gold);">Regla Especial:</label><input type="text" value="${n.especial}" onchange="window.actualizarDatoNodo('especial', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
                  </div>
                  <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; color:white; padding:10px; margin-top:15px;">🗑️ Destruir Nodo</button>`;
     }
+
+    // --- NUEVO: GESTOR DE COLORES EN TIEMPO REAL ---
+    html += `<hr style="border-color:#444; margin-top:20px;">
+             <details style="background:rgba(0,0,0,0.5); padding:10px; border-radius:6px; border:1px dashed #555;">
+                <summary style="color:#aaa; cursor:pointer; font-size:0.9em;">🎨 Gestor de Colores de Afinidad</summary>
+                <div style="display:grid; grid-template-columns:1fr; gap:5px; margin-top:10px;">`;
+    
+    afinidadesExistentes.forEach(af => {
+        const c = window.mapaColores[af] ? window.mapaColores[af].t : '#ffffff';
+        html += `<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8em;">
+                    <span style="color:#ddd;">${af}</span>
+                    <input type="color" value="${c}" onchange="window.actualizarColorPersonalizado('${af}', this.value)" style="background:none; border:none; width:30px; height:25px; cursor:pointer;">
+                 </div>`;
+    });
+    html += `   </div></details>`;
 
     html += `<button id="btn-save-editor" onclick="window.guardarEdicionAvanzada()" style="width:100%; background:linear-gradient(135deg, #b8860b, #d4af37); color:black; font-weight:bold; padding:15px; margin-top:25px; font-size:1.1em; border:none; box-shadow: 0 0 15px rgba(212,175,55,0.4); cursor:pointer;">💾 GUARDAR ESTRUCTURA</button>`;
     
