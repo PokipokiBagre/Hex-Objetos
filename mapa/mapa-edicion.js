@@ -18,13 +18,36 @@ window.mapaEditor = editor;
 window.toggleModoEdicion = () => {
     editor.activa = !editor.activa;
     const panel = document.getElementById('panel-edicion-avanzada');
+    const tools = document.getElementById('herramientas-editor');
     const btn = document.getElementById('btn-editar-mapa');
+    
+    const sidebarJugadores = document.getElementById('sidebar-jugadores');
+    const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
     
     if (editor.activa) {
         panel.classList.remove('oculto');
+        tools.classList.remove('oculto');
         btn.style.background = '#00ffff'; btn.style.color = '#000';
         document.getElementById('panel-info').classList.add('oculto'); 
         estadoMapa.interaccion.selectedNode = null;
+        
+        // Comportamiento Móvil para la barra de jugadores (Ocultar por defecto)
+        sidebarJugadores.style.transform = 'translateX(-150%)';
+        sidebarJugadores.style.opacity = '0';
+        sidebarJugadores.style.pointerEvents = 'none';
+        btnToggleSidebar.style.display = 'block'; // Mostrar botón de toggle
+        btnToggleSidebar.onclick = () => {
+            if(sidebarJugadores.style.opacity === '0') {
+                sidebarJugadores.style.transform = 'translateX(0)';
+                sidebarJugadores.style.opacity = '1';
+                sidebarJugadores.style.pointerEvents = 'auto';
+            } else {
+                sidebarJugadores.style.transform = 'translateX(-150%)';
+                sidebarJugadores.style.opacity = '0';
+                sidebarJugadores.style.pointerEvents = 'none';
+            }
+        };
+
         renderPanelEdicion();
     } else {
         editor.desactivar();
@@ -34,6 +57,17 @@ window.toggleModoEdicion = () => {
 editor.desactivar = () => {
     editor.activa = false;
     document.getElementById('panel-edicion-avanzada').classList.add('oculto');
+    document.getElementById('herramientas-editor').classList.add('oculto');
+    
+    // Restaurar jugadores
+    const sidebarJugadores = document.getElementById('sidebar-jugadores');
+    const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+    sidebarJugadores.style.transform = '';
+    sidebarJugadores.style.opacity = '';
+    sidebarJugadores.style.pointerEvents = '';
+    btnToggleSidebar.style.display = '';
+    btnToggleSidebar.onclick = () => sidebarJugadores.classList.toggle('open'); // Restaurar función móvil original
+    
     const btn = document.getElementById('btn-editar-mapa');
     if(btn) { btn.style.background = '#4a004a'; btn.style.color = 'var(--gold)'; }
     editor.seleccionMultiple.clear();
@@ -45,10 +79,60 @@ editor.desactivar = () => {
 
 editor.setHerramienta = (herr) => {
     editor.herramienta = herr;
-    renderPanelEdicion();
+    const btnSelect = document.getElementById('tool-cursor');
+    const btnFlecha = document.getElementById('tool-enlace');
+    
+    if(herr === 'cursor') {
+        btnSelect.style.background = 'var(--cyan-magic)'; btnSelect.style.color = '#000'; btnSelect.style.boxShadow = '0 0 15px rgba(0,255,255,0.5)';
+        btnFlecha.style.background = '#111'; btnFlecha.style.color = 'var(--cyan-magic)'; btnFlecha.style.boxShadow = 'none';
+    } else {
+        btnFlecha.style.background = 'var(--cyan-magic)'; btnFlecha.style.color = '#000'; btnFlecha.style.boxShadow = '0 0 15px rgba(0,255,255,0.5)';
+        btnSelect.style.background = '#111'; btnSelect.style.color = 'var(--cyan-magic)'; btnSelect.style.boxShadow = 'none';
+    }
 };
 
-// --- INTERACCIÓN CON RATÓN AVANZADA ---
+// --- EL ÚNICO BOTÓN DE GUARDADO MAESTRO ---
+// Sobreescribimos el de mapa-main.js para que guarde ABSOLUTAMENTE TODO
+window.guardarCambiosMapa = async () => {
+    estadoMapa.nodos.forEach(n => { if(n.modificado) registrarCambioNodo(n); });
+
+    const payload = {
+        accion: 'guardar_edicion_completa',
+        nodos: Object.values(editor.cambiosPendientes.nodos),
+        enlaces: editor.cambiosPendientes.enlaces,
+        afinidades: window.mapaColores 
+    };
+
+    if (payload.nodos.length === 0 && payload.enlaces.length === 0 && Object.keys(window.mapaColores).length === 0) {
+        return alert("No hay cambios para guardar.");
+    }
+
+    const btn = document.getElementById('btn-save-map');
+    const textoOriginal = btn.innerText;
+    btn.innerText = "Guardando Red..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify(payload) });
+        const data = await res.json();
+        if (data.status === 'success') {
+            alert("¡Cambios guardados en Google Sheets!");
+            editor.cambiosPendientes = { nodos: {}, enlaces: [] };
+            estadoMapa.nodos.forEach(n => { n.modificado = false; n._esNuevo = false; n._oldId = n.id; });
+            btn.classList.add('oculto'); // Se oculta tras guardar
+        } else {
+            alert("Fallo del servidor: " + data.message);
+        }
+    } catch(e) { alert("Error de Red."); }
+    
+    btn.innerText = textoOriginal; btn.disabled = false;
+};
+
+// Activa el botón de guardar global
+function activarBotonGuardar() {
+    document.getElementById('btn-save-map').classList.remove('oculto');
+}
+
+// --- INTERACCIÓN CON RATÓN ---
 editor.onMouseDown = (e, nodo, worldPos) => {
     editor.hasDragged = false; 
     editor.isShiftPressed = e.shiftKey; 
@@ -98,6 +182,7 @@ editor.onMouseMove = (e, dx, dy, worldPos) => {
             n.y += dy / z;
             n.modificado = true;
         });
+        activarBotonGuardar(); // Si arrastras, activa el guardado
     } else if (estadoMapa.interaccion.isDraggingBg) {
         estadoMapa.camara.x += dx;
         estadoMapa.camara.y += dy;
@@ -116,6 +201,7 @@ editor.onMouseUp = (e, nodo) => {
             } else {
                 crearEnlace(editor.tempLink.source, nodo);
             }
+            activarBotonGuardar(); // Al crear flecha, activa guardado
         }
         editor.tempLink = null;
     } else if (editor.boxStart) {
@@ -162,7 +248,7 @@ window.crearNodoNuevo = () => {
         id: `Hechizo ${newIdNum}`,
         nombreOriginal: `Hechizo ${newIdNum}`,
         nombre: `Hechizo ${newIdNum} (0)`,
-        afinidad: '', // <-- AHORA INICIA EN BLANCO
+        afinidad: '',
         clase: 'Clase 1',
         hex: 0,
         resumen: '', efecto: '', overcast: '', undercast: '', especial: '',
@@ -177,7 +263,12 @@ window.crearNodoNuevo = () => {
     editor.seleccionMultiple.clear();
     editor.seleccionMultiple.add(nuevo);
     editor.herramienta = 'cursor';
+    
+    // Forzamos actualización visual de la herramienta
+    window.mapaEditor.setHerramienta('cursor');
+    
     renderPanelEdicion();
+    activarBotonGuardar(); // Al crear nodo, activa guardado
 };
 
 function crearEnlace(source, target) {
@@ -206,6 +297,7 @@ window.actualizarDatoNodo = (campo, valor) => {
         }
         registrarCambioNodo(n);
     });
+    activarBotonGuardar(); // Al editar propiedad, activa guardado
     if(campo === 'afinidad') renderPanelEdicion();
 };
 
@@ -230,7 +322,7 @@ window.actualizarColorPersonalizado = (afinidad, hexColor) => {
     let borderHex = `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
     
     window.mapaColores[afinidad] = { t: hexColor, b: borderHex };
-    localStorage.setItem('hex_map_colors', JSON.stringify(window.mapaColores)); 
+    activarBotonGuardar();
 };
 
 window.eliminarSeleccion = () => {
@@ -256,41 +348,10 @@ window.eliminarSeleccion = () => {
     editor.seleccionMultiple.clear();
     actualizarColoresFlechas();
     renderPanelEdicion();
+    activarBotonGuardar(); // Al destruir, activa guardado
 };
 
-window.guardarEdicionAvanzada = async () => {
-    estadoMapa.nodos.forEach(n => { if(n.modificado) registrarCambioNodo(n); });
-
-    const payload = {
-        accion: 'guardar_edicion_completa',
-        nodos: Object.values(editor.cambiosPendientes.nodos),
-        enlaces: editor.cambiosPendientes.enlaces,
-        afinidades: window.mapaColores 
-    };
-
-    if (payload.nodos.length === 0 && payload.enlaces.length === 0 && Object.keys(window.mapaColores).length === 0) {
-        return alert("No has hecho ningún cambio estructural.");
-    }
-
-    const btn = document.getElementById('btn-save-editor');
-    btn.innerText = "Sincronizando con Sheets..."; btn.disabled = true;
-
-    try {
-        const res = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify(payload) });
-        const data = await res.json();
-        if (data.status === 'success') {
-            alert("¡Mapa y Afinidades guardados en Google Sheets!");
-            editor.cambiosPendientes = { nodos: {}, enlaces: [] };
-            estadoMapa.nodos.forEach(n => { n.modificado = false; n._esNuevo = false; n._oldId = n.id; });
-        } else {
-            alert("Fallo del servidor: " + data.message);
-        }
-    } catch(e) { alert("Error de Red."); }
-    
-    btn.innerText = "💾 GUARDAR ESTRUCTURA"; btn.disabled = false;
-};
-
-// --- INTERFAZ HTML DEL EDITOR ---
+// --- INTERFAZ HTML DEL EDITOR LIMPÍA Y REDUCIDA ---
 function renderPanelEdicion() {
     const panel = document.getElementById('panel-edicion-avanzada');
     if (!panel) return;
@@ -303,46 +364,36 @@ function renderPanelEdicion() {
     dataListHTML += `</datalist>`;
 
     let html = `${dataListHTML}
-                <button onclick="window.mapaEditor.desactivar()" title="Cerrar Editor" style="position:absolute; top:15px; right:15px; width:28px; height:28px; background:rgba(220,20,60,0.5); color:#fff; border:1px solid rgba(255,255,255,0.4); border-radius:50%; font-weight:bold; cursor:pointer; z-index:50;">✕</button>
-                <div style="position:sticky; top:0; background:rgba(10,0,20,0.95); z-index:10; padding-bottom:15px; border-bottom:1px dashed #555;">
-                    <h3 style="color:var(--gold); text-align:center; font-family:'Cinzel'; margin:0 0 15px 0; padding-right:20px;">⚙️ EDITOR ESTRUCTURAL</h3>
-                    
-                    <div style="display:flex; justify-content:center; gap:20px; margin-bottom: 15px;">
-                        <button onclick="window.mapaEditor.setHerramienta('cursor')" style="width:85px; height:85px; border-radius:12px; background:${editor.herramienta==='cursor' ? 'var(--cyan-magic)' : '#111'}; color:${editor.herramienta==='cursor' ? '#000' : 'var(--cyan-magic)'}; border:2px solid var(--cyan-magic); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:0.2s; box-shadow: ${editor.herramienta==='cursor' ? '0 0 15px rgba(0,255,255,0.5)' : 'none'};">
-                            <span style="font-size:2em; margin-bottom:5px;">👆</span>
-                            <span style="font-family:'Cinzel'; font-weight:bold; font-size:0.8em;">Select</span>
-                        </button>
-                        <button onclick="window.mapaEditor.setHerramienta('enlace')" style="width:85px; height:85px; border-radius:12px; background:${editor.herramienta==='enlace' ? 'var(--cyan-magic)' : '#111'}; color:${editor.herramienta==='enlace' ? '#000' : 'var(--cyan-magic)'}; border:2px solid var(--cyan-magic); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:0.2s; box-shadow: ${editor.herramienta==='enlace' ? '0 0 15px rgba(0,255,255,0.5)' : 'none'};" title="SHIFT + Soltar para conectar a varios">
-                            <span style="font-size:2em; margin-bottom:5px;">↗️</span>
-                            <span style="font-family:'Cinzel'; font-weight:bold; font-size:0.8em;">Flecha</span>
-                        </button>
-                    </div>
-                    <button onclick="window.crearNodoNuevo()" style="width:100%; background:linear-gradient(135deg, #004a00, #008000); color:#fff; border:1px solid #00ff00; border-radius:6px; padding:12px; font-weight:bold; font-size:1.1em; cursor:pointer;">➕ Crear Nodo Nuevo Aquí</button>
+                <button onclick="window.toggleModoEdicion()" title="Cerrar Editor" style="position:absolute; top:15px; right:15px; width:28px; height:28px; background:rgba(220,20,60,0.5); color:#fff; border:1px solid rgba(255,255,255,0.4); border-radius:50%; font-weight:bold; cursor:pointer; z-index:50;">✕</button>
+                <div style="position:sticky; top:0; background:rgba(15,0,30,0.95); z-index:10; padding-bottom:15px; border-bottom:1px dashed #555;">
+                    <h3 style="color:var(--gold); text-align:center; font-family:'Cinzel'; margin:0; padding-top:15px;">⚙️ PROPIEDADES</h3>
                 </div>`;
 
     const cands = Array.from(editor.seleccionMultiple);
     
     if (cands.length === 0) {
-        html += `<div style="padding:20px; text-align:center; color:#888;">
-                    <p style="font-size:0.95em; line-height:1.6;">Haz clic en cualquier nodo para editarlo.</p>
-                    <p style="font-size:0.85em; line-height:1.6;">Mantén pulsado <strong style="color:var(--gold);">SHIFT y arrastra</strong> en el fondo para encerrar múltiples nodos en una caja.</p>
+        html += `<div style="padding:40px 20px; text-align:center; color:#888;">
+                    <p style="font-size:1em; line-height:1.6;">Haz clic en cualquier nodo para editarlo.</p>
+                    <p style="font-size:0.9em; line-height:1.6;">Mantén pulsado <strong style="color:var(--gold);">SHIFT y arrastra</strong> en el fondo para encerrar múltiples nodos en una caja.</p>
                  </div>`;
     } 
     else if (cands.length > 1) {
         html += `<h4 style="color:var(--cyan-magic); text-align:center; font-family:'Cinzel'; margin-top:20px;">Edición Masiva (${cands.length} nodos)</h4>
-                 <div style="display:grid; grid-template-columns:1fr; gap:15px; padding:0 5px;">
+                 <div style="display:grid; grid-template-columns:1fr; gap:15px; padding:0 15px;">
                     <div><label style="font-size:0.8em; color:#aaa; font-weight:bold;">FORZAR COSTO HEX:</label><input type="number" step="50" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:10px;"></div>
                     <div><label style="font-size:0.8em; color:#aaa; font-weight:bold;">FORZAR CLASE:</label><select onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:10px;">
                         <option value="">- Ignorar -</option><option value="Clase 1">Clase 1</option><option value="Clase 2">Clase 2</option><option value="Clase 3">Clase 3</option><option value="Clase 4">Clase 4</option><option value="Clase 5">Clase 5</option>
                     </select></div>
                     <div><label style="font-size:0.8em; color:#aaa; font-weight:bold;">FORZAR AFINIDAD:</label><input type="text" list="dl-edit-afinidad" placeholder="- Escribe o Selecciona -" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:10px;"></div>
                  </div>
-                 <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; border-radius:6px; color:white; padding:12px; font-weight:bold; margin-top:25px; cursor:pointer;">🗑️ DESTRUIR SELECCIÓN</button>`;
+                 <div style="padding: 0 15px;">
+                    <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; border-radius:6px; color:white; padding:12px; font-weight:bold; margin-top:25px; cursor:pointer;">🗑️ DESTRUIR SELECCIÓN</button>
+                 </div>`;
     } 
     else {
         const n = cands[0];
         html += `<h4 style="color:var(--cyan-magic); text-align:center; font-family:'Cinzel'; margin-top:20px;">Propiedades de Nodo</h4>
-                 <div style="display:flex; flex-direction:column; gap:12px; font-size:0.85em; padding:0 5px;">
+                 <div style="display:flex; flex-direction:column; gap:12px; font-size:0.9em; padding:0 15px;">
                     <div><label style="color:#aaa; font-weight:bold;">ID Excel:</label><input type="text" value="${n.id}" onchange="window.actualizarDatoNodo('id', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
                     <div><label style="color:#aaa; font-weight:bold;">Nombre Visible:</label><input type="text" value="${n.nombreOriginal}" onchange="window.actualizarDatoNodo('nombreOriginal', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
                     
@@ -361,15 +412,17 @@ function renderPanelEdicion() {
                     <div><label style="color:#ff7777; font-weight:bold;">Overcast (Doble Dado):</label><input type="text" value="${n.overcast}" onchange="window.actualizarDatoNodo('overcast', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
                     <div><label style="color:#77aaff; font-weight:bold;">Undercast (Medio Dado):</label><input type="text" value="${n.undercast}" onchange="window.actualizarDatoNodo('undercast', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
                     <div><label style="color:var(--gold); font-weight:bold;">Regla Especial:</label><input type="text" value="${n.especial}" onchange="window.actualizarDatoNodo('especial', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
-                 </div>
-                 <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; border-radius:6px; color:white; padding:12px; font-weight:bold; margin-top:20px; cursor:pointer;">🗑️ DESTRUIR NODO</button>`;
+                 
+                    <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; border-radius:6px; color:white; padding:12px; font-weight:bold; margin-top:10px; cursor:pointer;">🗑️ DESTRUIR NODO</button>
+                 </div>`;
     }
 
     // --- GESTOR DE COLORES EN TIEMPO REAL ---
-    html += `<hr style="border-color:#444; margin-top:25px;">
-             <details style="background:rgba(0,0,0,0.4); padding:12px; border-radius:8px; border:1px dashed #555;">
-                <summary style="color:var(--gold); cursor:pointer; font-size:0.9em; font-weight:bold; font-family:'Cinzel';">🎨 GESTOR DE COLORES DE AFINIDAD</summary>
-                <div style="display:grid; grid-template-columns:1fr; gap:8px; margin-top:12px;">`;
+    html += `<hr style="border-color:#444; margin:25px 15px 15px 15px;">
+             <div style="padding: 0 15px 25px 15px;">
+                 <details style="background:rgba(0,0,0,0.4); padding:12px; border-radius:8px; border:1px dashed #555;">
+                    <summary style="color:var(--gold); cursor:pointer; font-size:0.9em; font-weight:bold; font-family:'Cinzel';">🎨 GESTOR DE COLORES DE AFINIDAD</summary>
+                    <div style="display:grid; grid-template-columns:1fr; gap:8px; margin-top:12px;">`;
     
     afinidadesExistentes.forEach(af => {
         const c = window.mapaColores[af] ? window.mapaColores[af].t : '#ffffff';
@@ -378,9 +431,9 @@ function renderPanelEdicion() {
                     <input type="color" value="${c}" onchange="window.actualizarColorPersonalizado('${af}', this.value)" style="background:none; border:none; width:30px; height:30px; cursor:pointer; padding:0;">
                  </div>`;
     });
-    html += `   </div></details>`;
-
-    html += `<button id="btn-save-editor" onclick="window.guardarEdicionAvanzada()" style="width:100%; background:linear-gradient(135deg, #b8860b, #d4af37); border-radius:8px; color:black; font-weight:bold; padding:18px; margin-top:25px; margin-bottom:20px; font-size:1.2em; border:none; box-shadow: 0 0 15px rgba(212,175,55,0.4); cursor:pointer;">💾 GUARDAR ESTRUCTURA</button>`;
+    html += `       </div>
+                 </details>
+             </div>`;
     
     panel.innerHTML = html;
 }
