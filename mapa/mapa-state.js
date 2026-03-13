@@ -23,14 +23,16 @@ export const estadoMapa = {
     }
 };
 
-export const COLOR_AFINIDAD = {
-    'Física': '#e2a673',
-    'Energética': '#f3e57a',
-    'Espiritual': '#7df0a7',
-    'Mando': '#a4d3f2',
-    'Psíquica': '#dcb1f0',
-    'Oscura': '#ff526f'
+window.mapaColores = {
+    'Física': { t: '#e2a673', b: '#b36a2f' },
+    'Energética': { t: '#f3e57a', b: '#bba71b' },
+    'Espiritual': { t: '#7df0a7', b: '#2ba85e' },
+    'Mando': { t: '#a4d3f2', b: '#3a87c2' },
+    'Psíquica': { t: '#dcb1f0', b: '#9648b8' },
+    'Oscura': { t: '#ff526f', b: '#b3152f' }
 };
+
+export const COLOR_AFINIDAD = window.mapaColores;
 
 export const ESTETICA = {
     lineaDescubierta: 'rgba(210, 190, 230, 0.2)', 
