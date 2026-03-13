@@ -268,6 +268,31 @@ window.descargarEstadoExcel = descargarEstadoExcel;
         window.mostrarPagina('grilla'); 
     }
 }
+
+// --- NUEVOS CONTROLES PARA LOOT PARTY ---
+window.toggleMostrarNPCsLoot = () => { 
+    estadoUI.mostrarNPCsLoot = !estadoUI.mostrarNPCsLoot; 
+    refrescarUI(); 
+};
+
+window.seleccionarTodosJugadores = () => {
+    Object.keys(invGlobal).forEach(j => {
+        const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === j.toLowerCase());
+        const p = key ? statsGlobal[key] : null;
+        if(p && p.isPlayer && !estadoUI.partyLoot.includes(j)) estadoUI.partyLoot.push(j);
+    });
+    refrescarUI();
+};
+
+window.seleccionarTodosNPCs = () => {
+    Object.keys(invGlobal).forEach(j => {
+        const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === j.toLowerCase());
+        const p = key ? statsGlobal[key] : null;
+        if((!p || !p.isPlayer) && !estadoUI.partyLoot.includes(j)) estadoUI.partyLoot.push(j);
+    });
+    refrescarUI();
+};
 iniciar();
+
 
 
