@@ -104,6 +104,35 @@ th:first-child, td:first-child { width: 70px; text-align: center; }
 
 .pagina { display: none; }
 .pagina.activa { display: block; animation: fadeIn 0.4s ease; }
+
+/* Corregir la cuadrícula de la forja múltiple */
+#multi-creation-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important; /* Mínimo 320px para que no choquen */ gap: 20px !important; padding: 10px;}
+
+/* Estilo para los nuevos inputs de texto con datalist */
+input[list].search-bar {
+    width: 100% !important;
+    box-sizing: border-box;
+    padding: 10px;
+    font-size: 0.85em !important;
+    text-align: left; /* Mejor alineado a la izquierda para leer tipos largos */
+    height: 40px;
+    margin: 0;
+}
+
+/* Asegurar que las filas de inputs dentro de cada caja de objeto tengan espacio */
+.multi-obj-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.multi-obj-row-triple {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr 70px; /* Distribución equilibrada */
+    gap: 10px;
+    margin-bottom: 10px;
+}
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 768px) {
