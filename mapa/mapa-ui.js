@@ -227,7 +227,8 @@ export function dibujarFrame() {
 
         // LÓGICA DE SWITCH GLOBAL PARA NODOS
         if (modoVisual === 'afinidades') {
-            colorAfinidadReal = COLOR_AFINIDAD[nodo.afinidad] || '#888';
+            // Busca en mapaColores, si no existe o es nuevo, crea un color gris por defecto
+            colorAfinidadReal = window.mapaColores[nodo.afinidad] ? window.mapaColores[nodo.afinidad].t : '#aaaaaa';
         } else {
             // Vista Descubiertos: Violeta/Dorado pastel
             if (nodo.esConocido) {
