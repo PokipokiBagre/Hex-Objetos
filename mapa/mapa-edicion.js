@@ -227,8 +227,8 @@ window.actualizarColorPersonalizado = (afinidad, hexColor) => {
     let b = Math.max(0, (rgb & 0x0000FF) - 50);
     let borderHex = `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
     
+    // Lo guardamos en la variable global (la UI se actualizará al instante)
     window.mapaColores[afinidad] = { t: hexColor, b: borderHex };
-    localStorage.setItem('hex_map_colors', JSON.stringify(window.mapaColores)); // GUARDADO EN NAVEGADOR
 };
 
 window.eliminarSeleccion = () => {
@@ -259,22 +259,26 @@ window.eliminarSeleccion = () => {
 window.guardarEdicionAvanzada = async () => {
     estadoMapa.nodos.forEach(n => { if(n.modificado) registrarCambioNodo(n); });
 
+    // AHORA MANDAMOS LAS AFINIDADES ACTUALIZADAS
     const payload = {
         accion: 'guardar_edicion_completa',
         nodos: Object.values(editor.cambiosPendientes.nodos),
-        enlaces: editor.cambiosPendientes.enlaces
+        enlaces: editor.cambiosPendientes.enlaces,
+        afinidades: window.mapaColores // <- ENVIAMOS LOS COLORES AL EXCEL
     };
 
-    if (payload.nodos.length === 0 && payload.enlaces.length === 0) return alert("No has hecho ningún cambio estructural.");
+    if (payload.nodos.length === 0 && payload.enlaces.length === 0 && Object.keys(window.mapaColores).length === 0) {
+        return alert("No has hecho ningún cambio estructural.");
+    }
 
     const btn = document.getElementById('btn-save-editor');
-    btn.innerText = "Sincronizando..."; btn.disabled = true;
+    btn.innerText = "Sincronizando con Sheets..."; btn.disabled = true;
 
     try {
         const res = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify(payload) });
         const data = await res.json();
         if (data.status === 'success') {
-            alert("¡Mapa guardado exitosamente en Google Sheets!");
+            alert("¡Mapa y Afinidades guardados en Google Sheets!");
             editor.cambiosPendientes = { nodos: {}, enlaces: [] };
             estadoMapa.nodos.forEach(n => { n.modificado = false; n._esNuevo = false; n._oldId = n.id; });
         } else {
