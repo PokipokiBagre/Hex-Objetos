@@ -325,17 +325,7 @@ function recalcularVidas(p, accion) {
     const fMax = calcularVidaRojaMax(p); if (p.vidaRojaActual > fMax) p.vidaRojaActual = fMax;
 }
 
-// CORRECCIÓN DEL BOTÓN RECALCULAR: Ahora usa tu función repintarConScroll('detalle') estable
-window.recalcularBases = () => { 
-    const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; 
-    if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { 
-        p.baseVidaRojaMax = 10; 
-        p.vidaRojaActual = calcularVidaRojaMax(p); 
-        p.baseVidaAzul = getMysticBonus(p); 
-        p.vidaAzul = p.baseVidaAzul; 
-        window.encolarCambio(n); guardar(); repintarConScroll('detalle'); 
-    } 
-};
+window.recalcularBases = () => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { p.baseVidaRojaMax = 10; p.vidaRojaActual = calcularVidaRojaMax(p); p.baseVidaAzul = getMysticBonus(p); p.vidaAzul = p.baseVidaAzul; window.encolarCambio(n); guardar(); repintarConScroll('detalle'); } };
 
 window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll('detalle'); };
 window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll('op'); };
@@ -433,7 +423,6 @@ async function iniciar() {
                 estadoUI.vistaActual = 'detalle';
             }
         }
-
     } 
     catch (error) { console.error("Error crítico:", error); } 
     finally { 
