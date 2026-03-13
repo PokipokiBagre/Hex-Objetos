@@ -416,17 +416,35 @@ window.conjurarHechizos = () => {
             continue;
         }
 
-        const info = todosNodos.find(n => n.Nombre.trim().toLowerCase() === spellName.trim().toLowerCase());
+        // Búsqueda inteligente: permite encontrar el hechizo por nombre o por ID (ej: Hechizo 24)
+        const spellNorm = spellName.trim().toLowerCase();
+        const info = todosNodos.find(n => (n.Nombre && n.Nombre.trim().toLowerCase() === spellNorm) || (n.ID && n.ID.trim().toLowerCase() === spellNorm));
         if(!info) { resDiv.innerHTML = "Hechizo no encontrado."; continue; }
 
         const hexCost = parseInt(info.HEX) || 0;
         const NC = dadoVal * afinVal;
         conjurosRealizados++;
         
-        const effect = getValInfo(info, ['efecto', 'Efecto']) || 'Ningún efecto base.';
-        const over = getValInfo(info, ['overcast 100%', 'overcast']);
-        const under = getValInfo(info, ['undercast 50%', 'undercast']);
-        const esp = getValInfo(info, ['especial', 'especiales']);
+        // --- EVALUACIÓN DE ENMASCARAMIENTO DE DATOS ---
+        const checkColaVis = estadoUI.colaCambios.toggleConocido.slice().reverse().find(c => c.ID === info.ID || c.Nombre === info.Nombre);
+        const isPublicBase = info.Conocido && info.Conocido.toString().trim().toLowerCase() === 'si';
+        const isKnown = checkColaVis ? (checkColaVis.Estado === 'si') : isPublicBase;
+        
+        // Si el usuario NO es OP y el hechizo está oculto, enmascaramos los resultados
+        const isHidden = !estadoUI.esAdmin && !isKnown;
+
+        let effect = getValInfo(info, ['efecto', 'Efecto']) || 'Ningún efecto base.';
+        let over = getValInfo(info, ['overcast 100%', 'overcast']);
+        let under = getValInfo(info, ['undercast 50%', 'undercast']);
+        let esp = getValInfo(info, ['especial', 'especiales']);
+
+        if (isHidden) {
+            effect = '<i style="color:#888;">Efecto desconocido (Hechizo sellado).</i>';
+            over = over ? '<i style="color:#888;">Efecto oculto.</i>' : null;
+            under = under ? '<i style="color:#888;">Efecto oculto.</i>' : null;
+            esp = esp ? '<i style="color:#888;">Efecto oculto.</i>' : null;
+        }
+        // ----------------------------------------------
 
         let htmlUI = `<div style="margin-bottom:5px;"><strong>Nivel de Casteo: <span style="font-size:1.2em; color:white;">${NC}</span></strong> <span style="color:#aaa; font-size:0.8em;">(Costo: ${hexCost})</span></div>`;
         let logStatus = "";
@@ -504,7 +522,6 @@ window.conjurarHechizos = () => {
         const mostrarEfectos = estadoUI.efectosCast !== false; // Evalúa el checkbox de efectos
 
         Object.values(agrupacionLogs).forEach(g => {
-            // Si es un Fallo O si desmarcaste "Mostrar Efectos", corta el texto en el estatus
             if (g.status.includes("FALLO") || !mostrarEfectos) {
                 textoLog += `${pj} | ${g.spell} x${g.count} | ${g.status}\n`;
             } else {
