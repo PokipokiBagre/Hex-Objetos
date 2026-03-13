@@ -175,33 +175,41 @@ export function dibujarFrame() {
         ctx.fillStyle = ctx.strokeStyle;
         ctx.fill();
     });
-
-   // --- HOOK DIBUJO DE EDICIÓN ---
+  // --- HOOK DIBUJO DE EDICIÓN ---
     if (window.mapaEditor && window.mapaEditor.activa) {
-        // 1. Dibujar enlace temporal (flecha que arrastras con punta)
+        // 1. Dibujar enlace temporal (flechas múltiples si hay selección masiva)
         if (window.mapaEditor.tempLink) {
             const temp = window.mapaEditor.tempLink;
-            const angle = Math.atan2(temp.endY - temp.startY, temp.endX - temp.startX);
-            const headlen = 18 / scaleFactor; // Tamaño de la punta
+            const seleccion = window.mapaEditor.seleccionMultiple;
             
-            // Línea principal
-            ctx.beginPath();
-            ctx.moveTo(temp.startX, temp.startY);
-            ctx.lineTo(temp.endX, temp.endY);
-            ctx.strokeStyle = '#00ffff'; 
-            ctx.lineWidth = 4 / scaleFactor; 
-            ctx.setLineDash([10/scaleFactor, 10/scaleFactor]);
-            ctx.stroke(); 
-            ctx.setLineDash([]);
-            
-            // Dibujo de la Punta
-            ctx.beginPath();
-            ctx.moveTo(temp.endX, temp.endY);
-            ctx.lineTo(temp.endX - headlen * Math.cos(angle - Math.PI / 7), temp.endY - headlen * Math.sin(angle - Math.PI / 7));
-            ctx.lineTo(temp.endX - headlen * Math.cos(angle + Math.PI / 7), temp.endY - headlen * Math.sin(angle + Math.PI / 7));
-            ctx.lineTo(temp.endX, temp.endY);
-            ctx.fillStyle = '#00ffff';
-            ctx.fill();
+            // Determinar desde qué nodos salen las flechas
+            const nodosOrigen = (seleccion.has(temp.source) && seleccion.size > 1) 
+                ? Array.from(seleccion) 
+                : [temp.source];
+
+            nodosOrigen.forEach(nodoOrg => {
+                const angle = Math.atan2(temp.endY - nodoOrg.y, temp.endX - nodoOrg.x);
+                const headlen = 18 / scaleFactor;
+                
+                // Línea punteada
+                ctx.beginPath();
+                ctx.moveTo(nodoOrg.x, nodoOrg.y);
+                ctx.lineTo(temp.endX, temp.endY);
+                ctx.strokeStyle = '#00ffff'; 
+                ctx.lineWidth = 4 / scaleFactor; 
+                ctx.setLineDash([10/scaleFactor, 10/scaleFactor]);
+                ctx.stroke(); 
+                ctx.setLineDash([]);
+                
+                // Punta de la flecha
+                ctx.beginPath();
+                ctx.moveTo(temp.endX, temp.endY);
+                ctx.lineTo(temp.endX - headlen * Math.cos(angle - Math.PI / 7), temp.endY - headlen * Math.sin(angle - Math.PI / 7));
+                ctx.lineTo(temp.endX - headlen * Math.cos(angle + Math.PI / 7), temp.endY - headlen * Math.sin(angle + Math.PI / 7));
+                ctx.lineTo(temp.endX, temp.endY);
+                ctx.fillStyle = '#00ffff';
+                ctx.fill();
+            });
         }
         
         // 2. Dibujar Caja de Selección (Shift + Arrastrar)
