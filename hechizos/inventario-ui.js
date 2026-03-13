@@ -6,12 +6,12 @@ const textNorm = (str) => str ? str.toString().trim().toLowerCase() : '';
 const safeStr = (str) => str ? str.toString().replace(/'/g, "\\'") : '';
 
 function getColorAfinidad(af) {
-    if(af === 'Física') return { b: '#8b4513', t: '#e2a673' };
-    if(af === 'Energética') return { b: '#e67e22', t: '#f3b67a' };
-    if(af === 'Espiritual') return { b: '#2ecc71', t: '#7df0a7' };
-    if(af === 'Mando') return { b: '#3498db', t: '#a4d3f2' };
-    if(af === 'Psíquica') return { b: '#9b59b6', t: '#dcb1f0' };
-    if(af === 'Oscura') return { b: 'var(--purple-magic)', t: '#c285ff' };
+    if(af === 'Física') return { b: '#b36a2f', t: '#e2a673' };
+    if(af === 'Energética') return { b: '#bba71b', t: '#f3e57a' };
+    if(af === 'Espiritual') return { b: '#2ba85e', t: '#7df0a7' };
+    if(af === 'Mando') return { b: '#3a87c2', t: '#a4d3f2' };
+    if(af === 'Psíquica') return { b: '#9648b8', t: '#dcb1f0' };
+    if(af === 'Oscura') return { b: '#b3152f', t: '#ff526f' };
     return { b: '#555', t: '#fff' };
 }
 
