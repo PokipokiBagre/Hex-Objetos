@@ -1,4 +1,4 @@
-import { invGlobal, objGlobal, estadoUI } from './obj-state.js';
+import { invGlobal, objGlobal, statsGlobal, estadoUI } from './obj-state.js';
 
 function drawnHEXPreserveFocus(containerId, html) {
     const activeId = document.activeElement ? document.activeElement.id : null;
@@ -552,6 +552,7 @@ export function dibujarCreacionMulti() {
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
+
 
 
 
