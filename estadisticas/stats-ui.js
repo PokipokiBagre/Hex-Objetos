@@ -111,10 +111,10 @@ export function dibujarCatalogo() {
 
         const claseInactiva = p.isActive ? '' : 'inactive-card';
         
-        // BOTÓN DE ELIMINAR (Solo visible si estás en modo OP/Admin)
+        // BOTÓN DE ELIMINAR MEJORADO (Basurero sutil interior)
         let btnEliminar = '';
         if (estadoUI.esAdmin) {
-            btnEliminar = `<button onclick="window.borrarPersonaje('${nombre}', event)" style="position: absolute; top: -10px; right: -10px; background: #ff0000; color: white; border: 2px solid #fff; border-radius: 50%; width: 30px; height: 30px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 10;" title="Eliminar Personaje de la Base de Datos">X</button>`;
+            btnEliminar = `<button onclick="window.borrarPersonaje('${nombre}', event)" style="position: absolute; top: 12px; right: 12px; background: rgba(255, 0, 0, 0.1); color: #ff5555; border: 1px solid rgba(255, 0, 0, 0.3); border-radius: 6px; width: 32px; height: 32px; font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; z-index: 10;" onmouseover="this.style.background='#ff0000'; this.style.color='#fff'; this.style.borderColor='#ff0000';" onmouseout="this.style.background='rgba(255, 0, 0, 0.1)'; this.style.color='#ff5555'; this.style.borderColor='rgba(255, 0, 0, 0.3)';" title="Eliminar Personaje">🗑️</button>`;
         }
 
         html += `
@@ -794,6 +794,7 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
 
 
