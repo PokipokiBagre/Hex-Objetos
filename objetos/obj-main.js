@@ -187,6 +187,12 @@ async function iniciar() {
     window.mostrarCreacionObjeto = () => { window.mostrarPagina('crear'); };
     window.mostrarCreacionMulti = () => { window.mostrarPagina('crear-multi'); };
     
+// --- LÓGICA DE CREACIÓN INDIVIDUAL ---
+    window.toggleMostrarNPCs = () => {
+        estadoUI.mostrarNPCsCrea = !estadoUI.mostrarNPCsCrea;
+        refrescarUI();
+    };
+
     window.updateCreationLog = () => {
         const n = document.getElementById('new-obj-name').value || "Objeto"; const e = document.getElementById('new-obj-eff').value || "Efecto";
         let l = []; document.querySelectorAll('.cant-input').forEach(i => {
@@ -202,10 +208,27 @@ async function iniciar() {
         agregarObjetoManual(d, rep, () => { window.mostrarPagina('op-menu'); window.actualizarBotonSyncObj(); });
     };
 
+    // --- LÓGICA DE CREACIÓN MÚLTIPLE (6 OBJETOS) ---
+    window.updateCreationMultiLog = () => {
+        const destPlayer = document.getElementById('multi-player-dest').value;
+        let l = [];
+        for(let i=1; i<=6; i++) { // Ahora lee 6 espacios
+            const n = document.getElementById(`new-obj-name-${i}`)?.value.trim();
+            const e = document.getElementById(`new-obj-eff-${i}`)?.value.trim();
+            const c = parseInt(document.getElementById(`new-obj-cant-${i}`)?.value) || 0;
+            if(n && c > 0) {
+                if (destPlayer) l.push(`<${destPlayer} | OO: ${n}${c > 1 ? ' x'+c : ''} | ${e || "Sin descripción"}>`);
+                else l.push(`<OO: ${n}${c > 1 ? ' x'+c : ''} | ${e || "Sin descripción"}>`);
+            }
+        }
+        const out = document.getElementById('copy-log-crea-multi');
+        if (out) out.value = l.join('\n');
+    };
+
     window.ejecutarAgregarMulti = () => {
         const destPlayer = document.getElementById('multi-player-dest').value;
         let listaNuevos = [];
-        for(let i=1; i<=5; i++) {
+        for(let i=1; i<=6; i++) { // Ahora procesa 6 espacios
             const nombre = document.getElementById(`new-obj-name-${i}`).value.trim();
             if(!nombre) continue;
             const tipo = document.getElementById(`new-obj-tipo-${i}`).value;
@@ -246,4 +269,5 @@ window.descargarEstadoExcel = descargarEstadoExcel;
     }
 }
 iniciar();
+
 
