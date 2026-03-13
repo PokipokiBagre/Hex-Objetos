@@ -25,7 +25,7 @@ export const estadoMapa = {
 
 export const COLOR_AFINIDAD = {
     'Física': '#e2a673',
-    'Energética': '#f3b67a',
+    'Energética': '#f3e57a',
     'Espiritual': '#7df0a7',
     'Mando': '#a4d3f2',
     'Psíquica': '#dcb1f0',
