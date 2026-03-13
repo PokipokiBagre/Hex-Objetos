@@ -516,22 +516,116 @@ function generarDatalistsDinamicos() {
     `;
 }
 
-// CREACIÓN INDIVIDUAL
+// BUSCADOR INTELIGENTE: Soluciona el problema de mayúsculas (Ej: LINDA vs Linda)
+const getPjStats = (nombre) => {
+    const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === nombre.toLowerCase());
+    return key ? statsGlobal[key] : { isPlayer: false, isActive: true, iconoOverride: "" };
+};
+
+export function dibujarPartyLoot() {
+    const term = (estadoUI.busquedaOP || "").toLowerCase();
+
+    let html = `<h2>Loot Rápido para la Party</h2>
+                <button onclick="window.mostrarPagina('op-menu')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Panel OP</button>
+                <div style="background:#1a0033; padding:20px; border-radius:8px; border:1px dashed var(--gold); margin-bottom:20px;">
+                    
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #444; padding-bottom:10px; flex-wrap:wrap; gap:10px;">
+                        <h4 style="color:var(--gold); margin:0;">1. Selecciona los destinatarios</h4>
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="window.seleccionarTodosJugadores()" style="background:#1a365d; color:white; border:1px solid #4a90e2; padding:5px 10px; border-radius:4px; cursor:pointer;">Todos los Jugadores</button>
+                            <button onclick="window.seleccionarTodosNPCs()" style="background:#330000; color:white; border:1px solid #ff1744; padding:5px 10px; border-radius:4px; cursor:pointer;">Todos los NPCs</button>
+                            <button onclick="window.toggleMostrarNPCsLoot()" style="background:#222; color:white; border:1px solid var(--gold); padding:5px 10px; border-radius:4px; cursor:pointer;">
+                                ${estadoUI.mostrarNPCsLoot ? '👁️ Ocultar NPCs' : '🎭 Mostrar NPCs'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">`;
+    
+    Object.keys(invGlobal).sort().forEach(j => {
+        const p = getPjStats(j);
+        // Si el botón de "Ocultar NPCs" está activo y este personaje es NPC, lo salta.
+        if (!estadoUI.mostrarNPCsLoot && !p.isPlayer) return;
+
+        const isChecked = estadoUI.partyLoot.includes(j) ? 'checked' : '';
+        const colorTexto = p.isPlayer ? '#fff' : '#aaa';
+
+        html += `<label style="background:#000; padding:10px; border:1px solid #444; border-radius:4px; cursor:pointer; color:${colorTexto};">
+                    <input type="checkbox" ${isChecked} onchange="window.togglePartyLoot('${j}', this.checked)"> 
+                    <img src="../img/imgpersonajes/${normalizarNombre(p.iconoOverride || j)}icon.png" style="width:24px; height:24px; border-radius:50%; vertical-align:middle; margin-right:5px;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                    ${j}
+                 </label>`;
+    });
+
+    html += `   </div>
+                <h4 style="color:var(--blue-life); margin-top:20px;">2. Multiplicador de Entrega (Por Clic)</h4>
+                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">`;
+    
+    [1, 5, 10, 50, 100].forEach(m => {
+        html += `<button onclick="window.setPartyMult(${m})" style="background:${estadoUI.partyMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.partyMult === m ? '#000' : '#fff'}">x${m}</button>`;
+    });
+
+    html += `   </div>
+            </div>
+            
+            <div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
+                <textarea id="copy-log-loot" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;"></textarea>
+                <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-loot')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
+            </div>
+            
+            <h4 style="color:var(--gold);">3. Haz clic en la IMAGEN de un objeto para entregar <span style="color:white;">x${estadoUI.partyMult}</span></h4>
+            <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Buscar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
+            <div class="grid-control">`;
+
+    estadoUI.cachedSortKeys.forEach(o => {
+        if (!term || o.toLowerCase().includes(term)) {
+            html += `<div class="control-card">
+                        <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
+                             onclick="window.giveLootToParty('${o.replace(/'/g, "\\'")}')" 
+                             style="width:80px; height:80px; object-fit:cover; border:2px solid var(--gold); border-radius:8px; background:#000; cursor:pointer; transition:0.2s;" 
+                             onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+                             onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+                        <span class="item-name" style="margin-top:10px; color:#fff;">${o}</span>
+                     </div>`;
+        }
+    });
+
+    drawnHEXPreserveFocus('panel-party-loot', html + `</div>`);
+}
+
+function generarDatalistsDinamicos() {
+    const tipos = new Set(['Consumible', 'Herramienta', 'Accesorio', 'Equipo']);
+    const mats = new Set(['Cristal', 'Metal', 'Orgánico', 'Sagrado']);
+    const rars = new Set(['Común', 'Raro', 'Legendario']);
+
+    Object.values(objGlobal).forEach(obj => {
+        if (obj.tipo && obj.tipo !== '-') tipos.add(obj.tipo.trim());
+        if (obj.mat && obj.mat !== '-') mats.add(obj.mat.trim());
+        if (obj.rar && obj.rar !== '-') rars.add(obj.rar.trim());
+    });
+
+    return `
+        <datalist id="dl-tipos">${[...tipos].sort().map(t => `<option value="${t}">`).join('')}</datalist>
+        <datalist id="dl-mats">${[...mats].sort().map(m => `<option value="${m}">`).join('')}</datalist>
+        <datalist id="dl-rars">${[...rars].sort().map(r => `<option value="${r}">`).join('')}</datalist>
+    `;
+}
+
 export function dibujarCreacionObjeto() {
     let html = `
     ${generarDatalistsDinamicos()}
     <h2>Creación Rápida (1 Objeto)</h2>
     <div class="container-hex" style="max-width:600px; background:rgba(30,0,60,0.9); padding:20px; border:1px solid #d4af37; border-radius:8px; margin:0 auto;">
-        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre..." oninput="window.updateCreationLog()" style="width:95%">
+        <input type="text" id="new-obj-name" class="search-bar" placeholder="Nombre del Objeto..." oninput="window.updateCreationLog()" style="width:95%">
         
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-            <input type="text" id="new-obj-tipo" list="dl-tipos" class="search-bar" style="width:100%" placeholder="Tipo (Ej: Consumible)" value="Consumible">
-            <input type="text" id="new-obj-mat" list="dl-mats" class="search-bar" style="width:100%" placeholder="Material (Ej: Metal)" value="Metal">
+            <input type="text" id="new-obj-tipo" list="dl-tipos" class="search-bar" style="width:100%" placeholder="Tipo (Ej: Consumible)" value="">
+            <input type="text" id="new-obj-mat" list="dl-mats" class="search-bar" style="width:100%" placeholder="Material (Ej: Metal)" value="">
         </div>
         
-        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px;"></textarea>
+        <textarea id="new-obj-eff" class="search-bar" placeholder="Efecto o Descripción..." oninput="window.updateCreationLog()" style="width:95%; height:60px; margin-top:10px; resize:none;"></textarea>
         
-        <input type="text" id="new-obj-rar" list="dl-rars" class="search-bar" style="width:95%; margin-top:10px;" placeholder="Rareza (Ej: Común)" value="Común">
+        <input type="text" id="new-obj-rar" list="dl-rars" class="search-bar" style="width:95%; margin-top:10px;" placeholder="Rareza (Ej: Común)" value="">
         
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:25px; margin-bottom:10px; border-bottom:1px solid #444; padding-bottom:10px;">
             <h3 style="margin:0; font-size:1em; color:var(--gold);">Entregar a (Opcional)</h3>
@@ -542,12 +636,12 @@ export function dibujarCreacionObjeto() {
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`;
     
     Object.keys(invGlobal).sort().forEach(j => {
-        const p = statsGlobal[j];
-        if (!estadoUI.mostrarNPCsCrea && (!p || !p.isPlayer)) return;
+        const p = getPjStats(j);
+        if (!estadoUI.mostrarNPCsCrea && !p.isPlayer) return;
 
         html += `<div style="text-align:left; font-size:0.8em; border-bottom:1px solid #333; padding:5px; display:flex; justify-content:space-between; align-items:center;">
-                    <label style="color:${(p && p.isPlayer) ? 'white' : '#aaa'};">${j}:</label>
-                    <input type="number" class="cant-input" data-player="${j}" value="0" min="0" oninput="window.updateCreationLog()" style="width:60px; background:#000; color:white; border:1px solid #555; text-align:center;">
+                    <label style="color:${p.isPlayer ? 'white' : '#aaa'};">${j}:</label>
+                    <input type="number" class="cant-input" data-player="${j}" value="" placeholder="0" min="0" oninput="window.updateCreationLog()" style="width:60px; background:#000; color:white; border:1px solid #555; text-align:center;">
                  </div>`;
     });
     
@@ -562,7 +656,6 @@ export function dibujarCreacionObjeto() {
     drawnHEXPreserveFocus('panel-creacion', html);
 }
 
-// CREACIÓN MÚLTIPLE (6 OBJETOS EN 3 COLUMNAS)
 export function dibujarCreacionMulti() {
     let html = `
     ${generarDatalistsDinamicos()}
@@ -583,14 +676,14 @@ export function dibujarCreacionMulti() {
             <h4 style="margin:0 0 10px 0; color:var(--cyan-magic); text-align:left;">Objeto ${i}</h4>
             <input type="text" id="new-obj-name-${i}" class="search-bar" placeholder="Nombre del Objeto..." oninput="window.updateCreationMultiLog()" style="width:95%; margin-bottom:10px;">
             
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;">
-                <input type="text" id="new-obj-tipo-${i}" list="dl-tipos" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Tipo..." value="Consumible">
-                <input type="text" id="new-obj-mat-${i}" list="dl-mats" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Material..." value="Cristal">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                <input type="text" id="new-obj-tipo-${i}" list="dl-tipos" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Tipo..." value="">
+                <input type="text" id="new-obj-mat-${i}" list="dl-mats" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Material..." value="">
             </div>
             
-            <div style="display:grid; grid-template-columns: 1fr 80px; gap:5px; margin-bottom:10px;">
-                <input type="text" id="new-obj-rar-${i}" list="dl-rars" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Rareza..." value="Común">
-                <input type="number" id="new-obj-cant-${i}" class="search-bar" value="1" min="1" title="Cantidad" oninput="window.updateCreationMultiLog()" style="margin:0; width:100%; text-align:center;">
+            <div style="display:grid; grid-template-columns: 1fr 80px; gap:10px; margin-bottom:10px;">
+                <input type="text" id="new-obj-rar-${i}" list="dl-rars" class="search-bar" style="margin:0; width:100%; font-size:0.85em;" placeholder="Rareza..." value="">
+                <input type="number" id="new-obj-cant-${i}" class="search-bar" value="" placeholder="Cant" min="1" title="Cantidad" oninput="window.updateCreationMultiLog()" style="margin:0; width:100%; text-align:center;">
             </div>
             
             <textarea id="new-obj-eff-${i}" class="search-bar" placeholder="Efecto o Descripción..." oninput="window.updateCreationMultiLog()" style="width:95%; height:50px; margin:0; resize:none;"></textarea>
@@ -612,10 +705,6 @@ export function dibujarCreacionMulti() {
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
-
-
-
-
 
 
 
