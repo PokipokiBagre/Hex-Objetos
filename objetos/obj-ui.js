@@ -1,4 +1,4 @@
-import { invGlobal, objGlobal, statsGlobal, historial, estadoUI, guardar } from './obj-state.js';
+import { invGlobal, objGlobal, statsGlobal, estadoUI } from './obj-state.js';
 
 function drawnHEXPreserveFocus(containerId, html) {
     const activeId = document.activeElement ? document.activeElement.id : null;
@@ -13,6 +13,15 @@ function drawnHEXPreserveFocus(containerId, html) {
         }
     }
 }
+
+const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
+const normalizarNombre = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
+
+// BUSCADOR INTELIGENTE: Soluciona el problema de mayúsculas (Ej: LINDA vs Linda)
+const getPjStats = (nombre) => {
+    const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === nombre.toLowerCase());
+    return key ? statsGlobal[key] : { isPlayer: false, isActive: true, iconoOverride: "" };
+};
 
 export function refrescarUI() { 
     // CONGELADOR DE ORDEN GENERAL (Se activa al cambiar de pestaña)
@@ -37,9 +46,6 @@ export function refrescarUI() {
     else if (estadoUI.vistaActual === 'transfer') dibujarTransferencia();
 }
 
-const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
-const normalizarNombre = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
-
 export function dibujarGrillaPersonajes() {
     estadoUI.filtroRol = estadoUI.filtroRol || 'Jugadores';
     estadoUI.filtroAct = estadoUI.filtroAct || 'Activos';
@@ -60,11 +66,8 @@ export function dibujarGrillaPersonajes() {
     </div>
     <div class="catalogo-grid">`;
     
-    const norm = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
-
     const getSortValue = (p) => { if (p.isPlayer && p.isActive) return 1; if (!p.isPlayer && p.isActive) return 2; if (!p.isPlayer && !p.isActive) return 3; if (p.isPlayer && !p.isActive) return 4; return 5; };
     
-    // Usar statsGlobal asegura que aparezcan INCLUSO si no tienen ni 1 objeto
     const sortedNames = Object.keys(statsGlobal).sort((a, b) => { 
         const valA = getSortValue(statsGlobal[a]); const valB = getSortValue(statsGlobal[b]); 
         if (valA !== valB) return valA - valB; 
@@ -92,7 +95,7 @@ export function dibujarGrillaPersonajes() {
         }
         
         const jSafe = j.replace(/'/g, "\\'"); 
-        const iconoMuestra = norm(p.iconoOverride || j);
+        const iconoMuestra = normalizarNombre(p.iconoOverride || j);
         
         let borderStyle = ""; let bgStyle = "background: #11001c;"; 
         if (p.isPlayer && p.isActive) { borderStyle = "border: 2px solid var(--gold); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);"; } 
@@ -140,9 +143,9 @@ export function dibujarResumenVisual() {
                 if(estadoUI.esAdmin) {
                     badgeHTML = `
                     <div class="badge-op">
-                        <button class="minus" onclick="window.hexMod('${j}','${o}',-1); event.stopPropagation();">-</button>
+                        <button class="minus" onclick="window.hexMod('${j}','${o.replace(/'/g, "\\'")}',-1); event.stopPropagation();">-</button>
                         <span>${count}</span>
-                        <button class="plus" onclick="window.hexMod('${j}','${o}',1); event.stopPropagation();">+</button>
+                        <button class="plus" onclick="window.hexMod('${j}','${o.replace(/'/g, "\\'")}',1); event.stopPropagation();">+</button>
                     </div>`;
                 } else {
                     badgeHTML = `<div class="badge-normal">${count}</div>`;
@@ -179,18 +182,13 @@ export function dibujarInventarios() {
     const j = estadoUI.jugadorInv;
     const term = (estadoUI.busquedaInv || "").toLowerCase();
     
-    // Variables seguras dentro de la propia función
-    const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
-    const norm = (str) => str ? str.toString().trim().toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u').replace(/\s+/g,'_').replace(/[^a-z0-9ñ_]/g,'') : "";
-    
-    // ENLACE HACIA LA PÁGINA DE ESTADÍSTICAS (Abre en nueva pestaña)
-const linkStats = `../estadisticas/index.html?pj=${encodeURIComponent(j)}`;
+    const linkStats = `../estadisticas/index.html?pj=${encodeURIComponent(j)}`;
     
     let html = `
     <button onclick="window.volverAGrilla()" style="background:#444; margin-bottom: 20px;">⬅ Volver a Inventarios</button>
     <div class="player-header">
         <a href="${linkStats}" target="_blank" title="Ver ficha de estado de ${j}" style="display:flex;">
-            <img src="../img/imgpersonajes/${norm(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
+            <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" class="player-icon" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
         </a>
         <div style="text-align:left; flex:1;">
             <a href="${linkStats}" target="_blank" style="text-decoration:none;" title="Ver ficha de estado de ${j}">
@@ -212,7 +210,7 @@ const linkStats = `../estadisticas/index.html?pj=${encodeURIComponent(j)}`;
     if (destacados.length > 0) {
         html += `<div class="top-items-grid">`;
         destacados.forEach(o => {
-            const imgFile = norm(o);
+            const imgFile = normalizarNombre(o);
             const rarClase = objGlobal[o]?.rar === 'Raro' ? 'rarity-raro' : (objGlobal[o]?.rar === 'Legendario' ? 'rarity-legendario' : '');
             const oSafe = o.replace(/'/g, "\\'");
             html += `
@@ -229,7 +227,6 @@ const linkStats = `../estadisticas/index.html?pj=${encodeURIComponent(j)}`;
         if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
             const oSafe = o.replace(/'/g, "\\'");
             
-            // Si es OP, renderiza botones + y - al lado de la cantidad
             const cantHTML = estadoUI.esAdmin 
                 ? `<div style="display:flex; justify-content:center; align-items:center; gap:8px;">
                      <button class="btn-inline-op minus" onclick="window.hexMod('${j}','${oSafe}',-1)">-</button>
@@ -239,7 +236,7 @@ const linkStats = `../estadisticas/index.html?pj=${encodeURIComponent(j)}`;
                 : `<b style="font-size:1.2em">${invGlobal[j][o]}</b>`;
 
             html += `<tr>
-                <td><img src="../img/imgobjetos/${norm(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
+                <td><img src="../img/imgobjetos/${normalizarNombre(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
                 <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${oSafe}')">${o}</td>
                 <td style="text-align:left; font-size:0.85em;">${objGlobal[o]?.eff || ''}</td>
                 <td>${cantHTML}</td>
@@ -248,19 +245,7 @@ const linkStats = `../estadisticas/index.html?pj=${encodeURIComponent(j)}`;
     });
     html += "</table></div>";
     
-    // Inserción segura sin necesidad de funciones externas
-    const activeId = document.activeElement ? document.activeElement.id : null;
-    const start = document.activeElement ? document.activeElement.selectionStart : null;
-    const end = document.activeElement ? document.activeElement.selectionEnd : null;
-    
-    const container = document.getElementById('contenedor-jugadores');
-    if (container) {
-        container.innerHTML = html;
-        if (activeId && document.getElementById(activeId)) {
-            const el = document.getElementById(activeId);
-            el.focus(); if (el.setSelectionRange) el.setSelectionRange(start, end);
-        }
-    }
+    drawnHEXPreserveFocus('contenedor-jugadores', html);
 }
 
 export function dibujarCatalogo() {
@@ -284,9 +269,10 @@ export function dibujarCatalogo() {
         const matchM = estadoUI.filtroMat === 'Todos' || item.mat.trim() === estadoUI.filtroMat;
         
         if (matchR && matchM && (!term || o.toLowerCase().includes(term))) {
+            const oSafe = o.replace(/'/g, "\\'");
             html += `<tr>
                 <td><img src="../img/imgobjetos/${normalizarNombre(o)}.png" class="cat-img" onclick="window.verImagen(this.src)" onerror="this.src='../img/imgobjetos/no_encontrado.png'"></td>
-                <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${o}')">${o}</td>
+                <td style="font-weight:bold; color:#d4af37; cursor:pointer;" onclick="window.verImagenByName('${oSafe}')">${o}</td>
                 <td style="font-size:0.85em; color:#aaa;">${item.tipo}</td>
                 <td style="text-align:left; font-size:0.85em;">${item.eff}</td>
                 <td style="font-size:0.85em;">${item.rar}</td>
@@ -303,7 +289,7 @@ export function dibujarMenuOP() {
             <button onclick="window.mostrarPagina('party-loot')" style="background:#b8860b; color:#000;">Repartir Loot a Party</button>
             <button onclick="window.mostrarPagina('transfer')" style="background:#1a4b8c; color:#fff;">Mercado de Transferencias</button>
             <button onclick="window.mostrarPagina('crear')" style="background:#4a004a">Creación Rápida (1)</button>
-            <button onclick="window.mostrarPagina('crear-multi')" style="background:#600060">Forja Múltiple (5)</button>
+            <button onclick="window.mostrarPagina('crear-multi')" style="background:#600060">Forja Múltiple (6)</button>
             <button onclick="window.descargarInventariosJPG()" style="background:#8b0000">Descargar todos los JPGs</button>
             <button onclick="window.descargarLogExcel()" style="background:#107c41; color:#fff;">Descargar Log (Excel)</button>
             <button onclick="window.descargarEstadoExcel()" style="background:#107c41; color:#fff;">Descargar Stock (Excel)</button>
@@ -313,7 +299,6 @@ export function dibujarMenuOP() {
 export function dibujarControl() {
     if (!estadoUI.jugadorInv) return; const j = estadoUI.jugadorInv; 
     
-    // Añadimos al caché visual cualquier objeto nuevo que haya recibido stock en esta sesión
     let currentKeys = estadoUI.cachedInvOrders[j] || [];
     Object.keys(invGlobal[j]).forEach(k => {
          if (invGlobal[j][k] > 0 && !currentKeys.includes(k)) currentKeys.push(k);
@@ -329,7 +314,8 @@ export function dibujarControl() {
     
     currentKeys.forEach(o => {
         if (invGlobal[j][o] > 0) {
-            html += `<button onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
+            const oSafe = o.replace(/'/g, "\\'");
+            html += `<button onclick="window.hexMod('${j}','${oSafe}', ${estadoUI.editMult * estadoUI.editModo})" 
                              style="background:#222; padding:5px 12px; border-radius:4px; border:1px solid #444; font-size:0.9em; box-shadow:0 2px 4px #000; cursor:pointer; transition:0.2s;" 
                              onmouseover="this.style.borderColor='${actionColor}'" onmouseout="this.style.borderColor='#444'" title="Haz clic para modificar">
                         ${o}: <b style="color:var(--gold); font-size:1.3em; margin-left:5px;">${invGlobal[j][o]}</b>
@@ -361,9 +347,10 @@ export function dibujarControl() {
         const term = estadoUI.busquedaOP.toLowerCase();
         if (!term || o.toLowerCase().includes(term)) {
             const c = invGlobal[j][o] || 0;
+            const oSafe = o.replace(/'/g, "\\'");
             html += `<div class="control-card ${c > 0 ? "item-con-stock" : ""}">
                         <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
-                             onclick="window.hexMod('${j}','${o}', ${estadoUI.editMult * estadoUI.editModo})" 
+                             onclick="window.hexMod('${j}','${oSafe}', ${estadoUI.editMult * estadoUI.editModo})" 
                              style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid ${actionColor}; transition:0.2s; box-shadow:0 0 10px ${actionColor};"
                              onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                              onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Click para aplicar">
@@ -372,60 +359,6 @@ export function dibujarControl() {
         }
     });
     drawnHEXPreserveFocus('panel-interactivo', html + "</div>");
-}
-
-export function dibujarPartyLoot() {
-    const term = (estadoUI.busquedaOP || "").toLowerCase();
-
-    let html = `<h2>Loot Rápido para la Party</h2>
-                <button onclick="window.mostrarPagina('op-menu')" style="background:#444; margin-bottom: 20px;">⬅ Volver al Panel OP</button>
-                <div style="background:#1a0033; padding:15px; border-radius:8px; border:1px dashed var(--gold); margin-bottom:20px;">
-                    <h4 style="color:var(--gold); margin-top:0;">1. Selecciona los destinatarios</h4>
-                    <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">`;
-    
-    Object.keys(invGlobal).sort().forEach(j => {
-        const isChecked = estadoUI.partyLoot.includes(j) ? 'checked' : '';
-        html += `<label style="background:#000; padding:10px; border:1px solid #444; border-radius:4px; cursor:pointer;">
-                    <input type="checkbox" ${isChecked} onchange="window.togglePartyLoot('${j}', this.checked)"> 
-                    <img src="../img/imgpersonajes/${normalizarNombre(j)}icon.png" style="width:24px; height:24px; border-radius:50%; vertical-align:middle; margin-right:5px;" onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                    ${j}
-                 </label>`;
-    });
-
-    html += `   </div>
-                <h4 style="color:var(--blue-life); margin-top:20px;">2. Multiplicador de Entrega (Por Clic)</h4>
-                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">`;
-    
-    [1, 5, 10, 50, 100].forEach(m => {
-        html += `<button onclick="window.setPartyMult(${m})" style="background:${estadoUI.partyMult === m ? 'var(--gold)' : '#222'}; color:${estadoUI.partyMult === m ? '#000' : '#fff'}">x${m}</button>`;
-    });
-
-    html += `   </div>
-            </div>
-            
-            <div class="container-hex" style="margin-bottom:20px; background:#1a0033; padding:15px; border:1px dashed #d4af37;">
-                <textarea id="copy-log-loot" class="search-bar" readonly style="width:95%; height:80px; font-size:0.85em; margin-bottom:10px;">${estadoUI.logCopy || 'Bitácora de sesión...'}</textarea>
-                <div style="display:flex; gap:10px;"><button onclick="window.copyToClipboard('copy-log-loot')" style="flex:3; background:#d4af37; color:#120024; font-weight:bold;">COPIAR REGISTRO</button><button onclick="window.limpiarLog()" style="flex:1; background:#8b0000; color:white;">X</button></div>
-            </div>
-            
-            <h4 style="color:var(--gold);">3. Haz clic en la IMAGEN de un objeto para entregar <span style="color:white;">x${estadoUI.partyMult}</span></h4>
-            <input type="text" id="busq-op" class="search-bar" placeholder="🔍 Buscar objeto..." value="${estadoUI.busquedaOP}" oninput="window.setBusquedaOP(this.value)">
-            <div class="grid-control">`;
-
-    estadoUI.cachedSortKeys.forEach(o => {
-        if (!term || o.toLowerCase().includes(term)) {
-            html += `<div class="control-card">
-                        <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
-                             onclick="window.giveLootToParty('${o}')" 
-                             style="width:80px; height:80px; object-fit:cover; border:2px solid var(--gold); border-radius:8px; background:#000; cursor:pointer; transition:0.2s;" 
-                             onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
-                             onerror="this.src='../img/imgobjetos/no_encontrado.png'">
-                        <span class="item-name" style="margin-top:10px; color:#fff;">${o}</span>
-                     </div>`;
-        }
-    });
-
-    drawnHEXPreserveFocus('panel-party-loot', html + `</div>`);
 }
 
 export function dibujarTransferencia() {
@@ -474,9 +407,10 @@ export function dibujarTransferencia() {
                 if (invGlobal[j][o] > 0 && (!term || o.toLowerCase().includes(term))) {
                     const c = invGlobal[j][o];
                     const cantToPass = estadoUI.transMult === 'TODO' ? c : estadoUI.transMult;
+                    const oSafe = o.replace(/'/g, "\\'");
                     html += `<div class="control-card item-con-stock">
                                 <img src="../img/imgobjetos/${normalizarNombre(o)}.png" 
-                                     onclick="window.ejecutarTransfer('${o}', ${cantToPass})" 
+                                     onclick="window.ejecutarTransfer('${oSafe}', ${cantToPass})" 
                                      style="width:80px; height:80px; object-fit:cover; cursor:pointer; border-radius:8px; border:2px solid #00ff00; transition:0.2s; box-shadow:0 0 10px #00ff00;"
                                      onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
                                      onerror="this.src='../img/imgobjetos/no_encontrado.png'" title="Clic para Transferir ${cantToPass}">
@@ -490,37 +424,6 @@ export function dibujarTransferencia() {
     }
     drawnHEXPreserveFocus('panel-transferencia', html);
 }
-
-// ============================================================================
-// FUNCIONES DE CREACIÓN (FORJAS)
-// ============================================================================
-
-// Función Auxiliar: Lee la base de datos y crea listas dinámicas de sugerencias
-function generarDatalistsDinamicos() {
-    // Valores base obligatorios
-    const tipos = new Set(['Consumible', 'Herramienta', 'Accesorio', 'Equipo']);
-    const mats = new Set(['Cristal', 'Metal', 'Orgánico', 'Sagrado']);
-    const rars = new Set(['Común', 'Raro', 'Legendario']);
-
-    // Añade cualquier tipo nuevo que hayas inventado en el pasado
-    Object.values(objGlobal).forEach(obj => {
-        if (obj.tipo && obj.tipo !== '-') tipos.add(obj.tipo.trim());
-        if (obj.mat && obj.mat !== '-') mats.add(obj.mat.trim());
-        if (obj.rar && obj.rar !== '-') rars.add(obj.rar.trim());
-    });
-
-    return `
-        <datalist id="dl-tipos">${[...tipos].sort().map(t => `<option value="${t}">`).join('')}</datalist>
-        <datalist id="dl-mats">${[...mats].sort().map(m => `<option value="${m}">`).join('')}</datalist>
-        <datalist id="dl-rars">${[...rars].sort().map(r => `<option value="${r}">`).join('')}</datalist>
-    `;
-}
-
-// BUSCADOR INTELIGENTE: Soluciona el problema de mayúsculas (Ej: LINDA vs Linda)
-const getPjStats = (nombre) => {
-    const key = Object.keys(statsGlobal).find(k => k.toLowerCase() === nombre.toLowerCase());
-    return key ? statsGlobal[key] : { isPlayer: false, isActive: true, iconoOverride: "" };
-};
 
 export function dibujarPartyLoot() {
     const term = (estadoUI.busquedaOP || "").toLowerCase();
@@ -544,7 +447,6 @@ export function dibujarPartyLoot() {
     
     Object.keys(invGlobal).sort().forEach(j => {
         const p = getPjStats(j);
-        // Si el botón de "Ocultar NPCs" está activo y este personaje es NPC, lo salta.
         if (!estadoUI.mostrarNPCsLoot && !p.isPlayer) return;
 
         const isChecked = estadoUI.partyLoot.includes(j) ? 'checked' : '';
@@ -705,8 +607,3 @@ export function dibujarCreacionMulti() {
     </div>`;
     drawnHEXPreserveFocus('panel-creacion-multi', html);
 }
-
-
-
-
-
