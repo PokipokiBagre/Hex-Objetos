@@ -20,7 +20,7 @@ const raridadValor = { "Legendario": 3, "Raro": 2, "Común": 1, "-": 0 };
 function AsegurarGuardaD(p) { if(p.guardaDorada === undefined) p.guardaDorada = 0; if(p.baseGuardaDorada === undefined) p.baseGuardaDorada = 0; }
 
 function asegurarEstructuras(p) {
-    AsegurarGuardaD(p); // <-- ¡Aquí estaba la "c" traicionera!
+    AsegurarGuardaD(p);
     if(!p.buffs) p.buffs = {}; if(!p.hechizos) p.hechizos = {}; if(!p.hechizosEfecto) p.hechizosEfecto = {}; if(!p.estados) p.estados = {};
     listaEstados.forEach(e => { if (p.estados[e.id] === undefined) p.estados[e.id] = (e.tipo === 'numero') ? 0 : false; });
     const props = ['fisica', 'energetica', 'espiritual', 'mando', 'psiquica', 'oscura', 'danoRojo', 'danoAzul', 'elimDorada', 'vidaRojaMaxExtra', 'vidaAzulExtra', 'guardaDoradaExtra'];
@@ -123,10 +123,11 @@ export function dibujarCatalogo() {
     contenedor.innerHTML = html + `</div>`;
 }
 
+// TOTALMENTE RESTAURADO AL HTML/CSS ORIGINAL PARA EVITAR ROTURAS, PERO CON LAS MEJORAS DE DATOS
 export function dibujarResumenVisual() {
     const contenedor = document.getElementById('vista-resumen');
-    let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px; font-family:'Cinzel'; font-size: 2em; letter-spacing: 2px; text-shadow:0 0 15px rgba(212,175,55,0.4);">Visión Táctica de la Party</h2>
-                <div class="resumen-grid" style="display: flex; flex-direction: column; gap: 20px;">`;
+    let html = `<h2 style="text-align:center; color:var(--gold); margin-bottom:30px; font-family:'Cinzel'; text-shadow:0 0 10px rgba(212,175,55,0.8);">Visión Táctica de la Party</h2>
+                <div class="resumen-grid">`;
 
     const afiMap = { 'Física':'fisica', 'Energética':'energetica', 'Espiritual':'espiritual', 'Mando':'mando', 'Psíquica':'psiquica', 'Oscura':'oscura' };
     const allNodos = [...(dbExtra.hechizos.nodos||[]), ...(dbExtra.hechizos.nodosOcultos||[])];
@@ -157,72 +158,67 @@ export function dibujarResumenVisual() {
             const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
             s.costo = info ? (parseInt(info.HEX) || 0) : 0;
         });
-        const topSpells = mySpells.sort((a,b) => b.costo - a.costo).slice(0, 8);
+        const topSpells = mySpells.sort((a,b) => b.costo - a.costo).slice(0, 10);
         let spellsHtml = topSpells.map(s => `<span class="mini-spell-tag copy-wrap" title="${s.Hechizo} (${s.costo} HEX)" onclick="window.copySilently('${s.Hechizo.replace(/'/g, "\\'")}', event)">${s.Hechizo}</span>`).join('');
         
         const mayorAf = getMayorAfinidad(p);
         const mKey = afiMap[mayorAf] || 'fisica';
         const calcAfT = (k) => (p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0);
+        
         const valMayorAf = calcAfT(mKey);
         const sumAf = ['fisica','energetica','espiritual','mando','psiquica','oscura'].reduce((a,k)=>a+calcAfT(k),0);
         
         const vidas = generarVidasHTML(p);
         const vexVisual = calcularVexMax(p);
 
+        // Estructura restaurada a la original para garantizar el CSS Grid de dos columnas
         html += `
-        <div class="resumen-row" style="background: linear-gradient(90deg, #111 0%, #1a1a2e 100%); border: 1px solid #333; border-radius: 12px; padding: 20px; display: flex; gap: 25px; align-items: stretch; cursor: pointer; transition: 0.3s;" onmouseover="this.style.borderColor='var(--gold)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.5)';" onmouseout="this.style.borderColor='#333'; this.style.boxShadow='none';" onclick="window.abrirDetalle('${nombre}')">
-            
-            <div class="resumen-left" style="display: flex; flex-direction: column; align-items: center; min-width: 140px; border-right: 1px dashed #444; padding-right: 20px;">
-                <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--gold); object-fit: cover;" onerror="${imgError}">
-                <h3 style="margin: 12px 0 8px 0; font-size: 1.2em; color: var(--gold); text-transform: uppercase; font-family: 'Cinzel';">${nombre}</h3>
-                <div style="display: flex; gap: 10px; width: 100%;">
-                    <div class="copy-wrap hex-label" style="flex: 1; background: #000; border: 1px solid var(--gold); border-radius: 6px; padding: 5px; text-align: center; cursor: pointer;" onclick="window.copySilently('HEX: ${p.hex}', event)">
-                        <strong style="color: var(--gold); font-size: 1.1em;">${p.hex}</strong><br><span style="font-size: 0.6em; color: #888;">HEX</span>
-                    </div>
-                    <div class="copy-wrap vex-label" style="flex: 1; background: #000; border: 1px solid #4a90e2; border-radius: 6px; padding: 5px; text-align: center; cursor: pointer;" onclick="window.copySilently('VEX: ${vexVisual}', event)">
-                        <strong style="color: #4a90e2; font-size: 1.1em;">${vexVisual}</strong><br><span style="font-size: 0.6em; color: #888;">VEX</span>
-                    </div>
+        <div class="resumen-row" onclick="window.abrirDetalle('${nombre}')" style="background:#111; border-color:#333;">
+            <div class="resumen-left">
+                <img src="../img/imgpersonajes/${iconoGrande}icon.png" style="border: 2px solid var(--gold);" onerror="${imgError}">
+                <h3 style="margin:8px 0 0 0; font-size:1.1em; color:var(--gold); text-transform:uppercase; font-family:'Cinzel';">${nombre}</h3>
+                <div class="copy-wrap hex-label" onclick="window.copySilently('HEX: ${p.hex}', event)">
+                    ${p.hex}<br><span style="font-size:0.5em; color:#fff;">HEX</span>
+                </div>
+                <div class="copy-wrap vex-label" onclick="window.copySilently('VEX: ${vexVisual}', event)">
+                    ${vexVisual}<br><span style="font-size:0.6em; color:#fff;">VEX</span>
                 </div>
             </div>
             
-            <div class="resumen-right" style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                    <div style="background: rgba(0,0,0,0.6); padding: 12px; border-radius: 8px; border: 1px solid #222; display: flex; gap: 20px;">
-                        <div class="copy-wrap health-grid" onclick="window.copySilently('Vida Roja: ${p.vidaRojaActual}/${vidas.maxRojo}', event)" style="margin:0;">
-                            ${vidas.rojasHTML}
-                        </div>
-                        ${vidas.azulesHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Vida Azul: ${vidas.azulTotal}', event)" style="margin:0; border-left: 1px solid #444; padding-left: 20px;">${vidas.azulesHTML}</div>` : ''}
-                        ${vidas.guardasHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Guardas: ${vidas.guardaTotal}', event)" style="margin:0; border-left: 1px solid #444; padding-left: 20px;">${vidas.guardasHTML}</div>` : ''}
-                    </div>
-
-                    <span class="copy-wrap" style="background:#1a1a00; border:1px solid var(--gold); padding:6px 12px; border-radius:6px; font-size: 0.9em;" onclick="window.copySilently('Afinidad Primaria: ${mayorAf} (${valMayorAf}) | Suma Total: ${sumAf}', event)">
-                        ✨ Afin. Principal: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b>
+            <div class="resumen-right">
+                <div class="resumen-badges">
+                    <span class="copy-wrap" style="background:#1a1a00; border:1px solid var(--gold); padding:4px 8px; border-radius:4px;" onclick="window.copySilently('Afinidad Primaria: ${mayorAf} (${valMayorAf}) | Suma Total: ${sumAf}', event)">
+                        ✨ Afin. Principal: <b style="color:var(--gold)">${mayorAf} (${valMayorAf})</b> | Suma: ${sumAf}
                     </span>
                 </div>
                 
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <span class="copy-wrap" style="background:#0a1128; border:1px solid #00ffff; padding:4px 8px; border-radius:4px; font-size:0.8em; min-width: 80px; text-align: center;" onclick="window.copySilently('Objetos Unicos: ${objCount}', event)">
-                            🎒 Obj: <b style="color:#00ffff">${objCount}</b>
-                        </span>
-                        <div style="display: flex; gap: 5px;">${itemsHtml}</div>
+                <div class="resumen-badges" style="margin-top:5px; background:#050505; padding:10px; border-radius:8px; border:1px dashed #333; width:fit-content; display:flex; gap:10px;">
+                    <div class="copy-wrap health-grid" onclick="window.copySilently('Vida Roja: ${p.vidaRojaActual}/${vidas.maxRojo}', event)" style="margin:0;">
+                        ${vidas.rojasHTML}
                     </div>
+                    ${vidas.azulesHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Vida Azul: ${vidas.azulTotal}', event)" style="margin:0; border-left:1px solid #333; padding-left:15px;">${vidas.azulesHTML}</div>` : ''}
+                    ${vidas.guardasHTML ? `<div class="copy-wrap health-grid" onclick="window.copySilently('Guardas: ${vidas.guardaTotal}', event)" style="margin:0; border-left:1px solid #333; padding-left:15px;">${vidas.guardasHTML}</div>` : ''}
+                </div>
+                
+                <div style="display:flex; gap:8px; margin-top:5px; flex-wrap:wrap; align-items:center;">
+                    <span class="copy-wrap" style="background:#0a1128; border:1px solid #00ffff; padding:3px 6px; border-radius:4px; font-size:0.8em;" onclick="window.copySilently('Objetos Unicos: ${objCount}', event)">
+                        🎒 Obj: <b style="color:#00ffff">${objCount}</b>
+                    </span>
+                    ${itemsHtml}
+                </div>
 
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <span class="copy-wrap" style="background:#110022; border:1px solid var(--cyan-magic); padding:4px 8px; border-radius:4px; font-size:0.8em; min-width: 80px; text-align: center;" onclick="window.copySilently('Hechizos Conocidos: ${mySpells.length}', event)">
-                            📖 Hcz: <b style="color:var(--cyan-magic)">${mySpells.length}</b>
-                        </span>
-                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">${spellsHtml}</div>
-                    </div>
+                <div style="display:flex; gap:8px; margin-top:5px; flex-wrap:wrap; align-items:center;">
+                    <span class="copy-wrap" style="background:#110022; border:1px solid var(--cyan-magic); padding:3px 6px; border-radius:4px; font-size:0.8em;" onclick="window.copySilently('Hechizos Conocidos: ${mySpells.length}', event)">
+                        📖 Hcz: <b style="color:var(--cyan-magic)">${mySpells.length}</b>
+                    </span>
+                    ${spellsHtml}
+                </div>
 
-                    ${countMis > 0 ? `
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <span class="copy-wrap" style="background:#1a0a00; border:1px solid #ffaa00; padding:4px 8px; border-radius:4px; font-size:0.8em; min-width: 80px; text-align: center;" onclick="window.copySilently('Misiones Activas: ${countMis}', event)">
-                            📜 Mis: <b style="color:#ffaa00">${countMis}</b>
-                        </span>
-                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">${missionsHtml}</div>
-                    </div>` : ''}
+                <div style="display:flex; gap:8px; margin-top:5px; flex-wrap:wrap; align-items:center;">
+                    <span class="copy-wrap" style="background:#1a0a00; border:1px solid #ffaa00; padding:3px 6px; border-radius:4px; font-size:0.8em;" onclick="window.copySilently('Misiones Activas: ${countMis}', event)">
+                        📜 Mis: <b style="color:#ffaa00">${countMis}</b>
+                    </span>
+                    ${missionsHtml}
                 </div>
             </div>
         </div>`;
@@ -347,15 +343,15 @@ export function dibujarDetalle() {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
         
         <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid #222;">
-            <h3 style="margin-top:0; font-family:'Cinzel'; font-size: 1.5em; border-bottom: 1px solid #444; padding-bottom: 10px; color: #eee;">🤍 Vitalidad</h3>
+            <h3 style="margin-top:0; font-family:'Cinzel'; font-size: 1.5em; border-bottom: 1px solid #444; padding-bottom: 10px; color: #eee;">🤍 Vida</h3>
             
             <div class="health-box copy-wrap" style="display:block; width:100%; box-sizing:border-box; padding:15px; background: #110000; border: 1px solid #300; border-radius: 8px; margin-bottom: 10px;" onclick="window.copySilently('Vida Roja: ${p.vidaRojaActual}/${vidas.maxRojo}', event)">
-                <label style="color:var(--red-life); font-weight:bold; display: block; margin-bottom: 10px; font-size: 1.1em;">VIDA FÍSICA (${p.vidaRojaActual} / ${vidas.maxRojo})</label>
+                <label style="color:var(--red-life); font-weight:bold; display: block; margin-bottom: 10px; font-size: 1.1em;">VIDA ROJA (${p.vidaRojaActual} / ${vidas.maxRojo})</label>
                 <div class="health-grid" style="justify-content: flex-start;">${vidas.rojasHTML}</div>
             </div>
             
             <div class="health-box copy-wrap" style="display:block; width:100%; box-sizing:border-box; padding:15px; background: #000a1a; border: 1px solid #001a33; border-radius: 8px; margin-bottom: 10px;" onclick="window.copySilently('Vida Azul: ${vidas.azulTotal}', event)">
-                <label style="color:var(--blue-life); font-weight:bold; display: block; margin-bottom: 10px; font-size: 1.1em;">VIDA MÍSTICA (${vidas.azulTotal})</label>
+                <label style="color:var(--blue-life); font-weight:bold; display: block; margin-bottom: 10px; font-size: 1.1em;">VIDA AZUL (${vidas.azulTotal})</label>
                 <div class="health-grid" style="justify-content: flex-start;">${vidas.azulesHTML}</div>
             </div>
             
@@ -364,7 +360,7 @@ export function dibujarDetalle() {
                 <div class="health-grid" style="justify-content: flex-start;">${vidas.guardasHTML}</div>
             </div>
             
-            <h3 style="margin-top:30px; font-family:'Cinzel'; font-size: 1.5em; border-bottom: 1px solid #444; padding-bottom: 10px; color: #eee;">⚔️ Ofensiva Calculada</h3>
+            <h3 style="margin-top:30px; font-family:'Cinzel'; font-size: 1.5em; border-bottom: 1px solid #444; padding-bottom: 10px; color: #eee;">⚔️ Puntos de Ataque</h3>
             <div class="affinities-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
                 <div class="affinity-box copy-wrap" style="background: #1a0505; border-color: #500;" onclick="window.copySilently('Daño Rojo: ${calcTotal(p.baseDanoRojo, p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo)}', event)"><label style="color:var(--red-life)">Daño Rojo</label><span style="font-size:1.6em; font-weight:bold;">${calcTotal(p.baseDanoRojo, p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo)}</span>${bTextSplit(p.hechizos.danoRojo, p.hechizosEfecto.danoRojo, p.buffs.danoRojo)}</div>
                 <div class="affinity-box copy-wrap" style="background: #050a1a; border-color: #002;" onclick="window.copySilently('Daño Azul: ${calcTotal(p.baseDanoAzul, p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul)}', event)"><label style="color:var(--blue-life)">Daño Azul</label><span style="font-size:1.6em; font-weight:bold;">${calcTotal(p.baseDanoAzul, p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul)}</span>${bTextSplit(p.hechizos.danoAzul, p.hechizosEfecto.danoAzul, p.buffs.danoAzul)}</div>
@@ -373,7 +369,7 @@ export function dibujarDetalle() {
         </div>
 
         <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid #222;">
-            <h3 style="margin-top:0; font-family:'Cinzel'; font-size: 1.5em; border-bottom: 1px solid #444; padding-bottom: 10px; color: #eee; text-align: left;">🔮 Afinidades Elementales</h3>
+            <h3 style="margin-top:0; font-family:'Cinzel'; font-size: 1.5em; border-bottom: 1px solid #444; padding-bottom: 10px; color: #eee; text-align: left;">🔮 Afinidades Totales</h3>
             <div class="affinities-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Física: ${calcTotal(p.afinidadesBase.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica)}', event)"><label>Física</label><span style="font-size:1.8em; font-weight:bold; color: #fff;">${calcTotal(p.afinidadesBase.fisica, p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica)}</span>${bTextSplit(p.hechizos.fisica, p.hechizosEfecto.fisica, p.buffs.fisica)}</div>
                 <div class="affinity-box copy-wrap" onclick="window.copySilently('Energética: ${calcTotal(p.afinidadesBase.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica)}', event)"><label>Energética</label><span style="font-size:1.8em; font-weight:bold; color: #fff;">${calcTotal(p.afinidadesBase.energetica, p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica)}</span>${bTextSplit(p.hechizos.energetica, p.hechizosEfecto.energetica, p.buffs.energetica)}</div>
@@ -495,7 +491,7 @@ export function dibujarPanelEdicionOP() {
             </div>
 
             <div class="edit-card" style="background: #110000; border: 1px solid var(--red-life); border-radius: 8px; padding: 15px; text-align: center;">
-                <h4 style="margin: 0 0 15px 0; color: var(--red-life);">❤️ Curar/Dañar (Vida Física)</h4>
+                <h4 style="margin: 0 0 15px 0; color: var(--red-life);">❤️ Curar/Dañar (Vida Roja)</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
                     <button type="button" style="background:#1b5e20; border:none; color:white; padding:12px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.modLibre('vidaRojaActual', 1)">+1 (Cura)</button>
                     <button type="button" style="background:#b71c1c; border:none; color:white; padding:12px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="window.modLibre('vidaRojaActual', -1)">-1 (Daño)</button>
@@ -763,4 +759,3 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
-
