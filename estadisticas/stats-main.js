@@ -90,11 +90,12 @@ function recalcularVidas(p, accionMutadora) {
 window.recalcularBases = () => { 
     const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; 
     if(confirm(`¿Recalcular Corazones Óptimos de ${n.toUpperCase()}?`)) { 
+        // Calcula la magia TOTAL (Base + Hechizos + Alterado + Buffs)
         const calcMagT = ['energetica','espiritual','mando','psiquica'].reduce((acc,k)=>acc+(p.afinidadesBase[k]||0)+(p.hechizos[k]||0)+(p.hechizosEfecto[k]||0)+(p.buffs[k]||0), 0);
         
         p.baseVidaRojaMax = 10; 
         p.vidaRojaActual = calcularVidaRojaMax(p); 
-        p.baseVidaAzul = Math.floor(calcMagT / 4); // CÁLCULO MEJORADO (Afinidad Total)
+        p.baseVidaAzul = Math.floor(calcMagT / 4); // Usa el total para la vida
         p.vidaAzul = p.baseVidaAzul; 
         
         window.encolarCambio(n); 
@@ -403,3 +404,4 @@ async function iniciar() {
 }
 
 iniciar();
+
