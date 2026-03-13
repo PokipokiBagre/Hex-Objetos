@@ -90,7 +90,7 @@
                 <div style="display:flex; flex-wrap:wrap; gap:15px; align-items:center; justify-content:space-between;">
                     <label style="color:var(--gold); font-weight:bold; font-size: 1.1em;">
                         CANT. DE HECHIZOS SIMULTÁNEOS: 
-                        <input type="number" id="cast-num" value="3" min="1" max="50" class="input-casteo" style="width:80px; display:inline-block; margin-left:10px;" onchange="window.generarFilasCasteo()">
+          <input type="number" id="cast-num" value="3" min="1" max="50" class="input-casteo" style="width:80px; display:inline-block; margin-left:10px;" onchange="window.generarFilasCasteo()" onwheel="window.scrollCasteo(event)">
                     </label>
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
                         <button onclick="window.copiarPrimerHechizo()" class="btn-nav" style="background:#333; border-color:#888;">📋 Copiar Primer Hechizo</button>
