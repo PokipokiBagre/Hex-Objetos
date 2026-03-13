@@ -187,46 +187,53 @@ window.cerrarModalOP = () => {
     if (modal) modal.classList.add('oculto');
 };
 
-// -------------------------------------------------------------
-// MOTOR CENTRAL DE REPINTADO UNIVERSAL (Sincronización instantánea)
-// -------------------------------------------------------------
-window.repintarDOM = () => {
+// MOTOR CORREGIDO: Es inteligente y actualiza TODA la interfaz visible sin cerrarte las ventanas
+function repintarConScroll() {
     const scrollY = window.scrollY; 
 
-    // 1. Repintar la vista de fondo activa (lo que hay debajo del modal)
-    if (estadoUI.vistaActual === 'detalle') {
-        const dCont = document.getElementById('vista-detalle');
-        if(dCont) { const h = dCont.getBoundingClientRect().height; dCont.style.minHeight = h + 'px'; dibujarDetalle(); requestAnimationFrame(() => dCont.style.minHeight = ''); }
-    } else if (estadoUI.vistaActual === 'hex') {
-        const sCont = document.getElementById('sub-vista-op');
-        if(sCont) sCont.innerHTML = dibujarHexOP();
-        updateHexLogText();
-    } else if (estadoUI.vistaActual === 'crear') {
-        const sCont = document.getElementById('sub-vista-op');
-        if(sCont) sCont.innerHTML = dibujarFormularioCrear();
-    } else if (estadoUI.vistaActual === 'catalogo') {
-        dibujarCatalogo();
-    } else if (estadoUI.vistaActual === 'resumen') {
-        dibujarResumenVisual();
-    }
-
-    // 2. Repintar el Modal si está abierto, manteniendo la posición del scroll
+    // 1. Refresca la ventana emergente si la tienes abierta
     const modal = document.getElementById('modal-op');
     const modalBody = document.getElementById('modal-op-body');
     if (modal && !modal.classList.contains('oculto') && modalBody) {
         const modalScrollTop = modalBody.scrollTop;
         modalBody.innerHTML = dibujarPanelEdicionOP();
-        requestAnimationFrame(() => {
-            modalBody.scrollTop = modalScrollTop;
-        });
+        requestAnimationFrame(() => modalBody.scrollTop = modalScrollTop);
+    }
+
+    // 2. Refresca inteligentemente el fondo según dónde estés
+    if (estadoUI.vistaActual === 'detalle') {
+        const container = document.getElementById('vista-detalle');
+        if (container) {
+            const h = container.getBoundingClientRect().height; 
+            container.style.minHeight = h + 'px';
+            dibujarDetalle();
+            requestAnimationFrame(() => container.style.minHeight = '');
+        }
+    } else if (estadoUI.vistaActual === 'hex' || estadoUI.vistaActual === 'crear') {
+        const container = document.getElementById('sub-vista-op');
+        if (container) {
+            const h = container.getBoundingClientRect().height; 
+            container.style.minHeight = h + 'px';
+            if (estadoUI.vistaActual === 'hex') {
+                container.innerHTML = dibujarHexOP();
+                updateHexLogText();
+            } else {
+                container.innerHTML = dibujarFormularioCrear();
+            }
+            requestAnimationFrame(() => container.style.minHeight = '');
+        }
+    } else if (estadoUI.vistaActual === 'resumen') {
+        dibujarResumenVisual();
+    } else if (estadoUI.vistaActual === 'catalogo') {
+        dibujarCatalogo();
     }
 
     window.scrollTo(0, scrollY);
-};
+}
 
-function refrescarVistas(cerrarModal = true) {
+function refrescarVistas() {
     ['vista-catalogo', 'vista-resumen', 'vista-detalle', 'vista-op'].forEach(id => document.getElementById(id).classList.add('oculto'));
-    if (cerrarModal) window.cerrarModalOP(); 
+    window.cerrarModalOP(); // Esto se mantiene igual para cuando navegas entre pestañas principales
 
     if (estadoUI.vistaActual === 'catalogo') { document.getElementById('vista-catalogo').classList.remove('oculto'); dibujarCatalogo(); }
     else if (estadoUI.vistaActual === 'resumen') { document.getElementById('vista-resumen').classList.remove('oculto'); dibujarResumenVisual(); }
@@ -247,7 +254,7 @@ window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; est
 window.abrirMenuOP = () => { 
     const enrutarOP = () => { 
         if (estadoUI.vistaActual === 'detalle' && estadoUI.personajeSeleccionado) {
-            window.repintarDOM(); 
+            repintarConScroll(); 
         } else { 
             estadoUI.vistaActual = 'hex'; 
             refrescarVistas(); 
@@ -264,26 +271,24 @@ window.setFiltro = (tipo, valor) => { if(tipo === 'rol') estadoUI.filtroRol = va
 window.togglePartyMember = (nombre, isChecked) => {
     if (isChecked) { const e = estadoUI.party.indexOf(null); if (e !== -1) estadoUI.party[e] = nombre; else alert("Máximo de 6 alcanzado."); } 
     else { const c = estadoUI.party.indexOf(nombre); if (c !== -1) estadoUI.party[c] = null; }
-    guardar(); window.repintarDOM();
+    guardar(); repintarConScroll();
 };
-window.vaciarParty = () => { estadoUI.party = [null, null, null, null, null, null]; guardar(); window.repintarDOM(); };
+window.vaciarParty = () => { estadoUI.party = [null, null, null, null, null, null]; guardar(); repintarConScroll(); };
 window.establecerPartyActiva = () => {
     if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
     if(!confirm("¿Marcar seleccionados como Activos y el resto Inactivos?")) return;
     Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) { statsGlobal[n].isActive = false; window.encolarCambio(n); } });
     estadoUI.party.forEach(n => { if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; window.encolarCambio(n); } });
-    guardar(); window.repintarDOM(); alert("Party actualizada.");
+    guardar(); repintarConScroll(); alert("Party actualizada.");
 };
 
-// -------------------------------------------------------------
-// TODAS LAS FUNCIONES DE EDICIÓN AHORA USAN window.repintarDOM()
-// -------------------------------------------------------------
+// LIMPIEZA DE BOTONES DE EDICIÓN: Ahora todos usan la ruta inteligente
 window.modHexInd = (nombre, amount) => { 
     const p = statsGlobal[nombre]; if(!p) return; 
     p.hex = Math.max(0, p.hex + amount); 
     window.addHexLogEntry(nombre, amount, false); 
     window.encolarCambio(nombre); 
-    guardar(); window.repintarDOM(); 
+    guardar(); repintarConScroll(); 
 };
 
 window.modHexGlobal = (amount) => {
@@ -296,7 +301,7 @@ window.modHexGlobal = (amount) => {
             window.encolarCambio(nombre); 
         } 
     });
-    guardar(); window.repintarDOM();
+    guardar(); repintarConScroll();
 };
 
 window.addAsistenciaGlobal = () => {
@@ -311,13 +316,13 @@ window.addAsistenciaGlobal = () => {
         }
     });
     guardar(); if (leveledUp.length > 0) alert(`¡ASISTENCIA MÁXIMA ALCANZADA!\n${leveledUp.join(', ')} regresan a Asistencia 1 y ganan +1000 HEX EXTRA.`);
-    window.repintarDOM();
+    repintarConScroll();
 };
 
 window.toggleCrearRol = () => { const btn = document.getElementById('btn-crear-rol'); if (btn.dataset.val === 'npc') { btn.dataset.val = 'jugador'; btn.innerText = 'ROL: JUGADOR'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } else { btn.dataset.val = 'npc'; btn.innerText = 'ROL: NPC'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } };
 window.toggleCrearAct = () => { const btn = document.getElementById('btn-crear-act'); if (btn.dataset.val === 'activo') { btn.dataset.val = 'inactivo'; btn.innerText = 'ESTADO: INACTIVO'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } else { btn.dataset.val = 'activo'; btn.innerText = 'ESTADO: ACTIVO'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } };
 window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','psi','osc'].reduce((acc,id)=>acc+(parseInt(document.getElementById('npc-'+id)?.value)||0),0); const d = document.getElementById('creation-affinity-sum-display'); if(d) d.innerText = `Total Afinidades: ${s}`; };
-window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); guardar(); window.repintarDOM(); };
+window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); guardar(); repintarConScroll(); };
 
 function recalcularVidas(p, accion) {
     const calcFisT = () => (p.afinidadesBase.fisica||0) + (p.hechizos.fisica||0) + (p.hechizosEfecto.fisica||0) + (p.buffs.fisica||0);
@@ -345,19 +350,19 @@ window.recalcularBases = () => {
     if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { 
         p.baseVidaRojaMax = 10; 
         p.vidaRojaActual = calcularVidaRojaMax(p); 
-        p.baseVidaAzul = getMysticBonus(p); // Ahora usa el total calculado en logic.js
+        p.baseVidaAzul = getMysticBonus(p); // Llama a la matemática corregida de logic.js
         p.vidaAzul = p.baseVidaAzul; 
         window.encolarCambio(n); 
         guardar(); 
-        window.repintarDOM(); 
+        repintarConScroll(); 
     } 
 };
 
-window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
+window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll(); };
+window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); repintarConScroll(); };
+window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); repintarConScroll(); };
+window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll(); };
+window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll(); };
 
 window.modForm = (inputId, cantidad) => {
     const input = document.getElementById(inputId);
@@ -369,9 +374,9 @@ window.modForm = (inputId, cantidad) => {
     }
 };
 
-window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); window.repintarDOM(); };
+window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll(); };
+window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); repintarConScroll(); };
+window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); repintarConScroll(); };
 
 window.ejecutarClonacion = (tipo) => {
     const s = document.getElementById('clon-source'); if(!s) return; const sn = s.value; if(!sn) return alert("Selecciona origen.");
@@ -386,7 +391,7 @@ window.ejecutarClonacion = (tipo) => {
         dest.afinidadesBase = JSON.parse(JSON.stringify(orig.afinidadesBase)); dest.afinidades = JSON.parse(JSON.stringify(orig.afinidades));
         dest.vex = orig.vex; if(tipo==='completo') dest.iconoOverride = orig.iconoOverride || sn;
     }
-    window.encolarCambio(tn); guardar(); s.value = ""; window.repintarDOM(); 
+    window.encolarCambio(tn); guardar(); s.value = ""; repintarConScroll(); 
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -452,7 +457,7 @@ async function iniciar() {
     } 
     catch (error) { console.error("Error crítico:", error); } 
     finally { 
-        refrescarVistas(true); 
+        refrescarVistas(); 
         if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
