@@ -452,7 +452,7 @@ window.ejecutarCreacionNPC = () => {
 // --- NUEVA FUNCIÓN: BORRAR PERSONAJE DESDE EL CATÁLOGO ---
 window.borrarPersonaje = (nombre, event) => {
     event.stopPropagation(); // Evita que se abra la ficha al clickear la X
-    if(confirm(`⚠️ ESTÁS A PUNTO DE ELIMINAR A ${nombre.toUpperCase()}.\n\n¿Estás completamente seguro? Esto lo borrará de la pantalla y enviará la orden al servidor.`)) {
+    if(confirm(`⚠️ ESTÁS A PUNTO DE BORRAR A ${nombre.toUpperCase()}.\n\nEl personaje desaparecerá de tu pantalla y se pondrá en la cola de cambios.\n\nNota: Deberás hacer clic en "Guardar Cambios al Servidor" para que la eliminación sea definitiva en la base de datos.`)) {
         if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
         
         // Agregamos una bandera secreta para que Apps Script sepa que debe borrar la fila
@@ -469,5 +469,6 @@ window.borrarPersonaje = (nombre, event) => {
 };
 
 iniciar();
+
 
 
