@@ -303,74 +303,84 @@ function renderPanelEdicion() {
     dataListHTML += `</datalist>`;
 
     let html = `${dataListHTML}
-                <div style="position:sticky; top:0; background:rgba(15,0,30,0.95); z-index:10; padding-bottom:10px;">
-                    <h3 style="color:#00ffff; text-align:center; font-family:'Cinzel'; border-bottom:1px solid #00ffff; margin-top:0; padding-top:10px; padding-bottom:10px;">Herramientas</h3>
-                    <div style="display:flex; gap:10px; margin-bottom: 15px;">
-                        <button onclick="window.mapaEditor.setHerramienta('cursor')" style="flex:1; background:${editor.herramienta==='cursor' ? '#00ffff' : '#222'}; color:${editor.herramienta==='cursor' ? '#000' : '#fff'}; border:1px solid #00ffff;">👆 Select</button>
-                        <button onclick="window.mapaEditor.setHerramienta('enlace')" style="flex:1; background:${editor.herramienta==='enlace' ? '#00ffff' : '#222'}; color:${editor.herramienta==='enlace' ? '#000' : '#fff'}; border:1px solid #00ffff;" title="SHIFT + Soltar para conectar a varios">↗️ Flecha</button>
+                <button onclick="window.mapaEditor.desactivar()" title="Cerrar Editor" style="position:absolute; top:15px; right:15px; width:28px; height:28px; background:rgba(220,20,60,0.5); color:#fff; border:1px solid rgba(255,255,255,0.4); border-radius:50%; font-weight:bold; cursor:pointer; z-index:50;">✕</button>
+                <div style="position:sticky; top:0; background:rgba(10,0,20,0.95); z-index:10; padding-bottom:15px; border-bottom:1px dashed #555;">
+                    <h3 style="color:var(--gold); text-align:center; font-family:'Cinzel'; margin:0 0 15px 0; padding-right:20px;">⚙️ EDITOR ESTRUCTURAL</h3>
+                    
+                    <div style="display:flex; justify-content:center; gap:20px; margin-bottom: 15px;">
+                        <button onclick="window.mapaEditor.setHerramienta('cursor')" style="width:85px; height:85px; border-radius:12px; background:${editor.herramienta==='cursor' ? 'var(--cyan-magic)' : '#111'}; color:${editor.herramienta==='cursor' ? '#000' : 'var(--cyan-magic)'}; border:2px solid var(--cyan-magic); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:0.2s; box-shadow: ${editor.herramienta==='cursor' ? '0 0 15px rgba(0,255,255,0.5)' : 'none'};">
+                            <span style="font-size:2em; margin-bottom:5px;">👆</span>
+                            <span style="font-family:'Cinzel'; font-weight:bold; font-size:0.8em;">Select</span>
+                        </button>
+                        <button onclick="window.mapaEditor.setHerramienta('enlace')" style="width:85px; height:85px; border-radius:12px; background:${editor.herramienta==='enlace' ? 'var(--cyan-magic)' : '#111'}; color:${editor.herramienta==='enlace' ? '#000' : 'var(--cyan-magic)'}; border:2px solid var(--cyan-magic); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:0.2s; box-shadow: ${editor.herramienta==='enlace' ? '0 0 15px rgba(0,255,255,0.5)' : 'none'};" title="SHIFT + Soltar para conectar a varios">
+                            <span style="font-size:2em; margin-bottom:5px;">↗️</span>
+                            <span style="font-family:'Cinzel'; font-weight:bold; font-size:0.8em;">Flecha</span>
+                        </button>
                     </div>
-                    <button onclick="window.crearNodoNuevo()" style="width:100%; background:#004a00; color:#fff; border:1px solid #00ff00; padding:10px;">➕ Crear Nodo Aquí</button>
-                </div>
-                <hr style="border-color:#444; margin-top:0;">`;
+                    <button onclick="window.crearNodoNuevo()" style="width:100%; background:linear-gradient(135deg, #004a00, #008000); color:#fff; border:1px solid #00ff00; border-radius:6px; padding:12px; font-weight:bold; font-size:1.1em; cursor:pointer;">➕ Crear Nodo Nuevo Aquí</button>
+                </div>`;
 
     const cands = Array.from(editor.seleccionMultiple);
     
     if (cands.length === 0) {
-        html += `<p style="color:#888; text-align:center; font-size:0.9em; margin-top:20px; line-height: 1.5;"><i>Haz clic en cualquier nodo para editarlo.<br><br>Mantén pulsado <b>SHIFT y arrastra</b> en el fondo para encerrar múltiples nodos.</i></p>`;
+        html += `<div style="padding:20px; text-align:center; color:#888;">
+                    <p style="font-size:0.95em; line-height:1.6;">Haz clic en cualquier nodo para editarlo.</p>
+                    <p style="font-size:0.85em; line-height:1.6;">Mantén pulsado <strong style="color:var(--gold);">SHIFT y arrastra</strong> en el fondo para encerrar múltiples nodos en una caja.</p>
+                 </div>`;
     } 
     else if (cands.length > 1) {
-        html += `<h4 style="color:var(--gold); text-align:center;">Edición Masiva (${cands.length} nodos)</h4>
-                 <div style="display:grid; grid-template-columns:1fr; gap:10px;">
-                    <div><label style="font-size:0.8em; color:#aaa;">Forzar Costo HEX:</label><input type="number" step="50" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
-                    <div><label style="font-size:0.8em; color:#aaa;">Forzar Clase:</label><select onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;">
+        html += `<h4 style="color:var(--cyan-magic); text-align:center; font-family:'Cinzel'; margin-top:20px;">Edición Masiva (${cands.length} nodos)</h4>
+                 <div style="display:grid; grid-template-columns:1fr; gap:15px; padding:0 5px;">
+                    <div><label style="font-size:0.8em; color:#aaa; font-weight:bold;">FORZAR COSTO HEX:</label><input type="number" step="50" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:10px;"></div>
+                    <div><label style="font-size:0.8em; color:#aaa; font-weight:bold;">FORZAR CLASE:</label><select onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:10px;">
                         <option value="">- Ignorar -</option><option value="Clase 1">Clase 1</option><option value="Clase 2">Clase 2</option><option value="Clase 3">Clase 3</option><option value="Clase 4">Clase 4</option><option value="Clase 5">Clase 5</option>
                     </select></div>
-                    <div><label style="font-size:0.8em; color:#aaa;">Forzar Afinidad:</label><input type="text" list="dl-edit-afinidad" placeholder="- Escribe o Selecciona -" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                    <div><label style="font-size:0.8em; color:#aaa; font-weight:bold;">FORZAR AFINIDAD:</label><input type="text" list="dl-edit-afinidad" placeholder="- Escribe o Selecciona -" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:10px;"></div>
                  </div>
-                 <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; color:white; padding:10px; margin-top:20px;">🗑️ Destruir Todos</button>`;
+                 <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; border-radius:6px; color:white; padding:12px; font-weight:bold; margin-top:25px; cursor:pointer;">🗑️ DESTRUIR SELECCIÓN</button>`;
     } 
     else {
         const n = cands[0];
-        html += `<h4 style="color:var(--gold); text-align:center; margin-top:0;">Propiedades de Nodo</h4>
-                 <div style="display:flex; flex-direction:column; gap:10px; font-size:0.85em;">
-                    <div><label style="color:#aaa;">ID Excel:</label><input type="text" value="${n.id}" onchange="window.actualizarDatoNodo('id', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
-                    <div><label style="color:#aaa;">Nombre Visible:</label><input type="text" value="${n.nombreOriginal}" onchange="window.actualizarDatoNodo('nombreOriginal', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+        html += `<h4 style="color:var(--cyan-magic); text-align:center; font-family:'Cinzel'; margin-top:20px;">Propiedades de Nodo</h4>
+                 <div style="display:flex; flex-direction:column; gap:12px; font-size:0.85em; padding:0 5px;">
+                    <div><label style="color:#aaa; font-weight:bold;">ID Excel:</label><input type="text" value="${n.id}" onchange="window.actualizarDatoNodo('id', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
+                    <div><label style="color:#aaa; font-weight:bold;">Nombre Visible:</label><input type="text" value="${n.nombreOriginal}" onchange="window.actualizarDatoNodo('nombreOriginal', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
                     
                     <div style="display:flex; gap:10px;">
-                        <div style="flex:1;"><label style="color:#aaa;">Costo HEX:</label><input type="number" step="50" value="${n.hex}" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
-                        <div style="flex:1;"><label style="color:#aaa;">Clase:</label><select onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;">
+                        <div style="flex:1;"><label style="color:#aaa; font-weight:bold;">Costo HEX:</label><input type="number" step="50" value="${n.hex}" onchange="window.actualizarDatoNodo('hex', parseInt(this.value))" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
+                        <div style="flex:1;"><label style="color:#aaa; font-weight:bold;">Clase:</label><select onchange="window.actualizarDatoNodo('clase', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;">
                             <option value="Clase 1" ${n.clase==='Clase 1'?'selected':''}>Clase 1</option><option value="Clase 2" ${n.clase==='Clase 2'?'selected':''}>Clase 2</option><option value="Clase 3" ${n.clase==='Clase 3'?'selected':''}>Clase 3</option><option value="Clase 4" ${n.clase==='Clase 4'?'selected':''}>Clase 4</option><option value="Clase 5" ${n.clase==='Clase 5'?'selected':''}>Clase 5</option>
                         </select></div>
                     </div>
                     
-                    <div><label style="color:#aaa;">Afinidad (Infinita):</label><input type="text" list="dl-edit-afinidad" value="${n.afinidad}" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                    <div><label style="color:#aaa; font-weight:bold;">Afinidad (Infinita):</label><input type="text" list="dl-edit-afinidad" value="${n.afinidad}" onchange="window.actualizarDatoNodo('afinidad', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
 
-                    <div><label style="color:#aaa;">Resumen Breve:</label><textarea onchange="window.actualizarDatoNodo('resumen', this.value)" style="width:100%; box-sizing:border-box; height:40px; background:#000; color:#fff; border:1px solid #555; padding:8px; resize:none;">${n.resumen}</textarea></div>
-                    <div><label style="color:#aaa;">Efecto Mecánico:</label><textarea onchange="window.actualizarDatoNodo('efecto', this.value)" style="width:100%; box-sizing:border-box; height:50px; background:#000; color:#fff; border:1px solid #555; padding:8px; resize:none;">${n.efecto}</textarea></div>
+                    <div><label style="color:#aaa; font-weight:bold;">Resumen Breve:</label><textarea onchange="window.actualizarDatoNodo('resumen', this.value)" style="width:100%; box-sizing:border-box; height:45px; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px; resize:none;">${n.resumen}</textarea></div>
+                    <div><label style="color:#aaa; font-weight:bold;">Efecto Mecánico:</label><textarea onchange="window.actualizarDatoNodo('efecto', this.value)" style="width:100%; box-sizing:border-box; height:60px; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px; resize:none;">${n.efecto}</textarea></div>
                     
-                    <div><label style="color:#ff7777;">Overcast (Doble Dado):</label><input type="text" value="${n.overcast}" onchange="window.actualizarDatoNodo('overcast', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
-                    <div><label style="color:#77aaff;">Undercast (Medio Dado):</label><input type="text" value="${n.undercast}" onchange="window.actualizarDatoNodo('undercast', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
-                    <div><label style="color:var(--gold);">Regla Especial:</label><input type="text" value="${n.especial}" onchange="window.actualizarDatoNodo('especial', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; padding:8px;"></div>
+                    <div><label style="color:#ff7777; font-weight:bold;">Overcast (Doble Dado):</label><input type="text" value="${n.overcast}" onchange="window.actualizarDatoNodo('overcast', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
+                    <div><label style="color:#77aaff; font-weight:bold;">Undercast (Medio Dado):</label><input type="text" value="${n.undercast}" onchange="window.actualizarDatoNodo('undercast', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
+                    <div><label style="color:var(--gold); font-weight:bold;">Regla Especial:</label><input type="text" value="${n.especial}" onchange="window.actualizarDatoNodo('especial', this.value)" style="width:100%; box-sizing:border-box; background:#000; color:#fff; border:1px solid #555; border-radius:4px; padding:8px;"></div>
                  </div>
-                 <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; color:white; padding:10px; margin-top:15px;">🗑️ Destruir Nodo</button>`;
+                 <button onclick="window.eliminarSeleccion()" style="width:100%; background:#4a0000; border:1px solid #ff0000; border-radius:6px; color:white; padding:12px; font-weight:bold; margin-top:20px; cursor:pointer;">🗑️ DESTRUIR NODO</button>`;
     }
 
     // --- GESTOR DE COLORES EN TIEMPO REAL ---
-    html += `<hr style="border-color:#444; margin-top:20px;">
-             <details style="background:rgba(0,0,0,0.5); padding:10px; border-radius:6px; border:1px dashed #555;">
-                <summary style="color:#aaa; cursor:pointer; font-size:0.9em;">🎨 Gestor de Colores de Afinidad</summary>
-                <div style="display:grid; grid-template-columns:1fr; gap:5px; margin-top:10px;">`;
+    html += `<hr style="border-color:#444; margin-top:25px;">
+             <details style="background:rgba(0,0,0,0.4); padding:12px; border-radius:8px; border:1px dashed #555;">
+                <summary style="color:var(--gold); cursor:pointer; font-size:0.9em; font-weight:bold; font-family:'Cinzel';">🎨 GESTOR DE COLORES DE AFINIDAD</summary>
+                <div style="display:grid; grid-template-columns:1fr; gap:8px; margin-top:12px;">`;
     
     afinidadesExistentes.forEach(af => {
         const c = window.mapaColores[af] ? window.mapaColores[af].t : '#ffffff';
-        html += `<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8em;">
-                    <span style="color:#ddd;">${af}</span>
-                    <input type="color" value="${c}" onchange="window.actualizarColorPersonalizado('${af}', this.value)" style="background:none; border:none; width:30px; height:25px; cursor:pointer;">
+        html += `<div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85em; background:#000; padding:5px 10px; border-radius:4px; border:1px solid #333;">
+                    <span style="color:#ddd; font-weight:bold;">${af}</span>
+                    <input type="color" value="${c}" onchange="window.actualizarColorPersonalizado('${af}', this.value)" style="background:none; border:none; width:30px; height:30px; cursor:pointer; padding:0;">
                  </div>`;
     });
     html += `   </div></details>`;
 
-    html += `<button id="btn-save-editor" onclick="window.guardarEdicionAvanzada()" style="width:100%; background:linear-gradient(135deg, #b8860b, #d4af37); color:black; font-weight:bold; padding:15px; margin-top:25px; font-size:1.1em; border:none; box-shadow: 0 0 15px rgba(212,175,55,0.4); cursor:pointer;">💾 GUARDAR ESTRUCTURA</button>`;
+    html += `<button id="btn-save-editor" onclick="window.guardarEdicionAvanzada()" style="width:100%; background:linear-gradient(135deg, #b8860b, #d4af37); border-radius:8px; color:black; font-weight:bold; padding:18px; margin-top:25px; margin-bottom:20px; font-size:1.2em; border:none; box-shadow: 0 0 15px rgba(212,175,55,0.4); cursor:pointer;">💾 GUARDAR ESTRUCTURA</button>`;
     
     panel.innerHTML = html;
 }
