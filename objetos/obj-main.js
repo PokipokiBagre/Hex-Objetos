@@ -178,6 +178,7 @@ async function iniciar() {
 
     window.setRar = (r) => { estadoUI.filtroRar = r; dibujarCatalogo(); };
     window.setMat = (m) => { estadoUI.filtroMat = m; dibujarCatalogo(); };
+    window.setFiltro = (tipo, valor) => { if(tipo === 'rol') estadoUI.filtroRol = valor; if(tipo === 'act') estadoUI.filtroAct = valor; refrescarUI(); };
     window.setBusquedaInv = (v) => { estadoUI.busquedaInv = v; dibujarInventarios(); };
     window.setBusquedaCat = (v) => { estadoUI.busquedaCat = v; dibujarCatalogo(); };
     window.setBusquedaOP = (v) => { estadoUI.busquedaOP = v; refrescarUI(); };
@@ -245,3 +246,4 @@ window.descargarEstadoExcel = descargarEstadoExcel;
     }
 }
 iniciar();
+
