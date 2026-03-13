@@ -9,7 +9,7 @@ export function inicializarCanvas() {
     redimensionar();
     window.addEventListener('resize', redimensionar);
     
-    // Ahora hacemos arrastrables ambos paneles
+    // Hacemos arrastrables ambos paneles
     hacerPanelArrastrable('panel-info');
     hacerPanelArrastrable('panel-edicion-avanzada');
 }
@@ -488,15 +488,30 @@ function hacerPanelArrastrable(id) {
             return; 
         }
 
-        e = e || window.event;
-        if (e.type !== 'touchstart') e.preventDefault(); 
-        
-        el.style.cursor = 'grabbing'; 
-        
+        // --- CORRECCIÓN CLAVE PARA RESIZE ---
+        // Detectar si el clic es en la esquina inferior derecha (zona de resize)
         let clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
         let clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
         
         const rect = el.getBoundingClientRect();
+        
+        // Zona de tolerancia en píxeles para el tirador de resize
+        const toleranciaResize = 30; 
+        
+        const clickEnXDeResize = (clientX - rect.left) > (rect.width - toleranciaResize);
+        const clickEnYDeResize = (clientY - rect.top) > (rect.height - toleranciaResize);
+        
+        if (clickEnXDeResize && clickEnYDeResize) {
+            // El usuario está intentando redimensionar. Cancelamos el drag & drop (mover ventana)
+            // y dejamos que el navegador actúe nativamente con el resize CSS.
+            return; 
+        }
+        // -------------------------------------
+
+        e = e || window.event;
+        if (e.type !== 'touchstart') e.preventDefault(); 
+        
+        el.style.cursor = 'grabbing'; 
         
         el.style.bottom = "auto";
         el.style.right = "auto";
