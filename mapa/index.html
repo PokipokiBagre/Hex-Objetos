@@ -14,7 +14,8 @@
             <h2 style="margin:0; color:var(--gold); text-shadow:0 0 10px rgba(212,175,55,0.5);">MAPA DE HECHIZOS</h2>
             <div style="display:flex; gap:10px; align-items:center;">
                 <button id="btn-ordenar" class="btn-action oculto" style="background:#003366; border-color:#00ffff;" onclick="window.ordenarMapaYifanHu()">🌀 Auto-Ordenar</button>
-                <button id="btn-save-map" class="btn-action oculto" onclick="window.guardarCambiosMapa()">💾 Guardar Movimientos</button>
+                
+                <button id="btn-save-map" class="btn-action oculto" onclick="window.guardarCambiosMapa()">💾 Guardar Cambios</button>
                 
                 <button id="btn-editar-mapa" class="btn-action oculto" style="background:#4a004a; border-color:#ff00ff;" onclick="window.toggleModoEdicion()">✏️ Editor Estructural</button>
                 
@@ -59,8 +60,24 @@
             <div id="info-op"></div>
         </div>
         
-<div id="panel-edicion-avanzada" class="sidebar oculto" style="resize: both; overflow: auto; min-width: 300px; min-height: 200px; right: 15px; top: 15px; height: calc(100vh - 30px); border-radius: 12px; left: auto; width: 450px; pointer-events: auto; background: rgba(15,0,30,0.95); border: 2px solid var(--gold); box-shadow: -5px 5px 20px rgba(0,0,0,0.8);">
+        <div id="panel-edicion-avanzada" class="panel-info oculto" style="resize: both; overflow: auto; min-width: 300px; min-height: 200px; right: 15px; top: 15px; height: calc(90vh - 30px); border-radius: 12px; left: auto; width: 480px; pointer-events: auto; background: rgba(15,0,30,0.95); border: 2px solid var(--gold); box-shadow: -5px 5px 20px rgba(0,0,0,0.8); z-index: 100;">
             </div>
+
+        <div id="herramientas-editor" class="oculto" style="position: absolute; bottom: 25px; left: 20px; z-index: 100; display: flex; gap: 12px; background: rgba(10,0,20,0.85); padding: 12px; border-radius: 12px; border: 1px solid var(--cyan-magic); pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.9);">
+            <button id="tool-cursor" onclick="window.mapaEditor.setHerramienta('cursor')" style="width: 75px; height: 75px; border-radius: 8px; background: var(--cyan-magic); color: #000; border: 2px solid var(--cyan-magic); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.2s; box-shadow: 0 0 15px rgba(0,255,255,0.5);">
+                <span style="font-size: 2em; margin-bottom: 2px;">👆</span>
+                <span style="font-family: 'Cinzel'; font-weight: bold; font-size: 0.75em;">Select</span>
+            </button>
+            <button id="tool-enlace" onclick="window.mapaEditor.setHerramienta('enlace')" style="width: 75px; height: 75px; border-radius: 8px; background: #111; color: var(--cyan-magic); border: 2px solid var(--cyan-magic); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.2s; box-shadow: none;" title="SHIFT + Soltar para conectar a varios">
+                <span style="font-size: 2em; margin-bottom: 2px;">↗️</span>
+                <span style="font-family: 'Cinzel'; font-weight: bold; font-size: 0.75em;">Flecha</span>
+            </button>
+            <button onclick="window.crearNodoNuevo()" style="width: 75px; height: 75px; border-radius: 8px; background: #111; color: #00ff00; border: 2px solid #00ff00; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.2s;">
+                <span style="font-size: 2em; margin-bottom: 2px;">➕</span>
+                <span style="font-family: 'Cinzel'; font-weight: bold; font-size: 0.75em;">Nodo</span>
+            </button>
+        </div>
+
     </div>
 
     <canvas id="mapa-canvas"></canvas>
@@ -73,5 +90,6 @@
     </div>
 
     <script type="module" src="mapa-main.js"></script>
-    <script type="module" src="mapa-edicion.js"></script> </body>
+    <script type="module" src="mapa-edicion.js"></script> 
+</body>
 </html>
