@@ -157,7 +157,7 @@ export function dibujarResumenVisual() {
             const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
             s.costo = info ? (parseInt(info.HEX) || 0) : 0;
             
-            // ENMASCARAMIENTO DE HECHIZOS
+            // LÓGICA DE ENMASCARAMIENTO 
             if (info && (!info.Conocido || String(info.Conocido).trim().toLowerCase() !== 'si')) {
                 s.isMasked = true;
                 s.displayName = info.ID || "Hechizo Sellado";
@@ -273,11 +273,14 @@ export function dibujarDetalle() {
     const countMis = myMissions.length;
     const mySpells = (dbExtra.hechizos.inventario || []).filter(i => i.Personaje.toLowerCase() === pjNameLower);
     
+    // --- SOLUCIÓN DEL CRASHEO: allNodos DEFINIDO AQUÍ ---
+    const allNodos = [...(dbExtra.hechizos.nodos||[]), ...(dbExtra.hechizos.nodosOcultos||[])];
+
     mySpells.forEach(s => {
         const info = allNodos.find(n => normalizar(n.Nombre) === normalizar(s.Hechizo) || normalizar(n.ID) === normalizar(s.Hechizo));
         s.costo = info ? (parseInt(info.HEX) || 0) : 0;
         
-        // ENMASCARAMIENTO DE HECHIZOS
+        // LÓGICA DE ENMASCARAMIENTO
         if (info && (!info.Conocido || String(info.Conocido).trim().toLowerCase() !== 'si')) {
             s.isMasked = true;
             s.displayName = info.ID || "Hechizo Sellado";
@@ -794,3 +797,4 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
