@@ -38,19 +38,13 @@ export function calcularVexMax(p) {
     return p.vex || 0;
 }
 
-// ==========================================
-// CORRECCIÓN MATEMÁTICA DE CORAZONES AZULES
-// ==========================================
 export function getMysticBonus(p) {
     if (!p) return 0;
-    // Calcula el total absoluto de cada rama mágica sumando todas sus fuentes
-    const totalMagico = 
-        ((p.afinidadesBase?.energetica || 0) + (p.hechizos?.energetica || 0) + (p.hechizosEfecto?.energetica || 0) + (p.buffs?.energetica || 0)) +
-        ((p.afinidadesBase?.espiritual || 0) + (p.hechizos?.espiritual || 0) + (p.hechizosEfecto?.espiritual || 0) + (p.buffs?.espiritual || 0)) +
-        ((p.afinidadesBase?.mando || 0) + (p.hechizos?.mando || 0) + (p.hechizosEfecto?.mando || 0) + (p.buffs?.mando || 0)) +
-        ((p.afinidadesBase?.psiquica || 0) + (p.hechizos?.psiquica || 0) + (p.hechizosEfecto?.psiquica || 0) + (p.buffs?.psiquica || 0));
-        
-    return Math.floor(totalMagico / 4);
+    const ene = p.afinidadesBase?.energetica || 0;
+    const esp = p.afinidadesBase?.espiritual || 0;
+    const man = p.afinidadesBase?.mando || 0;
+    const psi = p.afinidadesBase?.psiquica || 0;
+    return Math.floor((ene + esp + man + psi) / 4);
 }
 
 export function generarCSVExportacion() {
