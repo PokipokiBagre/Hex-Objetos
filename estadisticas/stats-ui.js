@@ -110,8 +110,16 @@ export function dibujarCatalogo() {
         else if (p.isPlayer && !p.isActive) { borderStyle = "border: 2px solid #cc0000; box-shadow: 0 4px 10px rgba(204, 0, 0, 0.2);"; bgStyle = "background: #1a0000;"; }
 
         const claseInactiva = p.isActive ? '' : 'inactive-card';
+        
+        // BOTÓN DE ELIMINAR (Solo visible si estás en modo OP/Admin)
+        let btnEliminar = '';
+        if (estadoUI.esAdmin) {
+            btnEliminar = `<button onclick="window.borrarPersonaje('${nombre}', event)" style="position: absolute; top: -10px; right: -10px; background: #ff0000; color: white; border: 2px solid #fff; border-radius: 50%; width: 30px; height: 30px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 10;" title="Eliminar Personaje de la Base de Datos">X</button>`;
+        }
+
         html += `
-        <div class="char-card ${claseInactiva}" style="${borderStyle} ${bgStyle} padding: 15px; border-radius: 12px; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" onclick="window.abrirDetalle('${nombre}')">
+        <div class="char-card ${claseInactiva}" style="position: relative; ${borderStyle} ${bgStyle} padding: 15px; border-radius: 12px; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'" onclick="window.abrirDetalle('${nombre}')">
+            ${btnEliminar}
             <img src="../img/imgpersonajes/${iconoMuestra}icon.png" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2); margin-bottom: 10px;" onerror="${imgError}">
             <h3 style="margin: 0 0 10px 0; font-family: 'Cinzel', serif; font-size: 1.2em; text-transform: uppercase;">${nombre}</h3>
             <div style="background: rgba(0,0,0,0.5); padding: 8px; border-radius: 6px;">
@@ -786,5 +794,6 @@ export function dibujarFormularioCrear() {
 export function dibujarFormularioEditar() {
     return `<p>Editor movido a Modal OP dentro de la ficha.</p>`;
 }
+
 
 
