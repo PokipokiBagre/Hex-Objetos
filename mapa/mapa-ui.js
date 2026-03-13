@@ -176,6 +176,47 @@ export function dibujarFrame() {
         ctx.fill();
     });
 
+    // --- HOOK DIBUJO DE EDICIÓN ---
+    if (window.mapaEditor && window.mapaEditor.activa) {
+        // 1. Dibujar enlace temporal (flecha que arrastras)
+        if (window.mapaEditor.tempLink) {
+            ctx.beginPath();
+            ctx.moveTo(window.mapaEditor.tempLink.startX, window.mapaEditor.tempLink.startY);
+            ctx.lineTo(window.mapaEditor.tempLink.endX, window.mapaEditor.tempLink.endY);
+            ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 4 / scaleFactor; ctx.setLineDash([10/scaleFactor, 10/scaleFactor]);
+            ctx.stroke(); ctx.setLineDash([]);
+        }
+        
+        // 2. Dibujar Caja de Selección (Shift + Arrastrar)
+        if (window.mapaEditor.boxStart && window.mapaEditor.boxCurrent) {
+            const minX = Math.min(window.mapaEditor.boxStart.x, window.mapaEditor.boxCurrent.x);
+            const minY = Math.min(window.mapaEditor.boxStart.y, window.mapaEditor.boxCurrent.y);
+            const w = Math.abs(window.mapaEditor.boxCurrent.x - window.mapaEditor.boxStart.x);
+            const h = Math.abs(window.mapaEditor.boxCurrent.y - window.mapaEditor.boxStart.y);
+            
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.15)';
+            ctx.fillRect(minX, minY, w, h);
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2 / scaleFactor;
+            ctx.setLineDash([5/scaleFactor, 5/scaleFactor]);
+            ctx.strokeRect(minX, minY, w, h);
+            ctx.setLineDash([]);
+        }
+
+        // 3. Dibujar Enmascarado de Selección Múltiple (Halo Cyan)
+        window.mapaEditor.seleccionMultiple.forEach(n => {
+            ctx.beginPath(); 
+            ctx.arc(n.x, n.y, n.radio + (12/scaleFactor), 0, Math.PI * 2);
+            ctx.strokeStyle = '#00ffff'; 
+            ctx.lineWidth = 6 / scaleFactor; 
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00ffff';
+            ctx.stroke();
+            ctx.shadowBlur = 0; // reset
+        });
+    }
+    // ------------------------------
+
     // ==========================================
     // 2. DIBUJAR NODOS
     // ==========================================
