@@ -162,7 +162,7 @@ window.crearNodoNuevo = () => {
         id: `Hechizo ${newIdNum}`,
         nombreOriginal: `Hechizo ${newIdNum}`,
         nombre: `Hechizo ${newIdNum} (0)`,
-        afinidad: 'Física',
+        afinidad: '', // <-- AHORA INICIA EN BLANCO
         clase: 'Clase 1',
         hex: 0,
         resumen: '', efecto: '', overcast: '', undercast: '', especial: '',
