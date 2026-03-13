@@ -9,7 +9,9 @@ export function inicializarCanvas() {
     redimensionar();
     window.addEventListener('resize', redimensionar);
     
-    hacerPanelArrastrable();
+    // Ahora hacemos arrastrables ambos paneles
+    hacerPanelArrastrable('panel-info');
+    hacerPanelArrastrable('panel-edicion-avanzada');
 }
 
 function redimensionar() {
@@ -25,7 +27,6 @@ function redimensionar() {
 export function dibujarFrame() {
     if(!ctx) return;
     
-    // AQUÍ EXTRAEMOS EL MODO VISUAL DEL ESTADO
     const { nodos, enlaces, camara, interaccion, jugadorActivo, vistaJugador, modoVisual } = estadoMapa;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0); 
@@ -171,25 +172,23 @@ export function dibujarFrame() {
         ctx.lineTo(targetX, targetY);
         ctx.fillStyle = ctx.strokeStyle;
         ctx.fill();
-    }); // <-- ESTA LLAVE FALTABA Y CAUSÓ EL PANTALLAZO NEGRO
+    });
 
     // --- HOOK DIBUJO DE EDICIÓN ---
     if (window.mapaEditor && window.mapaEditor.activa) {
-        // 1. Dibujar enlace temporal (flechas múltiples SOLO si hay SHIFT presionado)
+        // 1. Dibujar enlace temporal
         if (window.mapaEditor.tempLink) {
             const temp = window.mapaEditor.tempLink;
             const seleccion = window.mapaEditor.seleccionMultiple;
             
-            // Determinar desde qué nodos salen las flechas (VERIFICA SHIFT AHORA)
             const nodosOrigen = (window.mapaEditor.isShiftPressed && seleccion.has(temp.source) && seleccion.size > 1) 
                 ? Array.from(seleccion) 
                 : [temp.source];
 
             nodosOrigen.forEach(nodoOrg => {
                 const angle = Math.atan2(temp.endY - nodoOrg.y, temp.endX - nodoOrg.x);
-                const headlen = 18 / scaleFactor; // Tamaño de la punta
+                const headlen = 18 / scaleFactor;
                 
-                // Línea punteada
                 ctx.beginPath();
                 ctx.moveTo(nodoOrg.x, nodoOrg.y);
                 ctx.lineTo(temp.endX, temp.endY);
@@ -199,7 +198,6 @@ export function dibujarFrame() {
                 ctx.stroke(); 
                 ctx.setLineDash([]);
                 
-                // Punta de la flecha
                 ctx.beginPath();
                 ctx.moveTo(temp.endX, temp.endY);
                 ctx.lineTo(temp.endX - headlen * Math.cos(angle - Math.PI / 7), temp.endY - headlen * Math.sin(angle - Math.PI / 7));
@@ -210,7 +208,7 @@ export function dibujarFrame() {
             });
         }
         
-        // 2. Dibujar Caja de Selección (Shift + Arrastrar)
+        // 2. Dibujar Caja de Selección
         if (window.mapaEditor.boxStart && window.mapaEditor.boxCurrent) {
             const minX = Math.min(window.mapaEditor.boxStart.x, window.mapaEditor.boxCurrent.x);
             const minY = Math.min(window.mapaEditor.boxStart.y, window.mapaEditor.boxCurrent.y);
@@ -226,7 +224,7 @@ export function dibujarFrame() {
             ctx.setLineDash([]);
         }
 
-        // 3. Dibujar Enmascarado de Selección Múltiple (Halo Cyan)
+        // 3. Dibujar Enmascarado
         window.mapaEditor.seleccionMultiple.forEach(n => {
             ctx.beginPath(); 
             ctx.arc(n.x, n.y, n.radio + (12/scaleFactor), 0, Math.PI * 2);
@@ -235,10 +233,9 @@ export function dibujarFrame() {
             ctx.shadowBlur = 20;
             ctx.shadowColor = '#00ffff';
             ctx.stroke();
-            ctx.shadowBlur = 0; // reset
+            ctx.shadowBlur = 0; 
         });
     }
-    // ------------------------------
 
     // ==========================================
     // 2. DIBUJAR NODOS
@@ -248,15 +245,13 @@ export function dibujarFrame() {
         
         let colorAfinidadReal;
 
-        // LÓGICA DE SWITCH GLOBAL PARA NODOS
         if (modoVisual === 'afinidades') {
             colorAfinidadReal = window.mapaColores[nodo.afinidad] ? window.mapaColores[nodo.afinidad].t : '#aaaaaa';
         } else {
-            // Vista Descubiertos: Violeta/Dorado pastel
             if (nodo.esConocido) {
-                colorAfinidadReal = 'rgba(177, 156, 217, 1)'; // Violeta Pastel
+                colorAfinidadReal = 'rgba(177, 156, 217, 1)';
             } else {
-                colorAfinidadReal = 'rgba(236, 213, 154, 1)'; // Dorado Champán Pastel
+                colorAfinidadReal = 'rgba(236, 213, 154, 1)';
             }
         }
 
@@ -273,7 +268,7 @@ export function dibujarFrame() {
 
         let colorNodoFinal = colorAfinidadReal;
         if (isPlayerView && tieneElHechizo && !nodo.isHexNode) {
-            colorNodoFinal = 'rgba(177, 156, 217, 1)'; // Lavanda absoluto si lo tiene
+            colorNodoFinal = 'rgba(177, 156, 217, 1)';
         } else if (isPlayerView && (esAprendibleInmediato || esPrecedente)) {
             colorNodoFinal = esAprendibleInmediato ? 'rgba(236, 213, 154, 0.8)' : 'rgba(212, 196, 146, 0.4)';
         }
@@ -405,8 +400,6 @@ export function actualizarPanelInfo() {
     if (!nodo) { panel.classList.add('oculto'); return; }
 
     document.getElementById('info-titulo').innerText = nodo.nombre;
-    
-    // CORRECCIÓN: Leer color dinámico del objeto global
     const colorData = window.mapaColores[nodo.afinidad];
     const colorAfinidad = colorData ? colorData.t : '#888';
     
@@ -440,7 +433,6 @@ export function actualizarPanelInfo() {
 
         if (nodo.overcast || nodo.undercast || nodo.especial) {
             detallesEl.style.display = 'block';
-            
             const bOver = document.getElementById('box-overcast');
             const bUnder = document.getElementById('box-undercast');
             const bEsp = document.getElementById('box-especial');
@@ -476,33 +468,23 @@ export function actualizarPanelInfo() {
 
 export function resetearPosicionPanel() {
     const panel = document.getElementById('panel-info');
-    if (panel) {
-        panel.style.top = '';
-        panel.style.left = '';
-        panel.style.right = '';
-        panel.style.bottom = '';
-        panel.style.transform = '';
-    }
+    if (panel) { panel.style.top = ''; panel.style.left = ''; panel.style.right = ''; panel.style.bottom = ''; panel.style.transform = ''; }
 }
 
-function hacerPanelArrastrable() {
-    const el = document.getElementById('panel-info');
+// NUEVO: SISTEMA UNIVERSAL DE ARRASTRE PARA PANELES
+function hacerPanelArrastrable(id) {
+    const el = document.getElementById(id);
+    if(!el) return;
     el.style.cursor = 'grab';
-    el.title = "Arrastra para mover la ventana";
-
-    const header = document.getElementById('info-titulo');
-    if (header) {
-        header.style.cursor = 'default';
-        header.title = '';
-    }
-
+    
     let offsetX = 0, offsetY = 0;
 
     el.onmousedown = iniciarArrastre;
     el.ontouchstart = iniciarArrastre;
 
     function iniciarArrastre(e) {
-        if (e.target.closest('button') || e.target.closest('select') || e.target.closest('summary')) {
+        // Evitar que el arrastre se active al intentar escribir o pulsar botones
+        if (e.target.closest('button') || e.target.closest('select') || e.target.closest('summary') || e.target.closest('input') || e.target.closest('textarea')) {
             return; 
         }
 
