@@ -176,15 +176,32 @@ export function dibujarFrame() {
         ctx.fill();
     });
 
-    // --- HOOK DIBUJO DE EDICIÓN ---
+   // --- HOOK DIBUJO DE EDICIÓN ---
     if (window.mapaEditor && window.mapaEditor.activa) {
-        // 1. Dibujar enlace temporal (flecha que arrastras)
+        // 1. Dibujar enlace temporal (flecha que arrastras con punta)
         if (window.mapaEditor.tempLink) {
+            const temp = window.mapaEditor.tempLink;
+            const angle = Math.atan2(temp.endY - temp.startY, temp.endX - temp.startX);
+            const headlen = 18 / scaleFactor; // Tamaño de la punta
+            
+            // Línea principal
             ctx.beginPath();
-            ctx.moveTo(window.mapaEditor.tempLink.startX, window.mapaEditor.tempLink.startY);
-            ctx.lineTo(window.mapaEditor.tempLink.endX, window.mapaEditor.tempLink.endY);
-            ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 4 / scaleFactor; ctx.setLineDash([10/scaleFactor, 10/scaleFactor]);
-            ctx.stroke(); ctx.setLineDash([]);
+            ctx.moveTo(temp.startX, temp.startY);
+            ctx.lineTo(temp.endX, temp.endY);
+            ctx.strokeStyle = '#00ffff'; 
+            ctx.lineWidth = 4 / scaleFactor; 
+            ctx.setLineDash([10/scaleFactor, 10/scaleFactor]);
+            ctx.stroke(); 
+            ctx.setLineDash([]);
+            
+            // Dibujo de la Punta
+            ctx.beginPath();
+            ctx.moveTo(temp.endX, temp.endY);
+            ctx.lineTo(temp.endX - headlen * Math.cos(angle - Math.PI / 7), temp.endY - headlen * Math.sin(angle - Math.PI / 7));
+            ctx.lineTo(temp.endX - headlen * Math.cos(angle + Math.PI / 7), temp.endY - headlen * Math.sin(angle + Math.PI / 7));
+            ctx.lineTo(temp.endX, temp.endY);
+            ctx.fillStyle = '#00ffff';
+            ctx.fill();
         }
         
         // 2. Dibujar Caja de Selección (Shift + Arrastrar)
