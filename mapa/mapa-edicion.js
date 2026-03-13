@@ -9,7 +9,7 @@ const editor = {
     boxStart: null,
     boxCurrent: null,
     hasDragged: false, 
-    isShiftPressed: false, // <-- NUEVO: Rastreador de tecla Shift
+    isShiftPressed: false, 
     cambiosPendientes: { nodos: {}, enlaces: [] }
 };
 
@@ -51,7 +51,7 @@ editor.setHerramienta = (herr) => {
 // --- INTERACCIÓN CON RATÓN AVANZADA ---
 editor.onMouseDown = (e, nodo, worldPos) => {
     editor.hasDragged = false; 
-    editor.isShiftPressed = e.shiftKey; // Detecta si Shift se está presionando
+    editor.isShiftPressed = e.shiftKey; 
 
     if (editor.herramienta === 'enlace') {
         if (nodo) {
@@ -71,9 +71,7 @@ editor.onMouseDown = (e, nodo, worldPos) => {
             estadoMapa.interaccion.draggedNode = nodo;
         } else {
             if (e.shiftKey) {
-                // CORRECCIÓN: Limpia la selección gigante anterior al empezar a trazar una caja nueva
                 editor.seleccionMultiple.clear(); 
-                
                 editor.boxStart = { ...worldPos };
                 editor.boxCurrent = { ...worldPos };
             } else {
@@ -86,7 +84,7 @@ editor.onMouseDown = (e, nodo, worldPos) => {
 
 editor.onMouseMove = (e, dx, dy, worldPos) => {
     if (Math.abs(dx) > 2 || Math.abs(dy) > 2) editor.hasDragged = true; 
-    editor.isShiftPressed = e.shiftKey; // Actualiza estado del Shift mientras mueves el ratón
+    editor.isShiftPressed = e.shiftKey;
 
     if (editor.tempLink) {
         editor.tempLink.endX = worldPos.x;
@@ -111,7 +109,6 @@ editor.onMouseUp = (e, nodo) => {
     
     if (editor.tempLink) {
         if (nodo && nodo !== editor.tempLink.source) {
-            // NUEVO: Verifica si hay shift Y si el nodo origen es parte de un grupo
             if (e.shiftKey && editor.seleccionMultiple.has(editor.tempLink.source) && editor.seleccionMultiple.size > 1) {
                 editor.seleccionMultiple.forEach(n => {
                     if (n !== nodo) crearEnlace(n, nodo);
@@ -146,32 +143,16 @@ editor.onMouseUp = (e, nodo) => {
     estadoMapa.interaccion.draggedNode = null;
 };
 
-        
-        editor.boxStart = null;
-        editor.boxCurrent = null;
-        renderPanelEdicion();
-    } else if (estadoMapa.interaccion.isDraggingBg) {
-        // NUEVO: Solo borra la selección si hicimos CLIC en el fondo sin arrastrar la cámara
-        if (!editor.hasDragged && !e.shiftKey) {
-            editor.seleccionMultiple.clear();
-            renderPanelEdicion();
-        }
-    }
-    
-    estadoMapa.interaccion.isDraggingBg = false;
-    estadoMapa.interaccion.draggedNode = null;
-};
-
 // --- CREACIÓN LÓGICA E ID INTELIGENTE (RECICLAJE) ---
 function getNextId() {
     const usedIds = new Set();
     estadoMapa.nodos.forEach(n => {
-        const match = (n.id || n.nombreOriginal).match(/\d+/); // Extrae el número del ID
+        const match = (n.id || n.nombreOriginal).match(/\d+/); 
         if (match) usedIds.add(parseInt(match[0]));
     });
     
     let i = 1;
-    while (usedIds.has(i)) i++; // Busca el primer hueco libre (Ej: si falta el 664, lo toma)
+    while (usedIds.has(i)) i++; 
     return i;
 }
 
@@ -179,8 +160,8 @@ window.crearNodoNuevo = () => {
     const newIdNum = getNextId();
     const nuevo = {
         id: `Hechizo ${newIdNum}`,
-        nombreOriginal: `Nuevo Hechizo ${newIdNum}`,
-        nombre: `Nuevo Hechizo ${newIdNum} (0)`,
+        nombreOriginal: `Hechizo ${newIdNum}`,
+        nombre: `Hechizo ${newIdNum} (0)`,
         afinidad: 'Física',
         clase: 'Clase 1',
         hex: 0,
@@ -241,7 +222,6 @@ function registrarCambioNodo(n) {
 }
 
 window.actualizarColorPersonalizado = (afinidad, hexColor) => {
-    // Oscurecer color para el borde
     let c = hexColor.substring(1);
     let rgb = parseInt(c, 16);
     let r = Math.max(0, (rgb >> 16) - 50);
@@ -249,8 +229,8 @@ window.actualizarColorPersonalizado = (afinidad, hexColor) => {
     let b = Math.max(0, (rgb & 0x0000FF) - 50);
     let borderHex = `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
     
-    // Lo guardamos en la variable global (la UI se actualizará al instante)
     window.mapaColores[afinidad] = { t: hexColor, b: borderHex };
+    localStorage.setItem('hex_map_colors', JSON.stringify(window.mapaColores)); 
 };
 
 window.eliminarSeleccion = () => {
@@ -281,12 +261,11 @@ window.eliminarSeleccion = () => {
 window.guardarEdicionAvanzada = async () => {
     estadoMapa.nodos.forEach(n => { if(n.modificado) registrarCambioNodo(n); });
 
-    // AHORA MANDAMOS LAS AFINIDADES ACTUALIZADAS
     const payload = {
         accion: 'guardar_edicion_completa',
         nodos: Object.values(editor.cambiosPendientes.nodos),
         enlaces: editor.cambiosPendientes.enlaces,
-        afinidades: window.mapaColores // <- ENVIAMOS LOS COLORES AL EXCEL
+        afinidades: window.mapaColores 
     };
 
     if (payload.nodos.length === 0 && payload.enlaces.length === 0 && Object.keys(window.mapaColores).length === 0) {
