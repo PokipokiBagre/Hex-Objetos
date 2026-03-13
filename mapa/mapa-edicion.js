@@ -71,6 +71,9 @@ editor.onMouseDown = (e, nodo, worldPos) => {
             estadoMapa.interaccion.draggedNode = nodo;
         } else {
             if (e.shiftKey) {
+                // CORRECCIÓN: Limpia la selección gigante anterior al empezar a trazar una caja nueva
+                editor.seleccionMultiple.clear(); 
+                
                 editor.boxStart = { ...worldPos };
                 editor.boxCurrent = { ...worldPos };
             } else {
