@@ -38,17 +38,13 @@ export function calcularVexMax(p) {
     return p.vex || 0;
 }
 
+// CORRECCIÓN MATEMÁTICA: Ahora toma el TOTAL de las estadísticas mágicas, no solo la base.
 export function getMysticBonus(p) {
     if (!p) return 0;
-    // Función auxiliar para sacar el total de una afinidad
-    const total = (k) => (p.afinidadesBase?.[k]||0) + (p.hechizos?.[k]||0) + (p.hechizosEfecto?.[k]||0) + (p.buffs?.[k]||0);
+    const t = (k) => (p.afinidadesBase?.[k]||0) + (p.hechizos?.[k]||0) + (p.hechizosEfecto?.[k]||0) + (p.buffs?.[k]||0);
     
-    const ene = total('energetica');
-    const esp = total('espiritual');
-    const man = total('mando');
-    const psi = total('psiquica');
-    
-    return Math.floor((ene + esp + man + psi) / 4);
+    const totalMagia = t('energetica') + t('espiritual') + t('mando') + t('psiquica');
+    return Math.floor(totalMagia / 4);
 }
 
 export function generarCSVExportacion() {
