@@ -5,34 +5,29 @@ import { generarCSVExportacion, descargarArchivoCSV, calcularVidaRojaMax, getMys
 
 const API_ESTADISTICAS = 'https://script.google.com/macros/s/AKfycbwW4AXM9QSrPYR4vjXPdwSEhV1Q-t9S0exoskZQGoerVRJOsEMzReN1piMWzCfzW_RLmQ/exec';
 
-let formOverrides = { 'npc-vrm': false, 'npc-vra': false, 'npc-va': false };
-
 if (!estadoUI.colaCambios) estadoUI.colaCambios = { stats: {} };
 if (!estadoUI.colaCambios.stats) estadoUI.colaCambios.stats = {};
 
+// --- DRAG Y DROP DEL MODAL OP ---
 const dragHeader = document.getElementById('modal-drag-header');
 const modalContent = document.getElementById('hex-modal-content');
 let isDragging = false, startX, startY, initialX, initialY;
 
 if (dragHeader && modalContent) {
     dragHeader.onmousedown = (e) => {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
+        isDragging = true; startX = e.clientX; startY = e.clientY;
         const rect = modalContent.getBoundingClientRect();
         modalContent.style.position = 'absolute';
         modalContent.style.left = rect.left + 'px';
         modalContent.style.top = rect.top + 'px';
         modalContent.style.transform = 'none';
         modalContent.style.margin = '0';
-        initialX = rect.left;
-        initialY = rect.top;
+        initialX = rect.left; initialY = rect.top;
         e.preventDefault(); 
     };
     window.onmousemove = (e) => {
         if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
+        const dx = e.clientX - startX; const dy = e.clientY - startY;
         modalContent.style.left = (initialX + dx) + 'px';
         modalContent.style.top = (initialY + dy) + 'px';
     };
@@ -76,18 +71,12 @@ window.copySilently = (texto, event) => {
     try {
         if(event) { event.preventDefault(); event.stopPropagation(); }
         navigator.clipboard.writeText(texto);
-        
         const tooltip = document.createElement('div');
-        tooltip.innerText = "✨ Copiado!";
-        tooltip.className = 'floating-tooltip';
-        tooltip.style.left = event.pageX + 'px';
-        tooltip.style.top = (event.pageY - 20) + 'px';
+        tooltip.innerText = "✨ Copiado!"; tooltip.className = 'floating-tooltip';
+        tooltip.style.left = event.pageX + 'px'; tooltip.style.top = (event.pageY - 20) + 'px';
         document.body.appendChild(tooltip);
-        
         setTimeout(() => tooltip.remove(), 600);
-    } catch (e) {
-        console.log("Fallo al copiar.", e);
-    }
+    } catch (e) { console.log("Fallo al copiar.", e); }
 };
 
 window.actualizarBotonSync = () => {
@@ -186,42 +175,41 @@ window.cerrarModalOP = () => {
     if (modal) modal.classList.add('oculto');
 };
 
-// MOTOR CORE GIGANTE: Actualiza fondo y modal instantáneamente.
-window.repintarDOM = () => {
-    const scrollY = window.scrollY; 
+// =========================================================================
+// NUEVO MOTOR DE RENDERIZADO: ACTUALIZA FONDO Y MODAL A LA VEZ
+// =========================================================================
+window.actualizarPantallas = () => {
+    const currentScroll = window.scrollY;
 
-    // 1. Refresca la Ficha (Fondo) si estás ahí
+    // 1. DIBUJAR FONDO ACTIVO (Sin tocar el modal)
     if (estadoUI.vistaActual === 'detalle') {
-        dibujarDetalle();
+        const cont = document.getElementById('vista-detalle');
+        if (cont) cont.innerHTML = dibujarDetalle();
     } else if (estadoUI.vistaActual === 'hex') {
-        const sCont = document.getElementById('sub-vista-op');
-        if(sCont) sCont.innerHTML = dibujarHexOP();
+        const cont = document.getElementById('sub-vista-op');
+        if (cont) cont.innerHTML = dibujarHexOP();
         updateHexLogText();
-    } else if (estadoUI.vistaActual === 'crear') {
-        const sCont = document.getElementById('sub-vista-op');
-        if(sCont) sCont.innerHTML = dibujarFormularioCrear();
-    } else if (estadoUI.vistaActual === 'catalogo') {
-        dibujarCatalogo();
     } else if (estadoUI.vistaActual === 'resumen') {
         dibujarResumenVisual();
+    } else if (estadoUI.vistaActual === 'catalogo') {
+        dibujarCatalogo();
     }
 
-    // 2. Refresca el Modal de Edición (Frente) sin perder la posición del scroll
+    // 2. DIBUJAR MODAL OP SI ESTÁ ABIERTO
     const modal = document.getElementById('modal-op');
-    const modalBody = document.getElementById('modal-op-body');
-    if (modal && !modal.classList.contains('oculto') && modalBody) {
-        const modalScrollTop = modalBody.scrollTop;
-        modalBody.innerHTML = dibujarPanelEdicionOP();
-        requestAnimationFrame(() => {
-            modalBody.scrollTop = modalScrollTop;
-            window.scrollTo(0, scrollY);
-        });
-    } else {
-        window.scrollTo(0, scrollY);
+    if (modal && !modal.classList.contains('oculto')) {
+        const modalBody = document.getElementById('modal-op-body');
+        if (modalBody) {
+            const modalScroll = modalBody.scrollTop;
+            modalBody.innerHTML = dibujarPanelEdicionOP();
+            modalBody.scrollTop = modalScroll; // Restaura el scroll dentro de la ventanita
+        }
     }
+
+    window.scrollTo(0, currentScroll); // Restaura el scroll global
 };
 
-function refrescarVistas() {
+function refrescarVistasPrincipales() {
     ['vista-catalogo', 'vista-resumen', 'vista-detalle', 'vista-op'].forEach(id => document.getElementById(id).classList.add('oculto'));
     window.cerrarModalOP(); 
 
@@ -237,81 +225,34 @@ function refrescarVistas() {
     }
 }
 
-window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistas(); window.scrollTo(0,0); };
-window.mostrarResumen = () => { estadoUI.vistaActual = 'resumen'; refrescarVistas(); window.scrollTo(0,0); };
-window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistas(); window.scrollTo(0,0); };
+// Navegación Básica
+window.mostrarCatalogo = () => { estadoUI.vistaActual = 'catalogo'; refrescarVistasPrincipales(); window.scrollTo(0,0); };
+window.mostrarResumen = () => { estadoUI.vistaActual = 'resumen'; refrescarVistasPrincipales(); window.scrollTo(0,0); };
+window.abrirDetalle = (nombre) => { estadoUI.personajeSeleccionado = nombre; estadoUI.vistaActual = 'detalle'; refrescarVistasPrincipales(); window.scrollTo(0,0); };
 
 window.abrirMenuOP = () => { 
-    const enrutarOP = () => { 
+    if (estadoUI.esAdmin) { 
         if (estadoUI.vistaActual === 'detalle' && estadoUI.personajeSeleccionado) {
-            window.repintarDOM(); 
+            window.actualizarPantallas(); // Si está en la ficha, solo refresca
         } else { 
-            estadoUI.vistaActual = 'hex'; 
-            refrescarVistas(); 
+            estadoUI.vistaActual = 'hex'; refrescarVistasPrincipales(); 
         }
-    };
-    if (estadoUI.esAdmin) { enrutarOP(); return; }
+        return; 
+    }
     const pass = prompt("Acceso Restringido MÁSTER. Contraseña:");
-    if (pass === atob('Y2FuZXk=')) { estadoUI.esAdmin = true; enrutarOP(); } 
+    if (pass === atob('Y2FuZXk=')) { 
+        estadoUI.esAdmin = true; 
+        if (estadoUI.vistaActual === 'detalle' && estadoUI.personajeSeleccionado) window.actualizarPantallas();
+        else { estadoUI.vistaActual = 'hex'; refrescarVistasPrincipales(); }
+    } 
 };
 
-window.mostrarPaginaOP = (subvista) => { estadoUI.vistaActual = subvista; refrescarVistas(); };
-window.setFiltro = (tipo, valor) => { if(tipo === 'rol') estadoUI.filtroRol = valor; if(tipo === 'act') estadoUI.filtroAct = valor; refrescarVistas(); };
+window.mostrarPaginaOP = (subvista) => { estadoUI.vistaActual = subvista; refrescarVistasPrincipales(); };
+window.setFiltro = (tipo, valor) => { if(tipo === 'rol') estadoUI.filtroRol = valor; if(tipo === 'act') estadoUI.filtroAct = valor; refrescarVistasPrincipales(); };
 
-window.togglePartyMember = (nombre, isChecked) => {
-    if (isChecked) { const e = estadoUI.party.indexOf(null); if (e !== -1) estadoUI.party[e] = nombre; else alert("Máximo de 6 alcanzado."); } 
-    else { const c = estadoUI.party.indexOf(nombre); if (c !== -1) estadoUI.party[c] = null; }
-    guardar(); window.repintarDOM();
-};
-window.vaciarParty = () => { estadoUI.party = [null, null, null, null, null, null]; guardar(); window.repintarDOM(); };
-window.establecerPartyActiva = () => {
-    if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
-    if(!confirm("¿Marcar seleccionados como Activos y el resto Inactivos?")) return;
-    Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) { statsGlobal[n].isActive = false; window.encolarCambio(n); } });
-    estadoUI.party.forEach(n => { if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; window.encolarCambio(n); } });
-    guardar(); window.repintarDOM(); alert("Party actualizada.");
-};
-
-window.modHexInd = (nombre, amount) => { 
-    const p = statsGlobal[nombre]; if(!p) return; 
-    p.hex = Math.max(0, p.hex + amount); 
-    window.addHexLogEntry(nombre, amount, false); 
-    window.encolarCambio(nombre); 
-    guardar(); window.repintarDOM(); 
-};
-
-window.modHexGlobal = (amount) => {
-    if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
-    estadoUI.party.forEach(nombre => { 
-        if (nombre && statsGlobal[nombre]) { 
-            const p = statsGlobal[nombre]; 
-            p.hex = Math.max(0, p.hex + amount); 
-            window.addHexLogEntry(nombre, amount, false); 
-            window.encolarCambio(nombre); 
-        } 
-    });
-    guardar(); window.repintarDOM();
-};
-
-window.addAsistenciaGlobal = () => {
-    if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
-    let leveledUp = [];
-    estadoUI.party.forEach(nombre => {
-        if (nombre && statsGlobal[nombre]) {
-            const p = statsGlobal[nombre]; p.asistencia = (p.asistencia || 1) + 1;
-            if (p.asistencia >= 8) { p.asistencia = 1; p.hex += 1000; window.addHexLogEntry(nombre, 1000, true); leveledUp.push(nombre); } 
-            else { window.addHexLogEntry(nombre, 0, false); }
-            window.encolarCambio(nombre);
-        }
-    });
-    guardar(); if (leveledUp.length > 0) alert(`¡ASISTENCIA MÁXIMA ALCANZADA!\n${leveledUp.join(', ')} regresan a Asistencia 1 y ganan +1000 HEX EXTRA.`);
-    window.repintarDOM();
-};
-
-window.toggleCrearRol = () => { const btn = document.getElementById('btn-crear-rol'); if (btn.dataset.val === 'npc') { btn.dataset.val = 'jugador'; btn.innerText = 'ROL: JUGADOR'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } else { btn.dataset.val = 'npc'; btn.innerText = 'ROL: NPC'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } };
-window.toggleCrearAct = () => { const btn = document.getElementById('btn-crear-act'); if (btn.dataset.val === 'activo') { btn.dataset.val = 'inactivo'; btn.innerText = 'ESTADO: INACTIVO'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } else { btn.dataset.val = 'activo'; btn.innerText = 'ESTADO: ACTIVO'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } };
-window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','psi','osc'].reduce((acc,id)=>acc+(parseInt(document.getElementById('npc-'+id)?.value)||0),0); const d = document.getElementById('creation-affinity-sum-display'); if(d) d.innerText = `Total Afinidades: ${s}`; };
-window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); guardar(); window.repintarDOM(); };
+// ====================================================================
+// FUNCIONES DE EDICIÓN: TODAS LLAMAN A window.actualizarPantallas()
+// ====================================================================
 
 function recalcularVidas(p, accion) {
     const calcFisT = () => (p.afinidadesBase.fisica||0) + (p.hechizos.fisica||0) + (p.hechizosEfecto.fisica||0) + (p.buffs.fisica||0);
@@ -332,40 +273,89 @@ function recalcularVidas(p, accion) {
     const fMax = calcularVidaRojaMax(p); if (p.vidaRojaActual > fMax) p.vidaRojaActual = fMax;
 }
 
+window.cambioManual = (id, val, tipo) => {
+    const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return;
+    const v = parseInt(val) || 0;
+    if (tipo === 'baseTop') {
+        recalcularVidas(p, () => { const prop = `base${id.charAt(0).toUpperCase() + id.slice(1)}`; p[prop] = v; });
+    } else if (tipo === 'buff') {
+        recalcularVidas(p, () => p.buffs[id] = v);
+    } else if (tipo === 'baseAfin') {
+        recalcularVidas(p, () => p.afinidadesBase[id] = v);
+    } else if (tipo === 'spellEffTop' || tipo === 'spellEffAfin') {
+        recalcularVidas(p, () => p.hechizosEfecto[id] = v);
+    }
+    window.encolarCambio(n); guardar(); window.actualizarPantallas();
+};
+
 window.recalcularBases = () => { 
-    const n = estadoUI.personajeSeleccionado; 
-    const p = statsGlobal[n]; 
-    if(!p) return; 
+    const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; 
     if(confirm(`¿Recalcular Vidas Teóricas de ${n}?`)) { 
         p.baseVidaRojaMax = 10; 
         p.vidaRojaActual = calcularVidaRojaMax(p); 
-        p.baseVidaAzul = getMysticBonus(p); // Usa la lógica corregida
+        p.baseVidaAzul = getMysticBonus(p);
         p.vidaAzul = p.baseVidaAzul; 
-        window.encolarCambio(n); 
-        guardar(); 
-        window.repintarDOM(); 
+        window.encolarCambio(n); guardar(); window.actualizarPantallas(); 
     } 
 };
 
-window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
+window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
+window.modificarBuff = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.buffs[statId] = (p.buffs[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
+window.modBaseTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => { const prop = `base${statId.charAt(0).toUpperCase() + statId.slice(1)}`; p[prop] = Math.max(0, (p[prop]||0)+cantidad); }); window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
+window.modBaseAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.afinidadesBase[statId] = Math.max(0, (p.afinidadesBase[statId]||0)+cantidad)); window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
+window.modSpellEffTop = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
+window.modSpellEffAfin = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; recalcularVidas(p, () => p.hechizosEfecto[statId] = (p.hechizosEfecto[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
+window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
+window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
+window.toggleIdentidad = (prop) => { const n = estadoUI.personajeSeleccionado; const p = statsGlobal[n]; if(!p) return; p[prop] = !p[prop]; if (prop === 'isPlayer') p.isNPC = !p.isPlayer; window.encolarCambio(n); guardar(); window.actualizarPantallas(); };
 
-window.modForm = (inputId, cantidad) => {
-    const input = document.getElementById(inputId);
-    if(input) {
-        input.value = Math.max(0, (parseInt(input.value)||0) + cantidad);
-        if(inputId.startsWith('npc-fis') || inputId.startsWith('npc-ene') || inputId.startsWith('npc-esp') || inputId.startsWith('npc-man') || inputId.startsWith('npc-psi') || inputId.startsWith('npc-osc')) {
-            window.updateCreationAfinitySum();
-        }
-    }
+window.modHexInd = (nombre, amount) => { 
+    const p = statsGlobal[nombre]; if(!p) return; 
+    p.hex = Math.max(0, p.hex + amount); 
+    window.addHexLogEntry(nombre, amount, false); 
+    window.encolarCambio(nombre); 
+    guardar(); window.actualizarPantallas(); 
 };
 
-window.modLibre = (statId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p[statId] = Math.max(0, (p[statId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.modEstado = (estadoId, cantidad) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = Math.max(0, (p.estados[estadoId]||0)+cantidad); window.encolarCambio(n); guardar(); window.repintarDOM(); };
-window.toggleEstado = (estadoId) => { const n=estadoUI.personajeSeleccionado; const p=statsGlobal[n]; if(!p)return; p.estados[estadoId] = !p.estados[estadoId]; window.encolarCambio(n); guardar(); window.repintarDOM(); };
+window.modHexGlobal = (amount) => {
+    if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
+    estadoUI.party.forEach(nombre => { 
+        if (nombre && statsGlobal[nombre]) { 
+            const p = statsGlobal[nombre]; p.hex = Math.max(0, p.hex + amount); 
+            window.addHexLogEntry(nombre, amount, false); window.encolarCambio(nombre); 
+        } 
+    });
+    guardar(); window.actualizarPantallas();
+};
+
+window.togglePartyMember = (nombre, isChecked) => {
+    if (isChecked) { const e = estadoUI.party.indexOf(null); if (e !== -1) estadoUI.party[e] = nombre; else alert("Máximo de 6 alcanzado."); } 
+    else { const c = estadoUI.party.indexOf(nombre); if (c !== -1) estadoUI.party[c] = null; }
+    guardar(); window.actualizarPantallas();
+};
+window.vaciarParty = () => { estadoUI.party = [null, null, null, null, null, null]; guardar(); window.actualizarPantallas(); };
+window.establecerPartyActiva = () => {
+    if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
+    if(!confirm("¿Marcar seleccionados como Activos y el resto Inactivos?")) return;
+    Object.keys(statsGlobal).forEach(n => { if (statsGlobal[n].isPlayer) { statsGlobal[n].isActive = false; window.encolarCambio(n); } });
+    estadoUI.party.forEach(n => { if (n && statsGlobal[n]) { statsGlobal[n].isPlayer = true; statsGlobal[n].isNPC = false; statsGlobal[n].isActive = true; window.encolarCambio(n); } });
+    guardar(); window.actualizarPantallas(); alert("Party actualizada.");
+};
+
+window.addAsistenciaGlobal = () => {
+    if (!estadoUI.party.some(n => n !== null)) return alert("Party vacía.");
+    let leveledUp = [];
+    estadoUI.party.forEach(nombre => {
+        if (nombre && statsGlobal[nombre]) {
+            const p = statsGlobal[nombre]; p.asistencia = (p.asistencia || 1) + 1;
+            if (p.asistencia >= 8) { p.asistencia = 1; p.hex += 1000; window.addHexLogEntry(nombre, 1000, true); leveledUp.push(nombre); } 
+            else { window.addHexLogEntry(nombre, 0, false); }
+            window.encolarCambio(nombre);
+        }
+    });
+    guardar(); if (leveledUp.length > 0) alert(`¡ASISTENCIA MÁXIMA ALCANZADA!\n${leveledUp.join(', ')} regresan a Asistencia 1 y ganan +1000 HEX EXTRA.`);
+    window.actualizarPantallas();
+};
 
 window.ejecutarClonacion = (tipo) => {
     const s = document.getElementById('clon-source'); if(!s) return; const sn = s.value; if(!sn) return alert("Selecciona origen.");
@@ -380,7 +370,7 @@ window.ejecutarClonacion = (tipo) => {
         dest.afinidadesBase = JSON.parse(JSON.stringify(orig.afinidadesBase)); dest.afinidades = JSON.parse(JSON.stringify(orig.afinidades));
         dest.vex = orig.vex; if(tipo==='completo') dest.iconoOverride = orig.iconoOverride || sn;
     }
-    window.encolarCambio(tn); guardar(); s.value = ""; window.repintarDOM(); 
+    window.encolarCambio(tn); guardar(); s.value = ""; window.actualizarPantallas(); 
 };
 
 window.ejecutarCreacionNPC = () => {
@@ -401,14 +391,25 @@ window.ejecutarCreacionNPC = () => {
     window.encolarCambio(nombre); guardar(); estadoUI.personajeSeleccionado = nombre; window.abrirDetalle(nombre); window.scrollTo(0,0);
 };
 
+window.modForm = (inputId, cantidad) => {
+    const input = document.getElementById(inputId);
+    if(input) {
+        input.value = Math.max(0, (parseInt(input.value)||0) + cantidad);
+        if(inputId.startsWith('npc-fis') || inputId.startsWith('npc-ene') || inputId.startsWith('npc-esp') || inputId.startsWith('npc-man') || inputId.startsWith('npc-psi') || inputId.startsWith('npc-osc')) {
+            window.updateCreationAfinitySum();
+        }
+    }
+};
+
+window.toggleCrearRol = () => { const btn = document.getElementById('btn-crear-rol'); if (btn.dataset.val === 'npc') { btn.dataset.val = 'jugador'; btn.innerText = 'ROL: JUGADOR'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } else { btn.dataset.val = 'npc'; btn.innerText = 'ROL: NPC'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } };
+window.toggleCrearAct = () => { const btn = document.getElementById('btn-crear-act'); if (btn.dataset.val === 'activo') { btn.dataset.val = 'inactivo'; btn.innerText = 'ESTADO: INACTIVO'; btn.style.background = '#4a0000'; btn.style.borderColor = '#ff0000'; } else { btn.dataset.val = 'activo'; btn.innerText = 'ESTADO: ACTIVO'; btn.style.background = '#004a00'; btn.style.borderColor = '#00ff00'; } };
+window.updateCreationAfinitySum = () => { const s = ['fis','ene','esp','man','psi','osc'].reduce((acc,id)=>acc+(parseInt(document.getElementById('npc-'+id)?.value)||0),0); const d = document.getElementById('creation-affinity-sum-display'); if(d) d.innerText = `Total Afinidades: ${s}`; };
 window.descargarAumentada = () => { descargarArchivoCSV(generarCSVExportacion(), "HEX_ESTADOS_AUMENTADO.csv"); };
 
 async function iniciar() {
     try {
         const perf = performance.getEntriesByType("navigation")[0];
-        if (perf && perf.type === "reload") {
-            localStorage.removeItem('hex_stats_v2');
-        }
+        if (perf && perf.type === "reload") localStorage.removeItem('hex_stats_v2');
 
         const loader = document.getElementById('loader');
         const barra = document.getElementById('carga-progreso');
@@ -424,13 +425,10 @@ async function iniciar() {
             cargarTodoDesdeCSV(barra); 
         }
         
-        if (loader) {
-            setTimeout(() => loader.classList.add('oculto'), 500); 
-        }
+        if (loader) setTimeout(() => loader.classList.add('oculto'), 500); 
 
         const urlParams = new URLSearchParams(window.location.search);
         const pjQuery = urlParams.get('pj');
-        
         let hashQuery = window.location.hash.replace('#detalle-', '').replace('#inventario-', '');
         if (hashQuery) hashQuery = decodeURIComponent(hashQuery).replace(/_/g, ' ');
 
@@ -446,7 +444,7 @@ async function iniciar() {
     } 
     catch (error) { console.error("Error crítico:", error); } 
     finally { 
-        refrescarVistas(true); 
+        refrescarVistasPrincipales(); 
         if (estadoUI.vistaActual === 'hex') updateHexLogText();
     }
 }
