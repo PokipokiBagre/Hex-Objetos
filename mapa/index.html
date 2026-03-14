@@ -29,7 +29,7 @@
 
         <button id="btn-toggle-sidebar" onclick="document.getElementById('sidebar-jugadores').classList.toggle('open')" style="display: none; pointer-events: auto; position: absolute; top: 90px; left: 20px; z-index: 30; background: rgba(10,0,20,0.85); border: 1px solid var(--gold); color: var(--gold); padding: 8px 15px; border-radius: 6px; font-family: 'Cinzel', serif; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">👥 Jugadores</button>
 
-        <div id="sidebar-jugadores" class="sidebar" style="pointer-events: auto;">
+        <div id="sidebar-jugadores" class="sidebar" style="pointer-events: auto; top: 140px;">
             <h3 style="color:var(--gold); text-align:center; font-family:'Cinzel'; margin: 0 0 15px 0; border-bottom: 1px solid var(--gold); padding-bottom: 10px;">JUGADORES</h3>
             <button class="btn-jugador activo" id="btn-jug-Todos" onclick="window.seleccionarJugador('Todos')">
                 <div style="width:24px;height:24px;border-radius:50%;background:#444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;">★</div>
@@ -59,7 +59,7 @@
             <div id="info-op"></div>
         </div>
         
-        <div id="panel-edicion-avanzada" class="panel-info oculto" style="resize: both; overflow: auto; min-width: 300px; min-height: 200px; right: 20px; top: 90px; height: calc(100vh - 110px); border-radius: 12px; left: auto; width: 480px; pointer-events: auto; background: rgba(15,0,30,0.95); border: 2px solid var(--gold); box-shadow: -5px 5px 20px rgba(0,0,0,0.8); z-index: 100;">
+        <div id="panel-edicion-avanzada" class="panel-info oculto" style="resize: both; overflow: auto; min-width: 300px; min-height: 200px; right: 20px; top: 90px; height: fit-content; max-height: calc(100vh - 110px); border-radius: 12px; left: auto; width: 480px; pointer-events: auto; background: rgba(15,0,30,0.95); border: 2px solid var(--gold); box-shadow: -5px 5px 20px rgba(0,0,0,0.8); z-index: 100;">
             </div>
 
         <div id="herramientas-editor" class="oculto" style="position: absolute; bottom: 25px; left: 20px; z-index: 100; display: flex; gap: 12px; background: rgba(10,0,20,0.85); padding: 12px; border-radius: 12px; border: 1px solid var(--cyan-magic); pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.9);">
