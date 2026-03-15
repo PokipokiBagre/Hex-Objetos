@@ -350,7 +350,7 @@ export function dibujarFrame() {
         }
         ctx.setLineDash([]); 
 
-// ==========================================
+        // ==========================================
         // 3. TEXTOS
         // ==========================================
         if (camara.zoom > 0.08 || isHovered || isSelected || nodo.isHexNode) {
@@ -363,18 +363,12 @@ export function dibujarFrame() {
             const textY = nodo.y + nodo.radio + (15 / scaleFactor);
             ctx.lineWidth = 6 / scaleFactor;
             
-            // LÓGICA MÁSTER: Si es Admin, forzamos mostrar el nombre real del hechizo
-            const textoADibujar = estadoMapa.esAdmin && !nodo.esConocido && !nodo.isHexNode 
-                                  ? `${nodo.nombreOriginal.replace(/\s*\(\d+\)$/, '').trim()} (${nodo.hex})` 
-                                  : nodo.nombre;
-            
             if (isPlayerView && esIrrelevantePlayer && !nodo.isHexNode) {
                 ctx.strokeStyle = 'rgba(0,0,0,0.2)'; 
             } else {
                 ctx.strokeStyle = 'rgba(0,0,0,0.95)'; 
             }
-            
-            ctx.strokeText(textoADibujar, nodo.x, textY);
+            ctx.strokeText(nodo.nombre, nodo.x, textY);
             
             if (nodo.isHexNode) {
                 ctx.fillStyle = '#ffaaaa';
@@ -388,12 +382,14 @@ export function dibujarFrame() {
             } else if (nodo.esConocido) {
                 ctx.fillStyle = (isHovered || isSelected) ? ESTETICA.lineaSaliente : '#fff';
             } else {
-                // Si está sellado, pero somos Máster, lo pintamos de gris clarito para diferenciar
-                ctx.fillStyle = (isHovered || isSelected) ? '#ddd' : (estadoMapa.esAdmin ? '#e0e0e0' : '#bbb'); 
+                ctx.fillStyle = (isHovered || isSelected) ? '#ddd' : '#bbb'; 
             }
-            
-            ctx.fillText(textoADibujar, nodo.x, textY);
+            ctx.fillText(nodo.nombre, nodo.x, textY);
         }
+    });
+
+    ctx.globalAlpha = 1.0; 
+}
 
 export function actualizarPanelInfo() {
     const panel = document.getElementById('panel-info');
