@@ -92,40 +92,44 @@ editor.setHerramienta = (herr) => {
     }
 };
 
-// --- EL ÚNICO BOTÓN DE GUARDADO MAESTRO ---
-// Sobreescribimos el de mapa-main.js para que guarde ABSOLUTAMENTE TODO
 window.guardarCambiosMapa = async () => {
-    estadoMapa.nodos.forEach(n => { if(n.modificado) registrarCambioNodo(n); });
-
-    const payload = {
-        accion: 'guardar_edicion_completa',
-        nodos: Object.values(editor.cambiosPendientes.nodos),
-        enlaces: editor.cambiosPendientes.enlaces,
-        afinidades: window.mapaColores 
-    };
-
-    if (payload.nodos.length === 0 && payload.enlaces.length === 0 && Object.keys(window.mapaColores).length === 0) {
-        return alert("No hay cambios para guardar.");
-    }
-
     const btn = document.getElementById('btn-save-map');
-    const textoOriginal = btn.innerText;
-    btn.innerText = "Guardando Red..."; btn.disabled = true;
+    btn.innerText = "Guardando..."; 
+    btn.disabled = true;
 
     try {
-        const res = await fetch(API_HECHIZOS, { method: 'POST', body: JSON.stringify(payload) });
-        const data = await res.json();
-        if (data.status === 'success') {
-            alert("¡Cambios guardados en Google Sheets!");
-            editor.cambiosPendientes = { nodos: {}, enlaces: [] };
-            estadoMapa.nodos.forEach(n => { n.modificado = false; n._esNuevo = false; n._oldId = n.id; });
-            btn.classList.add('oculto'); // Se oculta tras guardar
-        } else {
-            alert("Fallo del servidor: " + data.message);
-        }
-    } catch(e) { alert("Error de Red."); }
-    
-    btn.innerText = textoOriginal; btn.disabled = false;
+        // 1. Mapeamos los datos al formato que espera Supabase
+        const updates = estadoMapa.nodos.map(n => ({
+            hechizo_id: n.id,
+            pos_x: Math.round(n.x), // Tu base de datos usa pos_x y pos_y
+            pos_y: Math.round(n.y),
+            es_conocido: n.esConocido
+        }));
+
+        // 2. Usamos tu manejador unificado de base de datos
+        const ok = await db.hechizos.guardarPosicionesBatch(updates);
+
+        if (!ok) throw new Error("Fallo en la consulta a Supabase");
+
+        // 3. Restaurar la interfaz si todo salió bien
+        estadoMapa.nodos.forEach(n => n.modificado = false);
+        btn.classList.add('oculto');
+        btn.innerText = "💾 Guardar Cambios";
+        btn.disabled = false;
+
+        // Mostrar el cartelito
+        const cartelito = document.createElement('div');
+        cartelito.innerHTML = "¡Coordenadas Guardadas! ✅";
+        cartelito.style.cssText = "position:fixed; top:30px; left:50%; transform:translateX(-50%); background:var(--gold); color:#000; padding:15px 40px; border-radius:8px; font-weight:bold; font-size:1.2em; z-index:9999; box-shadow:0 0 20px var(--gold); font-family:'Cinzel', serif;";
+        document.body.appendChild(cartelito);
+        setTimeout(() => cartelito.remove(), 2500);
+
+    } catch (error) {
+        console.error("Error guardando coordenadas:", error);
+        alert("Fallo al guardar. Revisa la consola para más detalles.");
+        btn.innerText = "Reintentar Guardado";
+        btn.disabled = false;
+    }
 };
 
 // Activa el botón de guardar global
