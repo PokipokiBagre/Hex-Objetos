@@ -99,9 +99,9 @@ export function eliminarPersonalizada(id) {
         if (m.tipo !== 'Personalizada' && !estadoUI.esAdmin) return alert("Solo puedes borrar personalizadas.");
         misGlobal.splice(idx, 1);
         
-        if(!estadoUI.colaCambios.misiones[id]) estadoUI.colaCambios.misiones[id] = {};
-        estadoUI.colaCambios.misiones[id]['Activa'] = 0; 
-        
+        // Marcador de borrado — sincronizarBD llama a db.misiones.eliminar
+        estadoUI.colaCambios.misiones[id] = { __ELIMINAR__: true, titulo: id };
+
         actualizarBotonSync();
         dibujarTablero();
     }
