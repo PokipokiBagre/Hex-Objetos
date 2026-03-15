@@ -1,5 +1,6 @@
 import { estadoMapa } from './mapa-state.js';
-import { API_HECHIZOS, actualizarColoresFlechas } from './mapa-data.js';
+import { actualizarColoresFlechas } from './mapa-data.js'; // (O las que tengas)
+import { db } from '../hex-db.js'; // <-- AGREGAMOS ESTO
 
 const editor = {
     activa: false,
